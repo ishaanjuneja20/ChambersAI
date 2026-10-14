@@ -72,13 +72,16 @@ def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
         raise GenerationError(f"Gemini request failed ({type(e).__name__})") from None
 
 
-def call_gemini(body: dict, post=_post) -> str:
+def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
     """POST a generateContent body with retries on busy models and a lighter fallback model. Returns the text."""
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         raise GenerationError("GEMINI_API_KEY is not set")
-    model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
-    models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
+    if model:                                   # caller picked a model: use only that one
+        models = [model]
+    else:
+        model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
+        models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
     data, last = None, None
     for m in models:
         for wait in (0,) + WAITS:

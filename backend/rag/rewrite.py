@@ -6,7 +6,11 @@ as legal text and never contains citations (it is told not to name sections).
 """
 from __future__ import annotations
 
+import os
+
 from backend.rag.generate import GenerationError, _post, call_gemini
+
+REWRITE_MODEL = "gemini-flash-lite-latest"     # small and cheap: rewriting is a simple task
 
 REWRITE_PROMPT = (
     "You help search a database of Indian statutes: BNS, BNSS, BSA, the Constitution, Hindu Marriage / Succession / "
@@ -27,7 +31,7 @@ def rewrite_query(question: str, post=_post) -> str:
     body = {"contents": [{"role": "user", "parts": [{"text": REWRITE_PROMPT + question}]}],
             "generationConfig": {"temperature": 0, "maxOutputTokens": 400}}
     try:
-        text = call_gemini(body, post)
+        text = call_gemini(body, post, model=os.environ.get("GEMINI_REWRITE_MODEL", REWRITE_MODEL))
     except GenerationError:
         return question
     line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""

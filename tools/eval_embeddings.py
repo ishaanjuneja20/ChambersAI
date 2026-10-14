@@ -184,7 +184,7 @@ REWRITE_PROMPT = (
     "Output only the query.\n\nQuestion: ")
 
 
-def rewrite_queries(questions, root, model, tag=""):
+def rewrite_queries(questions, root, model, tag="", delay=4.0):
     import urllib.request
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
@@ -206,13 +206,13 @@ def rewrite_queries(questions, root, model, tag=""):
                 cache[q["id"]] = out["candidates"][0]["content"]["parts"][0]["text"].strip().splitlines()[0].strip(" \"'`")[:300]
                 break
             except Exception as e:
-                wait = 8 * (attempt + 1)
+                wait = 15 * (attempt + 1)
                 print(f"  rewrite error for {q['id']} ({e}); retry in {wait}s", flush=True)
                 time.sleep(wait)
         else:
             sys.exit("rewrite kept failing; check GEMINI_API_KEY and --rewrite-model")
         path.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
-        time.sleep(0.5)
+        time.sleep(delay)
     return [cache[q["id"]] for q in questions]
 
 
@@ -281,7 +281,8 @@ def main():
     ap.add_argument("--device", default=None, help="cpu, mps or cuda (default: automatic). Use cpu if the GPU runs out of memory")
     ap.add_argument("--batch-size", type=int, default=16, help="lower it (e.g. 4) if memory runs out")
     ap.add_argument("--rewrite", action="store_true", help="rewrite each question into an English legal search query with Gemini first")
-    ap.add_argument("--rewrite-model", default="gemini-flash-latest")
+    ap.add_argument("--rewrite-model", default="gemini-flash-lite-latest")
+    ap.add_argument("--rewrite-delay", type=float, default=4.0, help="seconds between Gemini calls (free tiers allow only a few per minute)")
     ap.add_argument("--rewrite-mode", choices=["max", "only"], default="max",
                     help="max: score each section by the better of original and rewritten query (what the app does); only: rewritten query alone")
     ap.add_argument("--tag", default="", help="suffix for result files, e.g. @lay, so a different question set does not overwrite results")
@@ -309,7 +310,7 @@ def main():
         label = name + a.tag
         S = emb.sims(emb.query(qtexts), D)
         if a.rewrite:
-            rw = rewrite_queries(questions, root, a.rewrite_model, a.tag)
+            rw = rewrite_queries(questions, root, a.rewrite_model, a.tag, a.rewrite_delay)
             S2 = emb.sims(emb.query(rw), D)
             S = np.maximum(S, S2) if a.rewrite_mode == "max" else S2
             label = f"{name}+rewrite-{a.rewrite_mode}{a.tag}"
