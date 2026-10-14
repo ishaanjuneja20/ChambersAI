@@ -44,3 +44,11 @@ def test_verify_drops_unknown_ids_and_uses_metadata_citation():
     cid = next(h["chunk"]["id"] for h in hits if h["chunk"]["meta"]["section"] == "103")
     clean, cits, dropped = verify_citations(f"Murder is covered [{cid}] and also [bns-999].", hits)
     assert dropped == ["bns-999"] and cits == ["BNS s.103"] and "bns-999" not in clean
+
+
+def test_verify_handles_grouped_ids_and_hides_internal_ids():
+    hits = [{"chunk": {"id": "hma-13", "citation": "HMA s.13"}}, {"chunk": {"id": "sma-27", "citation": "SMA s.27"}}]
+    clean, cits, dropped = verify_citations("Cruelty [hma-13, sma-27]. Other [zzz-1, sma-27]. Gone [nope-9]. Keep [1].", hits)
+    assert cits == ["HMA s.13", "SMA s.27"] and dropped == ["zzz-1", "nope-9"]
+    assert "hma-13" not in clean and "zzz-1" not in clean and "nope-9" not in clean
+    assert "[HMA s.13; SMA s.27]" in clean and "[SMA s.27]" in clean and "[1]" in clean

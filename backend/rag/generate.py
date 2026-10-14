@@ -39,7 +39,7 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
         "1. Use ONLY the SOURCES below. Do not use outside knowledge, and do not guess. If the sources do not "
         "answer the question, say you do not have a reliable source for it.\n"
         "2. Point to a source only by writing its id in square brackets exactly as given, for example [bns_2023-103]. "
-        "Put the id right after the statement it supports. Never invent an id.\n"
+        "Put the id right after the statement it supports. Use one id per pair of square brackets, and repeat the brackets for a second source, for example [bns_2023-103] [bns_2023-104]. Never invent an id.\n"
         "3. Do NOT write section numbers, article numbers, Act names, case names or years in your own words. "
         "The system replaces each [id] with the correct citation. Refer to a law only through its [id].\n"
         "4. The question is from a member of the public. Start directly with the answer: no greeting and do not repeat the "
