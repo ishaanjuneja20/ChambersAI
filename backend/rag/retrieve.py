@@ -85,7 +85,11 @@ def set_backend(index=None, embedder=None):
 
 def search(query: str, lawyer_domain: str, k: int, index: Index, embed) -> list[dict]:
     q = np.asarray(embed([query]), dtype="float64")[0]
-    sims = index.vectors @ q
+    # einsum, not `@`: numpy 2.0 + Apple Accelerate on some Macs returns garbage from BLAS matmul (warnings
+    # 'divide by zero / overflow in matmul'). The corpus is small, so the plain loop is fast enough.
+    sims = np.einsum("ij,j->i", index.vectors, q)
+    if not np.isfinite(sims).all():
+        raise RuntimeError("non-finite similarities; check the embeddings and the numpy/BLAS install")
     best = {}                                    # section key -> chunk row with the highest similarity
     for i, key in enumerate(index.keys):
         if key not in best or sims[i] > sims[best[key]]:
