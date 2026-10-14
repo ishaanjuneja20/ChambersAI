@@ -8,7 +8,9 @@
 - [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
 - [ ] BSA<->Evidence Act mapping (no table yet)
 - [ ] Chunk judgments
-- [ ] Pick embedding model, build index
+- [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00
+- [ ] Run e5-small / e5-base / bge-m3 (and gemini) on the Mac and pick the embedding model
+- [ ] Lawyer review of the test set; add harder questions
 - [ ] Retrieval + refusal threshold + citation check
 - [ ] Per-domain test set with trap questions
 - [ ] Voice (Fish Audio), avatars, frontend
