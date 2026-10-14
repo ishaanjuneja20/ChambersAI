@@ -12,7 +12,7 @@
 - [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions
 - [x] retrieve() (bge-m3, boost .02, per-section, per-language refusal) + verify_citations; try it with tools/try_retrieve.py on the Mac
-- [ ] Gemini answer generation in backend/main.py generate() (currently a stub)
+- [x] Gemini answer step (backend/rag/generate.py + pipeline.py); untested against the real API; try with tools/try_ask.py
 - [ ] Per-domain test set with trap questions
 - [ ] Voice (Fish Audio), avatars, frontend
 
