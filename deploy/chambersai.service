@@ -1,0 +1,15 @@
+[Unit]
+Description=ChambersAI backend
+After=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/chambersai
+EnvironmentFile=/etc/chambersai.env
+Environment=PYTHONPATH=/opt/chambersai
+ExecStart=/opt/chambersai/.venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
