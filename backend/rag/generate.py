@@ -9,17 +9,23 @@ Needs GEMINI_API_KEY in the environment (never in git). Model: GEMINI_MODEL (def
 from __future__ import annotations
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-latest"
+FALLBACK_MODEL = "gemini-flash-lite-latest"     # used if the main model stays overloaded
+RETRY_CODES = (429, 500, 502, 503, 504)
+WAITS = (2, 5, 10)                               # seconds between attempts on a busy model
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
 MAX_SOURCE_CHARS = 3500
 
 
 class GenerationError(RuntimeError):
-    pass
+    def __init__(self, msg, code=None):
+        super().__init__(msg)
+        self.code = code
 
 
 def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
@@ -60,7 +66,7 @@ def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
             msg = json.loads(e.read())["error"]["message"][:200]
         except Exception:
             msg = ""
-        raise GenerationError(f"Gemini HTTP {e.code}: {msg}".strip()) from None
+        raise GenerationError(f"Gemini HTTP {e.code}: {msg}".strip(), e.code) from None
     except Exception as e:
         raise GenerationError(f"Gemini request failed ({type(e).__name__})") from None
 
@@ -76,7 +82,22 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
         "contents": [{"role": "user", "parts": [{"text": user}]}],
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1500},
     }
-    data = post(API.format(model=model), key, body)
+    models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
+    data, last = None, None
+    for m in models:
+        for wait in (0,) + WAITS:
+            time.sleep(wait)
+            try:
+                data = post(API.format(model=m), key, body)
+                break
+            except GenerationError as e:
+                last = e
+                if e.code not in RETRY_CODES:
+                    raise
+        if data is not None:
+            break
+    if data is None:
+        raise last
     try:
         parts = data["candidates"][0]["content"]["parts"]
         return "".join(p.get("text", "") for p in parts).strip()

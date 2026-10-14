@@ -38,3 +38,34 @@ def test_missing_key_and_blocked_response_raise():
         assert False
     except G.GenerationError:
         pass
+
+
+def test_retries_busy_model_then_succeeds(monkeypatch=None):
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    G.WAITS = (0, 0, 0)
+    calls = []
+
+    def flaky(url, key, body, timeout=60):
+        calls.append(url)
+        if len(calls) < 3:
+            raise G.GenerationError("Gemini HTTP 503: busy", 503)
+        return {"candidates": [{"content": {"parts": [{"text": "ok [bns_2023-103]"}]}}]}
+
+    assert "ok" in G.generate("q", HITS, "en", LAWYER, post=flaky) and len(calls) == 3
+
+
+def test_non_retryable_error_stops_immediately():
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    calls = []
+
+    def bad(url, key, body, timeout=60):
+        calls.append(1)
+        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+
+    try:
+        G.generate("q", HITS, "en", LAWYER, post=bad)
+        assert False
+    except G.GenerationError:
+        assert len(calls) == 1
