@@ -54,8 +54,13 @@ def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
-    except urllib.error.HTTPError as e:                       # status only: never echo request content
-        raise GenerationError(f"Gemini HTTP {e.code}") from None
+    except urllib.error.HTTPError as e:
+        # Google's own error text (e.g. "model not found", "quota exceeded"); never the request content
+        try:
+            msg = json.loads(e.read())["error"]["message"][:200]
+        except Exception:
+            msg = ""
+        raise GenerationError(f"Gemini HTTP {e.code}: {msg}".strip()) from None
     except Exception as e:
         raise GenerationError(f"Gemini request failed ({type(e).__name__})") from None
 
