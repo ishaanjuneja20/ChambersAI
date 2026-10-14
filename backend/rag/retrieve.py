@@ -72,7 +72,9 @@ def load_index(data_dir=None, model_dir="bge-m3") -> Index:
 
 def _default_embedder():
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer(MODEL_NAME)
+    # CPU on purpose: on Apple MPS short queries get wrong vectors (BNS 103 scored 0.21 instead of 0.71 for
+    # "punishment for murder"). One short query is fast on CPU. Override with CHAMBERS_DEVICE if needed.
+    model = SentenceTransformer(MODEL_NAME, device=os.environ.get("CHAMBERS_DEVICE", "cpu"))
     model.max_seq_length = 512
     return lambda texts: model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
 
