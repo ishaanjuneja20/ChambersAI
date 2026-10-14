@@ -1,16 +1,107 @@
-"""Stub retriever: returns fake hits in the real format (see docs/CONTRACTS.md)."""
+"""Real retriever (bge-m3). Format: docs/CONTRACTS.md.
 
-FAKE_CHUNK = {
-    "id": "bns-103",
-    "kind": "act_section",
-    "text": "(Stub) Whoever commits murder shall be punished with death or imprisonment for life, and shall also be liable to fine.",
-    "lang": "en",
-    "domains": ["criminal"],
-    "citation": "BNS s.103 (formerly IPC s.302)",
-    "meta": {"act": "BNS", "section": "103", "case_name": None, "year": None, "court": None,
-             "source_path": "statutes/criminal/BNS_2023.pdf"},
-}
+Data (not in git) is read from $CHAMBERS_DATA_DIR (default: ./data_dir fallback to cwd):
+    corpus/chunks/acts/*.jsonl            chunks (tools/chunk_acts.py + apply_citation_map.py)
+    corpus/embeddings/bge-m3/docs.npy     one L2-normalised row per chunk (tools/eval_embeddings.py)
+    corpus/embeddings/bge-m3/ids.json     chunk ids in row order
+
+Behaviour (decided from the eval, see DECISIONS.md):
+  * cosine similarity between the query and each chunk
+  * one hit per section (best chunk), because long sections are split into several chunks
+  * domain tag adds DOMAIN_BOOST to the ranking score; it never filters (CLAUDE.md rule 5)
+  * every hit carries `similarity` (raw, used for refusal) and `score` (boosted, used for ranking)
+  * `refusal_threshold(lang)` gives the per-language cut-off below which we refuse (rule 4)
+Citations are read from chunk metadata only (rule 2).
+"""
+import glob
+import json
+import os
+import re
+from pathlib import Path
+
+import numpy as np
+
+MODEL_NAME = "BAAI/bge-m3"
+DOMAIN_BOOST = 0.02
+# From tools/eval_embeddings.py on the DRAFT test set (not lawyer reviewed). Re-tune when the set grows.
+REFUSAL_THRESHOLDS = {"en": 0.635, "hi": 0.589}
+_DEVANAGARI = re.compile(r"[ऀ-ॿ]")
+
+_index = None          # lazily loaded Index
+_embedder = None       # callable: list[str] -> np.ndarray (n, d), L2-normalised
+
+
+def detect_lang(text: str) -> str:
+    return "hi" if _DEVANAGARI.search(text) else "en"
+
+
+def refusal_threshold(lang: str) -> float:
+    return REFUSAL_THRESHOLDS.get(lang, max(REFUSAL_THRESHOLDS.values()))
+
+
+class Index:
+    def __init__(self, chunks, vectors):
+        assert len(chunks) == len(vectors)
+        self.chunks = chunks
+        self.vectors = np.asarray(vectors, dtype="float64")
+        self.keys = [self._key(c) for c in chunks]
+        self.domains = [set(c.get("domains") or []) for c in chunks]
+
+    @staticmethod
+    def _key(c):
+        m = c["meta"]
+        return f'{m.get("act_short") or m.get("act")}:{m.get("section")}' if m.get("section") else c["id"]
+
+
+def load_index(data_dir=None, model_dir="bge-m3") -> Index:
+    root = Path(data_dir or os.environ.get("CHAMBERS_DATA_DIR", "."))
+    by_id = {}
+    for f in sorted(glob.glob(str(root / "corpus" / "chunks" / "acts" / "*.jsonl"))):
+        for line in open(f, encoding="utf-8"):
+            c = json.loads(line)
+            by_id[c["id"]] = c
+    emb = root / "corpus" / "embeddings" / model_dir
+    ids = json.loads((emb / "ids.json").read_text())
+    vectors = np.load(emb / "docs.npy")
+    missing = [i for i in ids if i not in by_id]
+    if missing:
+        raise RuntimeError(f"{len(missing)} embedded chunk ids not in chunk files (e.g. {missing[:3]}); "
+                           "re-run tools/eval_embeddings.py --models bge-m3 after re-chunking")
+    return Index([by_id[i] for i in ids], vectors)
+
+
+def _default_embedder():
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer(MODEL_NAME)
+    model.max_seq_length = 512
+    return lambda texts: model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+
+
+def set_backend(index=None, embedder=None):
+    """Inject an index/embedder (tests, or to preload at server start)."""
+    global _index, _embedder
+    _index, _embedder = index, embedder
+
+
+def search(query: str, lawyer_domain: str, k: int, index: Index, embed) -> list[dict]:
+    q = np.asarray(embed([query]), dtype="float64")[0]
+    sims = index.vectors @ q
+    best = {}                                    # section key -> chunk row with the highest similarity
+    for i, key in enumerate(index.keys):
+        if key not in best or sims[i] > sims[best[key]]:
+            best[key] = i
+    hits = []
+    for i in best.values():
+        boost = DOMAIN_BOOST if lawyer_domain in index.domains[i] else 0.0
+        hits.append({"chunk": index.chunks[i], "score": float(sims[i] + boost), "similarity": float(sims[i])})
+    hits.sort(key=lambda h: -h["score"])
+    return hits[:k]
 
 
 def retrieve(query: str, lawyer_domain: str, k: int = 5) -> list[dict]:
-    return [{"chunk": FAKE_CHUNK, "score": 0.9}][:k]
+    global _index, _embedder
+    if _index is None:
+        _index = load_index()
+    if _embedder is None:
+        _embedder = _default_embedder()
+    return search(query, lawyer_domain, k, _index, _embedder)
