@@ -5,7 +5,8 @@
     CHAMBERS_DATA_DIR=. PYTHONPATH=. python3 tools/try_ask.py criminal "what is the punishment for murder?"
     CHAMBERS_DATA_DIR=. PYTHONPATH=. python3 tools/try_ask.py family "तलाक के लिए क्या आधार हैं?"
 """
-import json, sys
+import json, os, sys
+os.environ.setdefault("CHAMBERS_DEBUG", "1")
 from pathlib import Path
 from backend.rag.pipeline import answer
 

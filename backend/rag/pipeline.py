@@ -1,5 +1,6 @@
 """question -> retrieve -> refuse? -> Gemini -> verify citations. Used by the API and tools/try_ask.py."""
 from __future__ import annotations
+import os
 from backend.rag.generate import generate
 from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
 from backend.rag.verify import verify_citations
@@ -11,11 +12,23 @@ REFUSAL = {"en": "I don't have a reliable source for this.",
 def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     lang = lang or detect_lang(question)
     refused = {"answer": REFUSAL.get(lang, REFUSAL["en"]), "citations": [], "refused": True}
+    debug = os.environ.get("CHAMBERS_DEBUG") == "1"       # numbers and section names only, never the question text
     hits = retrieve(question, lawyer["domain"])
-    if not hits or hits[0]["similarity"] < refusal_threshold(lang):
+    th = refusal_threshold(lang)
+    if debug:
+        refused["debug"] = {"lang": lang, "threshold": th,
+                            "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]]}
+    if not hits or hits[0]["similarity"] < th:
+        if debug:
+            refused["debug"]["reason"] = "best similarity below threshold"
         return refused
     raw = generate(question, hits, lang, lawyer)          # may raise GenerationError
     text, citations, _dropped = verify_citations(raw, hits)
     if not citations:                                     # nothing verifiable: refuse rather than answer unsourced
+        if debug:
+            refused["debug"]["reason"] = "model gave no valid citation"
         return refused
-    return {"answer": text, "citations": citations, "refused": False}
+    out = {"answer": text, "citations": citations, "refused": False}
+    if debug:
+        out["debug"] = refused["debug"]
+    return out
