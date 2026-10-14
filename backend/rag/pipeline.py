@@ -26,6 +26,8 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
         return refused
     raw = generate(question, hits, lang, lawyer)          # may raise GenerationError
     text, citations, _dropped = verify_citations(raw, hits)
+    if lang == "hi":                                     # Gemini sometimes ends sentences with the CJK full stop
+        text = text.replace("\u3002", "\u0964")
     if not citations:                                     # nothing verifiable: refuse rather than answer unsourced
         if debug:
             refused["debug"]["reason"] = "model gave no valid citation"
