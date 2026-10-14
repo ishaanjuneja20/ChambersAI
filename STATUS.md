@@ -3,7 +3,8 @@
 - [x] 38,366 judgments extracted and domain-tagged (92% agreement with model majority; no lawyer review)
 - [x] Repo skeleton
 - [x] Chunk English Acts (3,230 sections -> 3,713 chunks, 25 Acts; see docs/CHUNKING.md)
-- [ ] Chunk Hindi Acts (5 Acts have usable OCR; the rest need OCR)
+- [x] OCR all 22 Hindi PDFs (done on the Mac)
+- [ ] Hindi chunks: deferred, OCR too noisy to align by section (see docs/CHUNKING.md); test Hindi->English retrieval instead
 - [ ] BNS<->IPC / BNSS<->CrPC citation mapping
 - [ ] Chunk judgments
 - [ ] Pick embedding model, build index

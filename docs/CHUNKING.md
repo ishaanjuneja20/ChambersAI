@@ -29,7 +29,20 @@ Run from the data folder (`~/Desktop/RAG Datasets`):
 
 An Act whose `corpus/chunks/acts/<Act>.jsonl` exists is skipped. Output is written to a temp file and renamed, so a crash never leaves a half-written Act. Use `--force` to redo everything or `--only <Act>` for one. `corpus/chunks/acts/_summary.csv` shows counts and gaps per Act.
 
+## Hindi
+All 22 Hindi PDFs have been OCR'd (`statutes/<domain>/*_hi.ocr.txt`, Tesseract hin+eng). The India Code `*_hi_indiacode.txt` files and the PDF text layers are corrupted (legacy fonts), so OCR is the only Hindi source.
+
+OCR is too noisy to chunk by section number: it drops leading digits (BNS s.103 reads "03.") and misses most headings. Aligning Hindi headings to the English section list (monotone match, OCR number must be a suffix of the English number) recovers only part of each Act:
+
+| Act | English sections | Hindi headings found | Aligned |
+|---|---|---|---|
+| BNS | 358 | 169 | 144 |
+| BSA | 170 | 81 | 75 |
+| Consumer Protection Act | 107 | 50 | 47 |
+| Hindu Marriage Act | 35 | 25 | 19 |
+
+Decision (see `DECISIONS.md`): no Hindi chunks for now. Hindi queries retrieve the English chunks through a multilingual embedding model, and the answer is generated in Hindi. The OCR text is kept for later.
+
 ## Not done yet
-- Hindi chunks aligned to English section numbers. Only 5 Acts have usable Hindi (the OCR'd BNS, BNSS, BSA, Industrial Relations Code, Constitution). The `*_hi_indiacode.txt` files and the other Hindi PDFs have a corrupted text layer and would need OCR.
 - BNS<->IPC and BNSS<->CrPC citation mapping (from the official comparison PDFs).
 - Judgments (paragraph chunks, or one summary vector per case first; see `DECISIONS.md`).
