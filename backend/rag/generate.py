@@ -4,7 +4,7 @@ Rules enforced here (CLAUDE.md): the model never writes citations itself. It may
 as [chunk-id]; backend/rag/verify.py turns known ids into the citation text from chunk metadata and drops
 unknown ones. Client text is never logged (rule 6): errors carry status codes only.
 
-Needs GEMINI_API_KEY in the environment (never in git). Model: GEMINI_MODEL (default gemini-2.5-flash).
+Needs GEMINI_API_KEY in the environment (never in git). Model: GEMINI_MODEL (default gemini-flash-latest).
 """
 from __future__ import annotations
 import json
@@ -13,7 +13,7 @@ import urllib.error
 import urllib.request
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-flash-latest"
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
 MAX_SOURCE_CHARS = 3500
 
