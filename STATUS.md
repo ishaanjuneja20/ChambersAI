@@ -9,9 +9,10 @@
 - [ ] BSA<->Evidence Act mapping (no table yet)
 - [ ] Chunk judgments
 - [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00
-- [ ] Run e5-small / e5-base / bge-m3 (and gemini) on the Mac and pick the embedding model
+- [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions
-- [ ] Retrieval + refusal threshold + citation check
+- [x] retrieve() (bge-m3, boost .02, per-section, per-language refusal) + verify_citations; try it with tools/try_retrieve.py on the Mac
+- [ ] Gemini answer generation in backend/main.py generate() (currently a stub)
 - [ ] Per-domain test set with trap questions
 - [ ] Voice (Fish Audio), avatars, frontend
 
