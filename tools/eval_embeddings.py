@@ -261,6 +261,8 @@ def evaluate(sims, chunks, questions):
 
     # refusal threshold: top-1 section score for answerable vs trap questions
     top1 = S.max(axis=1)
+    res["top1"] = [{"id": q["id"], "lang": q["lang"], "type": q["type"], "s": round(float(top1[i]), 4)}
+                   for i, q in enumerate(questions)]
     for lang in ("en", "hi"):
         a = np.array([top1[i] for i, q in enumerate(questions) if q["lang"] == lang and q["type"] == "answerable"])
         t = np.array([top1[i] for i, q in enumerate(questions) if q["lang"] == lang and q["type"] == "trap"])
@@ -325,7 +327,11 @@ def main():
     # summary table across every model that has a result file
     rows = []
     for p in sorted(out_dir.glob("*.json")):
+        if p.name.startswith("rewrites_"):
+            continue
         r = json.loads(p.read_text())
+        if "boost" not in r:
+            continue
         b0 = r["boost"]["0.0"]
         rows.append(f"| {r['model']} | {b0['en']['hit@1']} | {b0['en']['hit@5']} | {b0['hi']['hit@1']} | {b0['hi']['hit@5']} | "
                     f"{r['refusal']['en']['traps_refused']} / {r['refusal']['en']['answerable_kept']} | "
