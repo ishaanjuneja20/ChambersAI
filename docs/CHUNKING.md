@@ -43,6 +43,13 @@ OCR is too noisy to chunk by section number: it drops leading digits (BNS s.103 
 
 Decision (see `DECISIONS.md`): no Hindi chunks for now. Hindi queries retrieve the English chunks through a multilingual embedding model, and the answer is generated in Hindi. The OCR text is kept for later.
 
+## BNS <-> IPC and BNSS <-> CrPC labels
+`tools/build_citation_map.py` reads the two comparison PDFs (needs `pip install pdfplumber`) into `corpus/citation_map.json`; `tools/apply_citation_map.py` then adds `meta.formerly`, `meta.formerly_act`, `meta.is_new` and a label such as `BNS s.103 (formerly IPC s.302)` to the BNS and BNSS chunks. It is safe to rerun. Run it again after `chunk_acts.py --force`, because that rewrites the citations.
+
+Source caveat: the tables are hosted by Kerala Prisons but authored by a police-academy officer, not India Code. Only the section numbers are used (the prose summary is not copied). Spot checks matched known mappings (BNS 103->IPC 302, 85->498A, 64->376, 318->420; BNSS 173->CrPC 154, 187->167, 482->438, 528->482), but the full table has not been verified against a lawyer-checked source. Labels longer than four old sections are left off the citation and kept in `meta.formerly`.
+
+Coverage: all 358 BNS and 531 BNSS sections have an entry. BSA<->Evidence Act has no table yet.
+
 ## Not done yet
 - BNS<->IPC and BNSS<->CrPC citation mapping (from the official comparison PDFs).
 - Judgments (paragraph chunks, or one summary vector per case first; see `DECISIONS.md`).

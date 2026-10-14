@@ -5,7 +5,8 @@
 - [x] Chunk English Acts (3,230 sections -> 3,713 chunks, 25 Acts; see docs/CHUNKING.md)
 - [x] OCR all 22 Hindi PDFs (done on the Mac)
 - [ ] Hindi chunks: deferred, OCR too noisy to align by section (see docs/CHUNKING.md); test Hindi->English retrieval instead
-- [ ] BNS<->IPC / BNSS<->CrPC citation mapping
+- [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
+- [ ] BSA<->Evidence Act mapping (no table yet)
 - [ ] Chunk judgments
 - [ ] Pick embedding model, build index
 - [ ] Retrieval + refusal threshold + citation check
