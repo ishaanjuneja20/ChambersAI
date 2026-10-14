@@ -73,18 +73,26 @@ class TfidfEmbedder:
 
 
 class DenseEmbedder:
-    def __init__(self, short, root, chunks):
+    def __init__(self, short, root, chunks, device=None, batch_size=16):
         from sentence_transformers import SentenceTransformer
         self.short = short
+        self.batch_size = batch_size
         hf, self.qp, self.dp = MODELS[short]
-        print(f"loading {hf} ...", flush=True)
-        self.m = SentenceTransformer(hf)
+        print(f"loading {hf} (device={device or 'auto'}, batch={batch_size}) ...", flush=True)
+        self.m = SentenceTransformer(hf, device=device)
         self.m.max_seq_length = 512
         self.dir = root / "corpus" / "embeddings" / short
         self.chunks = chunks
 
     def encode(self, texts):
-        return self.m.encode(texts, batch_size=16, normalize_embeddings=True, show_progress_bar=False)
+        out = self.m.encode(texts, batch_size=self.batch_size, normalize_embeddings=True, show_progress_bar=False)
+        try:                                   # keep Apple-GPU memory from piling up between batches
+            import torch
+            if torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+        except Exception:
+            pass
+        return out
 
     def doc_matrix(self):
         return cached_docs(self.dir, self.chunks, lambda t: self.encode([self.dp + x for x in t]))
@@ -94,7 +102,7 @@ class DenseEmbedder:
 
     @staticmethod
     def sims(Q, D):
-        return Q @ D.T
+        return np.asarray(Q, dtype="float64") @ np.asarray(D, dtype="float64").T
 
 
 class GeminiEmbedder:
@@ -132,7 +140,7 @@ class GeminiEmbedder:
 
     @staticmethod
     def sims(Q, D):
-        return Q @ D.T
+        return np.asarray(Q, dtype="float64") @ np.asarray(D, dtype="float64").T
 
 
 def cached_docs(dir_, chunks, encode, batch=BATCH):
@@ -164,6 +172,47 @@ def cached_docs(dir_, chunks, encode, batch=BATCH):
         if p.exists():
             p.unlink()
     return m
+
+
+# ---------------------------------------------------------------- query rewriting (optional)
+REWRITE_PROMPT = (
+    "You help search a database of Indian statutes (BNS, BNSS, BSA, the Constitution, Hindu Marriage/Succession Acts, "
+    "Consumer Protection Act, Contract Act, Transfer of Property Act, labour codes, RERA, RTI and similar).\n"
+    "Rewrite the user's question as ONE short English search query that uses the legal terms a statute would use "
+    "(for example 'specific performance of contract', 'anticipatory bail', 'retrenchment compensation'). "
+    "If the question is in Hindi, translate it. Do NOT answer the question and do NOT cite section numbers. "
+    "Output only the query.\n\nQuestion: ")
+
+
+def rewrite_queries(questions, root, model):
+    import urllib.request
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        sys.exit("Set GEMINI_API_KEY to use --rewrite")
+    path = root / "corpus" / "eval" / f"rewrites_{model}.json"
+    cache = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    for q in questions:
+        if q["id"] in cache:
+            continue
+        body = {"contents": [{"parts": [{"text": REWRITE_PROMPT + q["question"]}]}],
+                "generationConfig": {"temperature": 0}}
+        for attempt in range(6):
+            try:
+                req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    out = json.load(r)
+                cache[q["id"]] = out["candidates"][0]["content"]["parts"][0]["text"].strip()
+                break
+            except Exception as e:
+                wait = 8 * (attempt + 1)
+                print(f"  rewrite error for {q['id']} ({e}); retry in {wait}s", flush=True)
+                time.sleep(wait)
+        else:
+            sys.exit("rewrite kept failing; check GEMINI_API_KEY and --rewrite-model")
+        path.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+        time.sleep(0.5)
+    return [cache[q["id"]] for q in questions]
 
 
 # ---------------------------------------------------------------- evaluation
@@ -228,6 +277,10 @@ def main():
     ap.add_argument("--root", default=".")
     ap.add_argument("--models", nargs="+", default=["tfidf"])
     ap.add_argument("--questions", default=None)
+    ap.add_argument("--device", default=None, help="cpu, mps or cuda (default: automatic). Use cpu if the GPU runs out of memory")
+    ap.add_argument("--batch-size", type=int, default=16, help="lower it (e.g. 4) if memory runs out")
+    ap.add_argument("--rewrite", action="store_true", help="rewrite each question into an English legal search query with Gemini first")
+    ap.add_argument("--rewrite-model", default="gemini-2.5-flash")
     a = ap.parse_args()
     root = Path(a.root).resolve()
     qpath = Path(a.questions) if a.questions else (root / "tests" / "eval" / "questions.json")
@@ -243,16 +296,21 @@ def main():
         elif name == "gemini":
             emb = GeminiEmbedder(root, chunks)
         elif name in MODELS:
-            emb = DenseEmbedder(name, root, chunks)
+            emb = DenseEmbedder(name, root, chunks, device=a.device, batch_size=a.batch_size)
         else:
             sys.exit(f"unknown model {name}")
         D = emb.doc_matrix()
-        Q = emb.query([q["question"] for q in questions])
+        qtexts = [q["question"] for q in questions]
+        label = name
+        if a.rewrite:
+            qtexts = rewrite_queries(questions, root, a.rewrite_model)
+            label = f"{name}+rewrite"
+        Q = emb.query(qtexts)
         res = evaluate(emb.sims(Q, D), chunks, questions)
-        res["model"] = name
+        res["model"] = label
         res["seconds"] = round(time.time() - t0)
-        (out_dir / f"{name}.json").write_text(json.dumps(res, indent=1, ensure_ascii=False))
-        print(f"\n== {name} ({res['seconds']}s)")
+        (out_dir / f"{label}.json").write_text(json.dumps(res, indent=1, ensure_ascii=False))
+        print(f"\n== {label} ({res['seconds']}s)")
         for b, r in res["boost"].items():
             print(f"  boost {b}: EN {r['en']}  HI {r['hi']}")
         print("  refusal:", res["refusal"])
