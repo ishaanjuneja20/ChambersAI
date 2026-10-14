@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from backend.rag.generate import generate
 from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
+from backend.rag.rewrite import rewrite_query
 from backend.rag.verify import verify_citations
 
 REFUSAL = {"en": "I don't have a reliable source for this.",
@@ -13,10 +14,11 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     lang = lang or detect_lang(question)
     refused = {"answer": REFUSAL.get(lang, REFUSAL["en"]), "citations": [], "refused": True}
     debug = os.environ.get("CHAMBERS_DEBUG") == "1"       # numbers and section names only, never the question text
-    hits = retrieve(question, lawyer["domain"])
+    rewritten = rewrite_query(question) if os.environ.get("CHAMBERS_REWRITE", "1") != "0" else None
+    hits = retrieve(question, lawyer["domain"], rewritten=rewritten)
     th = refusal_threshold(lang)
     if debug:
-        refused["debug"] = {"lang": lang, "threshold": th,
+        refused["debug"] = {"lang": lang, "threshold": th, "rewrite": rewritten,
                             "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]]}
     if not hits or hits[0]["similarity"] < th:
         if debug:

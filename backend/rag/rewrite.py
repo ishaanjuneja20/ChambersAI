@@ -1,0 +1,34 @@
+"""Query rewriting: turn an everyday (English or Hindi) question into a short English legal search query.
+
+Only the SEARCH uses the rewrite; the user's own question is still what Gemini answers. If anything goes wrong
+the original question is used unchanged, so retrieval never depends on this step. The rewrite is never shown
+as legal text and never contains citations (it is told not to name sections).
+"""
+from __future__ import annotations
+
+from backend.rag.generate import GenerationError, _post, call_gemini
+
+REWRITE_PROMPT = (
+    "You help search a database of Indian statutes: BNS, BNSS, BSA, the Constitution, Hindu Marriage / Succession / "
+    "Adoptions and Maintenance Acts, Special Marriage Act, Domestic Violence Act, Consumer Protection Act, Contract Act, "
+    "Sale of Goods Act, Transfer of Property Act, Registration Act, Specific Relief Act, Limitation Act, RERA, "
+    "Land Acquisition Act, RTI Act, POSH Act, and the labour codes (wages, industrial relations, social security, "
+    "occupational safety).\n"
+    "Rewrite the user's question as ONE short English search query (max 25 words) using the words a statute would use. "
+    "Examples: 'fired without notice' -> 'retrenchment of worker notice compensation conditions precedent'; "
+    "'shop won't refund defective phone' -> 'consumer complaint defective goods refund replacement district commission'; "
+    "'police won't take my complaint' -> 'information in cognizable cases first information report refusal'. "
+    "If the question is in Hindi, translate it. If the topic is NOT covered by the laws above (for example tax, cheques, "
+    "company registration, patents), do NOT force it into them: just state its real topic in plain words. "
+    "Do NOT answer the question and do NOT name section numbers. Output only the query.\n\nQuestion: ")
+
+
+def rewrite_query(question: str, post=_post) -> str:
+    body = {"contents": [{"role": "user", "parts": [{"text": REWRITE_PROMPT + question}]}],
+            "generationConfig": {"temperature": 0, "maxOutputTokens": 400}}
+    try:
+        text = call_gemini(body, post)
+    except GenerationError:
+        return question
+    line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""
+    return line[:300] or question

@@ -9,3 +9,7 @@
 Status: drafted by Claude, not reviewed by a lawyer. Gold sections are the obvious ones; a lawyer should check them and add harder, realistic questions (this set is deliberately easy and mostly one question to one section). Teammates should add questions in the same format.
 
 Run: `python3 tools/eval_embeddings.py --root . --models tfidf e5-small`
+
+## questions_lay.json (DRAFT, everyday wording)
+30 answerable questions (15 pairs, English and Hindi) and 8 trap questions, written the way a member of the public would ask, with no legal terms. `questions.json` is deliberately easy; this set is closer to real use and is what refusal thresholds and query rewriting should be judged on. Same format, same caveat: not reviewed by a lawyer.
+Run: `python3 tools/eval_embeddings.py --root . --models bge-m3 --device cpu --questions tests/eval/questions_lay.json --tag @lay`

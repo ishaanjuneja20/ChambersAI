@@ -52,3 +52,14 @@ def test_verify_handles_grouped_ids_and_hides_internal_ids():
     assert cits == ["HMA s.13", "SMA s.27"] and dropped == ["zzz-1", "nope-9"]
     assert "hma-13" not in clean and "zzz-1" not in clean and "nope-9" not in clean
     assert "[HMA s.13; SMA s.27]" in clean and "[SMA s.27]" in clean and "[1]" in clean
+
+
+def test_search_uses_better_of_query_and_rewrite():
+    idx, _ = make()
+    far = np.array([0.0, 1.0])               # close to hma-13 only
+    near = np.array([1.0, 0.0])              # close to bns-103 only
+    emb = lambda texts: np.array([far if t == "lay question" else near for t in texts])
+    base = R.search("lay question", "criminal", 5, idx, emb)
+    both = R.search("lay question", "criminal", 5, idx, emb, rewritten="legal rewrite")
+    assert both[0]["similarity"] > base[0]["similarity"] or both[0]["similarity"] == 1.0
+    assert both[0]["chunk"]["meta"]["section"] == "103"

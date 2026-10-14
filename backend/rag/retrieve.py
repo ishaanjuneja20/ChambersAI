@@ -86,11 +86,13 @@ def set_backend(index=None, embedder=None):
     _index, _embedder = index, embedder
 
 
-def search(query: str, lawyer_domain: str, k: int, index: Index, embed) -> list[dict]:
-    q = np.asarray(embed([query]), dtype="float64")[0]
+def search(query: str, lawyer_domain: str, k: int, index: Index, embed, rewritten: str | None = None) -> list[dict]:
+    """`rewritten` is an optional English legal rewrite of the question; each section keeps its better score."""
+    texts = [query] + ([rewritten] if rewritten and rewritten != query else [])
+    Q = np.asarray(embed(texts), dtype="float64")
     # einsum, not `@`: numpy 2.0 + Apple Accelerate on some Macs returns garbage from BLAS matmul (warnings
     # 'divide by zero / overflow in matmul'). The corpus is small, so the plain loop is fast enough.
-    sims = np.einsum("ij,j->i", index.vectors, q)
+    sims = np.max([np.einsum("ij,j->i", index.vectors, q) for q in Q], axis=0)
     if not np.isfinite(sims).all():
         raise RuntimeError("non-finite similarities; check the embeddings and the numpy/BLAS install")
     best = {}                                    # section key -> chunk row with the highest similarity
@@ -105,10 +107,10 @@ def search(query: str, lawyer_domain: str, k: int, index: Index, embed) -> list[
     return hits[:k]
 
 
-def retrieve(query: str, lawyer_domain: str, k: int = 5) -> list[dict]:
+def retrieve(query: str, lawyer_domain: str, k: int = 5, rewritten: str | None = None) -> list[dict]:
     global _index, _embedder
     if _index is None:
         _index = load_index()
     if _embedder is None:
         _embedder = _default_embedder()
-    return search(query, lawyer_domain, k, _index, _embedder)
+    return search(query, lawyer_domain, k, _index, _embedder, rewritten)

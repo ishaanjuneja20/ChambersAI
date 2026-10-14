@@ -69,3 +69,16 @@ def test_non_retryable_error_stops_immediately():
         assert False
     except G.GenerationError:
         assert len(calls) == 1
+
+
+def test_rewrite_returns_first_line_and_falls_back_on_error():
+    from backend.rag import rewrite as W
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    assert W.rewrite_query("fired without notice", post=fake_post('"retrenchment notice compensation"\nextra')) == \
+        "retrenchment notice compensation"
+
+    def boom(*a, **k):
+        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+
+    assert W.rewrite_query("fired without notice", post=boom) == "fired without notice"

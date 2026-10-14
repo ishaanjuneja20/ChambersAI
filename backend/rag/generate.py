@@ -72,17 +72,12 @@ def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
         raise GenerationError(f"Gemini request failed ({type(e).__name__})") from None
 
 
-def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_post) -> str:
+def call_gemini(body: dict, post=_post) -> str:
+    """POST a generateContent body with retries on busy models and a lighter fallback model. Returns the text."""
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         raise GenerationError("GEMINI_API_KEY is not set")
-    system, user = build_prompt(question, hits, lang, lawyer)
     model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
-    body = {
-        "systemInstruction": {"parts": [{"text": system}]},
-        "contents": [{"role": "user", "parts": [{"text": user}]}],
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1500},
-    }
     models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
     data, last = None, None
     for m in models:
@@ -104,3 +99,13 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
         return "".join(p.get("text", "") for p in parts).strip()
     except (KeyError, IndexError, TypeError):
         raise GenerationError("Gemini returned no answer (blocked or empty)") from None
+
+
+def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_post) -> str:
+    system, user = build_prompt(question, hits, lang, lawyer)
+    body = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1500},
+    }
+    return call_gemini(body, post)
