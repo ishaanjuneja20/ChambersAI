@@ -4,6 +4,7 @@ The model may only point at sources by chunk id, e.g. [bns-103]. Every id it use
 retrieved hits; anything else is dropped. The citation text shown to the user always comes from
 chunk metadata (rule 2), never from the model's own wording.
 """
+from __future__ import annotations
 import re
 
 ID_RE = re.compile(r"\[([a-z0-9_]+-[A-Za-z0-9\-]+)\]")

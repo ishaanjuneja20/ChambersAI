@@ -6,6 +6,7 @@ unknown ones. Client text is never logged (rule 6): errors carry status codes on
 
 Needs GEMINI_API_KEY in the environment (never in git). Model: GEMINI_MODEL (default gemini-2.5-flash).
 """
+from __future__ import annotations
 import json
 import os
 import urllib.error

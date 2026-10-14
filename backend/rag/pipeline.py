@@ -1,4 +1,5 @@
 """question -> retrieve -> refuse? -> Gemini -> verify citations. Used by the API and tools/try_ask.py."""
+from __future__ import annotations
 from backend.rag.generate import generate
 from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
 from backend.rag.verify import verify_citations

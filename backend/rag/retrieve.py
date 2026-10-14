@@ -13,6 +13,7 @@ Behaviour (decided from the eval, see DECISIONS.md):
   * `refusal_threshold(lang)` gives the per-language cut-off below which we refuse (rule 4)
 Citations are read from chunk metadata only (rule 2).
 """
+from __future__ import annotations
 import glob
 import json
 import os

@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -14,7 +15,7 @@ LAWYERS = json.loads((Path(__file__).parent.parent / "lawyers.json").read_text()
 class AskRequest(BaseModel):
     lawyer: str
     question: str
-    lang: str | None = None      # "en" | "hi"; detected from the question when omitted
+    lang: Optional[str] = None      # "en" | "hi"; detected from the question when omitted
 
 
 @app.get("/health")
