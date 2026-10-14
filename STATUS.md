@@ -12,7 +12,7 @@
 - [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions
 - [x] retrieve() (bge-m3, boost .02, per-section, per-language refusal) + verify_citations; try it with tools/try_retrieve.py on the Mac
-- [x] Gemini answer step (backend/rag/generate.py + pipeline.py), verified on the Mac with the real Gemini API (EN murder question, HI divorce question; model gemini-flash-latest, retries on 503). Hindi top match is only ~0.016 above its refusal threshold: watch it. Try more questions with tools/try_ask.py
+- [x] Gemini answer step (backend/rag/generate.py + pipeline.py), verified on the Mac with the real Gemini API (EN murder question, HI divorce question; model gemini-flash-latest, retries on 503). Query rewriting added (lift on everyday wording is large); thresholds retuned EN .64 / HI .60. Free Gemini key rate-limits: plan for a paid/billing-enabled key before the demo (2 Gemini calls per question)
 - [ ] Per-domain test set with trap questions
 - [ ] Voice (Fish Audio), avatars, frontend
 

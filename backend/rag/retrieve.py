@@ -24,8 +24,11 @@ import numpy as np
 
 MODEL_NAME = "BAAI/bge-m3"
 DOMAIN_BOOST = 0.02
-# From tools/eval_embeddings.py on the DRAFT test set (not lawyer reviewed). Re-tune when the set grows.
-REFUSAL_THRESHOLDS = {"en": 0.635, "hi": 0.589}
+# Tuned with tools/tune_threshold.py on the two DRAFT test sets pooled (not lawyer reviewed), WITH query rewriting on:
+# EN 0.64 keeps 92% of real questions / refuses 93% of traps; HI 0.60 keeps 96% / refuses 86%.
+# Tilted towards answering: the Gemini step ("no source" -> no citation -> refuse) is a second guard.
+# Without the rewrite step, scores are lower: re-tune if rewriting is switched off (CHAMBERS_REWRITE=0).
+REFUSAL_THRESHOLDS = {"en": 0.64, "hi": 0.60}
 _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 
 _index = None          # lazily loaded Index
