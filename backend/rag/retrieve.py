@@ -80,7 +80,18 @@ def _default_embedder():
     # "punishment for murder"). One short query is fast on CPU. Override with CHAMBERS_DEVICE if needed.
     model = SentenceTransformer(MODEL_NAME, device=os.environ.get("CHAMBERS_DEVICE", "cpu"))
     model.max_seq_length = 512
-    return lambda texts: model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+    cache: dict = {}                                   # the same text is embedded by the statute and the judgment search
+
+    def embed(texts):
+        todo = [t for t in dict.fromkeys(texts) if t not in cache]
+        if todo:
+            for t, v in zip(todo, model.encode(todo, normalize_embeddings=True, show_progress_bar=False)):
+                cache[t] = v
+            while len(cache) > 256:
+                cache.pop(next(iter(cache)))
+        return np.stack([cache[t] for t in texts])
+
+    return embed
 
 
 def set_backend(index=None, embedder=None):
