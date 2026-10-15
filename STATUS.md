@@ -6,7 +6,8 @@
 - [x] OCR all 22 Hindi PDFs (done on the Mac)
 - [ ] Hindi chunks: deferred, OCR too noisy to align by section (see docs/CHUNKING.md); test Hindi->English retrieval instead
 - [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
-- [ ] BSA<->Evidence Act mapping (no table yet)
+- [x] Data gaps fixed: HAMA s.4 and Contract Act s.24 recovered (chunker accepted no space after the dot); embeddings refreshed with tools/update_act_embeddings.py
+- [ ] BSA<->Evidence Act mapping (no table yet; Evidence Act text not in the corpus, needs an official source)
 - [x] Judgments indexed: 38,366 cards + 1,413,250 paragraph vectors (bge-m3, built on the GPU PC, verified on the Mac: counts match per year, vectors unit length)
 - [~] Judgment retrieval: backend/rag/judgments.py written and unit-tested (2 stages, soft domain boost, citations from metadata); run on the real index (0.7 s load, ~0.02 s/query); 41 draft test questions (tests/eval/judgment_questions.json), right case in top 5 .69 (strict single-gold scoring), about 85% by manual reading; wired into pipeline.answer (answers with numbered citations tested on the Mac, EN + HI); refusal threshold 0.60 (question-as-asked) is provisional; needs lawyer-reviewed questions with all acceptable cases and harder traps
 - [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00

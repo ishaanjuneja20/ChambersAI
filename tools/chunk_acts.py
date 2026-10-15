@@ -46,7 +46,8 @@ ACTS = {
     "TransferOfPropertyAct_1882": ("property", "Transfer of Property Act, 1882", 1882, "TPA", "s"),
 }
 
-HEAD_RE = re.compile(r"^(?P<ind> {2,}|\t+)(?:\d{1,2}\*?\[|\*?\[)?(?P<num>\d{1,3}[A-Z]{0,2})\.\s+(?P<rest>\S.*)$")
+# "24.Agreements void ..." (no space after the dot, as in the Indian Contract Act and HAMA s.4) is accepted when a capital letter follows
+HEAD_RE = re.compile(r"^(?P<ind> {2,}|\t+)(?:\d{1,2}\*?\[|\*?\[)?(?P<num>\d{1,3}[A-Z]{0,2})\.(?:\s+|(?=[A-Z]))(?P<rest>\S.*)$")
 OMIT_RE = re.compile(r"\b(Omitted|Repealed|Rep\.)", re.I)
 TITLE_DASH_RE = re.compile(r"^(?P<title>.{1,300}?)\s*\]?\.?\s*\]?\s*[%s]{1,2}" % DASH)
 TOC_RE = re.compile(r"^\s{0,}\[?(?P<num>\d{1,3}[A-Z]{0,2})\.\s+(?P<title>\S.*?)\.?\s*$")
