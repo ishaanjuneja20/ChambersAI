@@ -36,3 +36,6 @@
 
 | Chunker: accept "24.Agreements" (no space after the dot) | HAMA s.4 and Contract Act s.24 were missing from the chunks because the heading pattern needed whitespace after the dot. Now allowed when a capital letter follows. Only s.3 and s.23 text changed (trimmed); `missing_vs_toc` is empty for both Acts. |
 | `tools/update_act_embeddings.py` instead of re-embedding all Acts | Keeps stored vectors for unchanged ids, embeds only new ids plus `--also` ones, checks unit length and that kept rows are unchanged, backs up the old files as `*.before-update`. |
+
+| BSA<->IEA labels from the Tripura comparison of the Act | The UP Police PDF compares the Bill (clause numbers differ from the Act), so the 9-page table of the Act as passed is used. Section numbers only; no prose copied. Chunk ids unchanged, so no re-embedding. Not lawyer-verified. |
+| try_lawyers stops on the first bad-key error | A placeholder key made 25 calls fail and look like results. |

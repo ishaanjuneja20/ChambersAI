@@ -47,6 +47,8 @@ def main():
                 out = answer(question, lawyers[lid])
             except Exception as e:                         # keep going; report the error type only
                 out = {"answer": f"ERROR {type(e).__name__}: {e}", "citations": [], "refused": None}
+                if getattr(e, "code", None) in (400, 401, 403) and "key" in str(e).lower():
+                    sys.exit(f"Stopped: {e}. Check GEMINI_API_KEY (use the real key, not a placeholder).")
             sec = time.time() - t0
             results.append({"lawyer": lid, "kind": kind, "question": question, "gold": gold, "seconds": round(sec, 1), **out})
             flag = "REFUSED" if out["refused"] else ("ERROR" if out["refused"] is None else "answered")
@@ -58,8 +60,9 @@ def main():
     print("\n=== summary (kind -> refused/answered) ===")
     for r in results:
         k = r["kind"].split(":")[0]
-        ok = (r["refused"] is True) if k in ("trap", "non_legal") else (r["refused"] is False)
-        print(f"{'ok ' if ok else 'CHECK'} {r['lawyer']:15s} {r['kind']:22s} {'refused' if r['refused'] else 'answered'}")
+        state = "ERROR" if r["refused"] is None else ("refused" if r["refused"] else "answered")
+        ok = state != "ERROR" and ((state == "refused") if k in ("trap", "non_legal") else (state == "answered"))
+        print(f"{'ok   ' if ok else 'CHECK'} {r['lawyer']:15s} {r['kind']:22s} {state}")
     print("\nwritten", outp)
 
 

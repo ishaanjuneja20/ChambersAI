@@ -48,7 +48,7 @@ Decision (see `DECISIONS.md`): no Hindi chunks for now. Hindi queries retrieve t
 
 Source caveat: the tables are hosted by Kerala Prisons but authored by a police-academy officer, not India Code. Only the section numbers are used (the prose summary is not copied). Spot checks matched known mappings (BNS 103->IPC 302, 85->498A, 64->376, 318->420; BNSS 173->CrPC 154, 187->167, 482->438, 528->482), but the full table has not been verified against a lawyer-checked source. Labels longer than four old sections are left off the citation and kept in `meta.formerly`.
 
-Coverage: all 358 BNS and 531 BNSS sections have an entry. BSA<->Evidence Act has no table yet.
+Coverage: all 358 BNS and 531 BNSS sections have an entry. BSA<->Evidence Act: `tools/build_bsa_map.py` reads `statutes/criminal/comparison_BSA_to_IEA.pdf` (Tripura government comparison of the Act as passed, Act 47 of 2023; section numbers only) into `corpus/citation_map.json` key `bsa`, and `apply_citation_map.py` labels the BSA chunks. 170/170 sections, 2 new (s.61, s.170); spot checks matched known mappings (BSA 63 -> IEA 65B, 23 -> 25/26, 24 -> 30). The UP Police PDF compares the earlier Bill (different numbers), so it is not used. Not lawyer-verified.
 
 ## Not done yet
 - BNS<->IPC and BNSS<->CrPC citation mapping (from the official comparison PDFs).
