@@ -448,5 +448,145 @@
   "type": "trap",
   "question": "पनीर बटर मसाला कैसे बनाते हैं?",
   "gold_cases": []
+ },
+ {
+  "id": "t07",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the stamp duty on a sale deed in Maharashtra right now?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current state-level figure"
+ },
+ {
+  "id": "t08",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "How much court fee do I have to pay to file a consumer complaint for a 5 lakh claim?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current fee schedule, not in judgments"
+ },
+ {
+  "id": "t09",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "Will I win my divorce case if I file next month?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "prediction"
+ },
+ {
+  "id": "t10",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What does Section 999 of the Indian Penal Code say?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "non-existent section"
+ },
+ {
+  "id": "t11",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "Summarise the Supreme Court's 2019 judgment in Ramesh Kumar v. State of Goa on cryptocurrency taxation.",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "invented case"
+ },
+ {
+  "id": "t12",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the minimum daily wage in Karnataka this month?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current figure"
+ },
+ {
+  "id": "t13",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the punishment for murder under Pakistani law?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "foreign law"
+ },
+ {
+  "id": "t14",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "How do I get a divorce in the United States if my spouse lives in India?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "foreign law"
+ },
+ {
+  "id": "t15",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "Which is the best lawyer for bail applications in Mumbai?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "recommendation, not law"
+ },
+ {
+  "id": "t16",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What did the Supreme Court decide yesterday on bail?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "news / recent event"
+ },
+ {
+  "id": "t17",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "Which Article of the Constitution abolished the death penalty in India?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "false premise"
+ },
+ {
+  "id": "t18",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "trap",
+  "question": "अगर मैं अगले महीने तलाक की अर्जी दूँ तो क्या मैं केस जीत जाऊँगी?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "prediction"
+ },
+ {
+  "id": "t19",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "trap",
+  "question": "महाराष्ट्र में बिक्री विलेख पर अभी स्टांप शुल्क कितना है?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current state-level figure"
+ },
+ {
+  "id": "t20",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "trap",
+  "question": "भारतीय दंड संहिता की धारा 999 क्या कहती है?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "non-existent section"
  }
 ]
