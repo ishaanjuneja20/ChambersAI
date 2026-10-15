@@ -25,8 +25,14 @@ Agreed approach, not done yet. Remind the user when the team reaches the voice o
 - [ ] Before going public: per-visitor rate limit and a question length cap, CHAMBERS_DEBUG off, CORS for the frontend address, make sure nothing logs question text, a start script (pull repo, check the index folder, start server + tunnel).
 - [ ] Gemini: billing-enabled key with a spending cap for real users (free keys may use prompts for training; only made-up demo questions on free keys). Rotate the keys pasted in chat.
 - [ ] Time Fish Audio speech-to-text and text-to-speech; confirm the avatar method with the frontend teammates.
-- [ ] Other lawyers (consumer, property, labour, constitutional) not yet run end to end through the answer step.
+- [x] Other lawyers (consumer, property, labour, constitutional) run end to end, EN + HI: correct, 2-4 s each on the lite chain.
 - [ ] Put the Dattam Labs (CC-BY-4.0) credit in the README and app.
 
 ## Resume notes
 Chunks live on the data folder (`corpus/chunks/acts/`), not in git. Re-run `python3 tools/chunk_acts.py --root .` from `~/Desktop/RAG Datasets`; finished Acts are skipped.
+
+## Where we stopped (2026-10-16, night)
+- Review round 1 scored (3 AI reviewers). Pack rebuilt with real answers: 34/35 real questions answered, p05 (arrest memo; D.K. Basu not in top 3) refused = known retrieval miss, all 20 traps refused, no errors. The earlier 7 over-refusals were free-tier rate limits, not a pipeline bug.
+- `corpus/review/send/SEND_part1..6.txt` regenerated (old ones in `send_round1/`); same candidates/key, only answers are new.
+- Next: (1) send new SEND files to the reviewers (answer check only) or spot-check f08, f18, p02, f16, p03, p08 by hand; (2) rescore with tools/score_review.py; (3) pack still shows 600-char excerpts vs 3,500 seen by the model; (4) check Machhi Singh / Neeraja Chaudhary / Minerva Mills (1980) in the index; (5) false-premise traps t10/t17/t20 (refuse vs correct premise); (6) EN vs HI cheque-bounce inconsistency; (7) merge PRs #2 to #7 in order.
+- Security: the Gemini key was pasted in chat repeatedly. Revoke it in Google AI Studio; new key only in `.chambers_env`.
