@@ -4,11 +4,13 @@ Rules enforced here (CLAUDE.md): the model never writes citations itself. It may
 as [chunk-id]; backend/rag/verify.py turns known ids into the citation text from chunk metadata and drops
 unknown ones. Client text is never logged (rule 6): errors carry status codes only.
 
-Needs GEMINI_API_KEY in the environment (never in git). Model: GEMINI_MODEL (default gemini-flash-latest).
+Needs GEMINI_API_KEY (or several, comma-separated, in GEMINI_API_KEYS) in the environment (never in git). Model: GEMINI_MODEL (default gemini-flash-latest).
 """
 from __future__ import annotations
+import itertools
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -76,11 +78,22 @@ def _post(url: str, key: str, body: dict, timeout: int = 45) -> dict:
         raise GenerationError(f"Gemini request failed ({type(e).__name__})", 504) from None   # network/timeouts are retried
 
 
+_rr = itertools.count()                          # round-robin position across calls (thread-safe enough: next() is atomic)
+
+
+def api_keys() -> list[str]:
+    """GEMINI_API_KEYS (comma or space separated) for several keys, else GEMINI_API_KEY. Never log these."""
+    raw = os.environ.get("GEMINI_API_KEYS") or os.environ.get("GEMINI_API_KEY") or ""
+    return [k for k in re.split(r"[\s,;]+", raw) if k]
+
+
 def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
     """POST a generateContent body with retries on busy models and a lighter fallback model. Returns the text."""
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
+    keys = api_keys()
+    if not keys:
         raise GenerationError("GEMINI_API_KEY is not set")
+    start = next(_rr) % len(keys)               # spread calls over the keys; a 429 moves on to the next key
+    keys = keys[start:] + keys[:start]
     if model:                                   # caller picked a model: use only that one
         models = [model]
     else:
@@ -90,13 +103,19 @@ def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
     for m in models:
         for wait in (0,) + WAITS:
             time.sleep(wait)
-            try:
-                data = post(API.format(model=m), key, body)
+            for key in keys:
+                try:
+                    data = post(API.format(model=m), key, body)
+                    break
+                except GenerationError as e:
+                    last = e
+                    if e.code == 429 and key != keys[-1]:
+                        continue                # this key is out of quota: try the next one straight away
+                    if e.code not in RETRY_CODES:
+                        raise
+                    break
+            if data is not None:
                 break
-            except GenerationError as e:
-                last = e
-                if e.code not in RETRY_CODES:
-                    raise
         if data is not None:
             break
     if data is None:

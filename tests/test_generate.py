@@ -138,3 +138,33 @@ def test_numbered_citations_share_numbers_and_follow_first_use():
     text, cits, dropped = verify_citations("X [sc-2#3]. Y [a-1]. Z [sc-2#3] [a-1] [zz-9].", hits, numbered=True)
     assert text.startswith("X [1]. Y [2]. Z [1] [2]"), text
     assert cits == ["A v. B (2001), from para 3", "Act s.1"] and dropped == ["zz-9"]
+
+
+def test_key_pool_rotates_and_skips_a_key_that_is_out_of_quota():
+    os.environ.pop("GEMINI_API_KEY", None)
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_API_KEYS"] = "k1, k2 k3"
+    G.WAITS = (0, 0, 0)
+    assert G.api_keys() == ["k1", "k2", "k3"]
+    seen = []
+
+    def post(url, key, body, timeout=60):
+        seen.append(key)
+        if key == "k1":
+            raise G.GenerationError("Gemini HTTP 429: quota", 429)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    try:
+        for _ in range(3):
+            assert G.call_gemini({}, post, model="m") == "ok"
+        # every call succeeded; a call that started on k1 moved straight on to k2 without waiting
+        assert set(seen) == {"k1", "k2", "k3"} and seen.count("k1") == 1
+        seen.clear()
+        os.environ["GEMINI_API_KEYS"] = "k1"
+        try:
+            G.call_gemini({}, post, model="m")
+            assert False
+        except G.GenerationError as e:
+            assert e.code == 429
+    finally:
+        os.environ.pop("GEMINI_API_KEYS", None)
