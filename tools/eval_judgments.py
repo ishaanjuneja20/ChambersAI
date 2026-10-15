@@ -57,7 +57,7 @@ def brute_force(index, Q, k=5, groups=None):
 
 
 def load_queries(qs, embed, root, rewrite):
-    """Returns (Q rows, groups, rows_of). With rewrite, each question gets a second row: its English legal rewrite
+    """Returns (Q rows, groups, rows_of, rewritten). With rewrite, each question gets a second row: its English legal rewrite
     (cached in corpus/eval/judgment_rewrites.json so a re-run costs nothing)."""
     texts = [q["question"] for q in qs]
     rew = {}
@@ -87,7 +87,8 @@ def load_queries(qs, embed, root, rewrite):
             all_texts.append(r)
     Q = np.asarray(embed(all_texts), dtype="float32")
     # search_judgments embeds [query] or [query, rewritten]; hand back the matching rows
-    return Q, groups, (lambda i, t: Q[groups[i][:len(t)]])
+    rewritten = [rew.get(q["id"]) if rew.get(q["id"]) != q["question"] else None for q in qs]
+    return Q, groups, (lambda i, t: Q[groups[i][:len(t)]]), rewritten
 
 
 def main():
@@ -107,7 +108,7 @@ def main():
     t0 = time.time()
     index = J.load_judgment_index(root)
     embed = R.get_embedder()
-    Q, groups, rows_of = load_queries(qs, embed, root, a.rewrite)
+    Q, groups, rows_of, rewritten = load_queries(qs, embed, root, a.rewrite)
     print(f"index + embeddings {time.time() - t0:.0f}s; {len(qs)} questions", flush=True)
 
     real = [(i, q) for i, q in enumerate(qs) if q["type"] != "trap"]
@@ -138,7 +139,7 @@ def main():
             case_hit = para_hit = n_point = 0
             for i, q in real:
                 hits = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: rows_of(i, t),
-                                          n_cases=n_cases, card_weight=cw)
+                                          rewritten=rewritten[i], n_cases=n_cases, card_weight=cw)
                 ids = [h["chunk"]["id"] for h in hits]
                 case_hit += q["gold_cases"][0] in {case_of(x) for x in ids}
                 if q["type"] == "point":
@@ -163,7 +164,7 @@ def main():
 
     # thresholds: best paragraph similarity from the default two-stage search
     def best_sim(i, q):
-        h = J.search_judgments(q["question"], q["lawyer"], 1, index, lambda t, i=i: rows_of(i, t))
+        h = J.search_judgments(q["question"], q["lawyer"], 1, index, lambda t, i=i: rows_of(i, t), rewritten=rewritten[i])
         return h[0]["similarity"] if h else 0.0
     real_s = sorted(best_sim(i, q) for i, q in real)
     trap_s = sorted(best_sim(i, q) for i, q in traps)

@@ -38,7 +38,7 @@ def main():
     qs = [q for q in json.loads(qpath.read_text(encoding="utf-8")) if q["type"] != "trap"]
     index = J.load_judgment_index(root)
     embed = R.get_embedder()
-    Q, groups, rows_of = load_queries(qs, embed, root, a.rewrite)
+    Q, groups, rows_of, rewritten = load_queries(qs, embed, root, a.rewrite)
     paths = [c["path"] for c in index.cases]
     title = {c["path"]: f'{c["title"][:48]} ({c["year"]})' for c in index.cases}
     brute = brute_force(index, Q, k=10, groups=groups)
@@ -46,7 +46,7 @@ def main():
     for i, q in enumerate(qs):
         gold = q["gold_cases"][0]
         hits = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: rows_of(i, t),
-                                  n_cases=a.n_cases, card_weight=a.card_weight)
+                                  rewritten=rewritten[i], n_cases=a.n_cases, card_weight=a.card_weight)
         got = [case_of(h["chunk"]["id"]) for h in hits]
         if gold in got and not a.all:
             continue

@@ -167,3 +167,18 @@ def test_rewrite_prompt_switches_to_judgments_and_does_not_leak_test_topics():
     qs = " ".join(q["question"].lower() for q in json.load(open(root / "tests" / "eval" / "judgment_questions.json")))
     for word in ("salary", "wall", "landlord", "tenant", "eviction"):
         assert word not in qs
+
+
+def test_eval_passes_the_rewrite_into_the_search(tmp_path):
+    """Regression: the first --rewrite run reported identical two-stage numbers because the rewrite was never passed on."""
+    spec = importlib.util.spec_from_file_location("eval_judgments", root / "tools" / "eval_judgments.py")
+    ev = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ev)
+    (tmp_path / "corpus" / "eval").mkdir(parents=True)
+    (tmp_path / "corpus" / "eval" / "judgment_rewrites.json").write_text(json.dumps({"a": "better words"}))
+    embed = lambda ts: np.array([[0, 1, 0] if t == "orig" else [1, 0, 0] for t in ts], dtype="float32")
+    Q, groups, rows_of, rewritten = ev.load_queries([{"id": "a", "question": "orig"}], embed, tmp_path, True)
+    assert rewritten == ["better words"] and groups == [[0, 1]]
+    plain = J.search_judgments("orig", "", 1, make_index(), lambda t: rows_of(0, t))
+    used = J.search_judgments("orig", "", 1, make_index(), lambda t: rows_of(0, t), rewritten=rewritten[0])
+    assert plain[0]["chunk"]["id"].startswith("sc-2002") and used[0]["chunk"]["id"].startswith("sc-2001")
