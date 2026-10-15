@@ -62,7 +62,7 @@ def test_non_retryable_error_stops_immediately():
 
     def bad(url, key, body, timeout=60):
         calls.append(1)
-        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+        raise G.GenerationError("Gemini HTTP 403: bad key", 403)
 
     try:
         G.generate("q", HITS, "en", LAWYER, post=bad)
@@ -79,7 +79,7 @@ def test_rewrite_returns_first_line_and_falls_back_on_error():
         "retrenchment notice compensation"
 
     def boom(*a, **k):
-        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+        raise G.GenerationError("Gemini HTTP 403: bad key", 403)
 
     assert W.rewrite_query("fired without notice", post=boom) == "fired without notice"
 
