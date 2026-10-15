@@ -7,7 +7,7 @@
 - [ ] Hindi chunks: deferred, OCR too noisy to align by section (see docs/CHUNKING.md); test Hindi->English retrieval instead
 - [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
 - [ ] BSA<->Evidence Act mapping (no table yet)
-- [ ] Chunk judgments
+- [~] Judgments: case cards built by tools/build_judgment_cards.py (code + tests done, full run on the Mac pending); stage 2 paragraph search, judgment test questions and judgment refusal threshold still to do
 - [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00
 - [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions
