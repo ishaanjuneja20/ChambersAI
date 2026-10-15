@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -65,11 +66,19 @@ def load_queries(qs, embed, root, rewrite):
         cache = Path(root) / "corpus" / "eval" / "judgment_rewrites.json"
         old = json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else {}
         for q in qs:
-            if q["id"] not in old:
-                old[q["id"]] = rewrite_query(q["question"], target="judgments")
-            rew[q["id"]] = old[q["id"]]
+            if old.get(q["id"], q["question"]) == q["question"]:      # missing, or an earlier failed call
+                got = rewrite_query(q["question"], target="judgments")
+                if got != q["question"]:                               # a failed call returns the question unchanged: don't cache it
+                    old[q["id"]] = got
+            rew[q["id"]] = old.get(q["id"], q["question"])
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps(old, ensure_ascii=False, indent=1), encoding="utf-8")
+        changed = sum(1 for q in qs if rew[q["id"]] != q["question"])
+        print(f"rewrites obtained: {changed} of {len(qs)}", flush=True)
+        if changed == 0:
+            sys.exit("No rewrite came back. Is GEMINI_API_KEY a real key (not the placeholder), and is the Gemini API reachable? Nothing was tested.")
+        if changed < len(qs) * 0.8:
+            print("WARNING: many rewrites failed; the numbers below mix rewritten and plain questions", flush=True)
     all_texts, groups = list(texts), [[i] for i in range(len(texts))]
     for i, q in enumerate(qs):
         r = rew.get(q["id"])
