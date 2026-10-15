@@ -1,0 +1,9 @@
+.env
+**/.env
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/input_audio.mp3
+backend/voice_response.mp3
