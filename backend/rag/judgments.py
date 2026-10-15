@@ -135,7 +135,9 @@ def _sims(matrix, qs):
 
 
 def search_judgments(query: str, lawyer_domain: str, k: int, index: JudgmentIndex, embed,
-                     rewritten: Optional[str] = None, n_cases: int = N_CASES, per_case: int = PER_CASE) -> list:
+                     rewritten: Optional[str] = None, n_cases: int = N_CASES, per_case: int = PER_CASE,
+                     card_weight: Optional[float] = None) -> list:
+    cw = CARD_WEIGHT if card_weight is None else card_weight
     texts = [query] + ([rewritten] if rewritten and rewritten != query else [])
     Q = np.asarray(embed(texts), dtype="float32")
     card_sims = _sims(index.card_vectors, Q)
@@ -154,7 +156,7 @@ def search_judgments(query: str, lawyer_domain: str, k: int, index: JudgmentInde
         psims = _sims(np.asarray(index.store.vectors(year)[s:e], dtype="float32"), Q)
         best = np.argsort(-psims)[:per_case]
         for b in best:
-            score = float(psims[b] + CARD_WEIGHT * card_sims[ci] + boost[ci])
+            score = float(psims[b] + cw * card_sims[ci] + boost[ci])
             cand.append((score, float(psims[b]), int(ci), year, s + int(b)))
     cand.sort(key=lambda t: -t[0])
     hits = []
