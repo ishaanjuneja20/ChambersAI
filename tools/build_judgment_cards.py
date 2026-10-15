@@ -118,15 +118,20 @@ def build_year(path: str, meta: Dict[str, dict], doms: Dict[str, List[str]], lim
 
 
 class Embedder:
-    def __init__(self, device: str, batch_size: int):
+    def __init__(self, device: str, batch_size: Optional[int]):
+        import torch
         from sentence_transformers import SentenceTransformer
         if device == "auto":
-            import torch
-            device = "mps" if torch.backends.mps.is_available() else "cpu"
+            device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+        if device == "cuda" and not torch.cuda.is_available():
+            sys.exit("CUDA requested but torch.cuda.is_available() is False: install the CUDA build of PyTorch (see docs/GPU_EMBEDDING.md)")
         self.m = SentenceTransformer(MODEL, device=device)
         self.m.max_seq_length = 512
-        self.bs = batch_size
-        print(f"model {MODEL} on {device}, batch {self.bs}", flush=True)
+        if device == "cuda":
+            self.m.half()  # fp16: about 2x faster, vectors are stored as float16 anyway
+        self.bs = batch_size or (64 if device == "cuda" else 16)
+        name = torch.cuda.get_device_name(0) if device == "cuda" else device
+        print(f"model {MODEL} on {name}, batch {self.bs}", flush=True)
 
     def __call__(self, texts: List[str]):
         import numpy as np
@@ -146,8 +151,8 @@ def main():
     ap.add_argument("--years", default="1950-2026", help="e.g. 2019 or 2015-2026")
     ap.add_argument("--out-dir", default=None, help="default: <root>/corpus/judgments_index")
     ap.add_argument("--no-embed", action="store_true", help="write cards only (quick check, no model needed)")
-    ap.add_argument("--device", default="auto", help="auto | mps | cpu (documents are fine on mps)")
-    ap.add_argument("--batch-size", type=int, default=16)
+    ap.add_argument("--device", default="auto", help="auto | cuda | mps | cpu (auto prefers cuda, then mps)")
+    ap.add_argument("--batch-size", type=int, default=None, help="default 64 on cuda, 16 otherwise")
     ap.add_argument("--limit", type=int, default=None, help="cards per year, for testing")
     a = ap.parse_args()
 

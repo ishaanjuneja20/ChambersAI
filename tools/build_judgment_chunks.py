@@ -136,8 +136,8 @@ def main():
     ap.add_argument("--out-dir", default=None, help="default: <root>/corpus/judgments_index")
     ap.add_argument("--count-only", action="store_true", help="count chunks per year and exit (no files, no model)")
     ap.add_argument("--no-embed", action="store_true", help="write chunk files only")
-    ap.add_argument("--device", default="auto")
-    ap.add_argument("--batch-size", type=int, default=16)
+    ap.add_argument("--device", default="auto", help="auto | cuda | mps | cpu")
+    ap.add_argument("--batch-size", type=int, default=None, help="default 64 on cuda, 16 otherwise")
     ap.add_argument("--embed-chunk", type=int, default=2048, help="chunks embedded between progress lines")
     a = ap.parse_args()
 
