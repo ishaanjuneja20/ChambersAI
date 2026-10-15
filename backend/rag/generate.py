@@ -91,6 +91,16 @@ def api_keys() -> list[str]:
     return [k for k in re.split(r"[\s,;]+", raw) if k]
 
 
+def model_chain() -> list[str]:
+    """Models to try in order. GEMINI_MODELS="a,b,c" (each model has its own free-tier quota, so a list spreads the
+    load); GEMINI_MODEL="a" means only that one; default is the lite model then the full one."""
+    raw = os.environ.get("GEMINI_MODELS") or os.environ.get("GEMINI_MODEL") or ""
+    chain = [m for m in re.split(r"[\s,;]+", raw) if m]
+    if os.environ.get("GEMINI_MODELS"):
+        return chain
+    return chain[:1] if chain else [DEFAULT_MODEL, FALLBACK_MODEL]
+
+
 def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
     """POST a generateContent body with retries on busy models and a lighter fallback model. Returns the text."""
     keys = api_keys()
@@ -98,11 +108,7 @@ def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
         raise GenerationError("GEMINI_API_KEY is not set")
     start = next(_rr) % len(keys)               # spread calls over the keys; a 429 moves on to the next key
     keys = keys[start:] + keys[:start]
-    if model:                                   # caller picked a model: use only that one
-        models = [model]
-    else:
-        model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
-        models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
+    models = [model] if model else model_chain()      # caller picked a model: use only that one
     data, last = None, None
     for m in models:
         for wait in (0,) + WAITS:
@@ -120,6 +126,8 @@ def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
                     break
             if data is not None:
                 break
+            if last is not None and last.code == 429 and m != models[-1]:
+                break                           # every key is over quota for this model: next model, no waiting
         if data is not None:
             break
     if data is None:
@@ -194,11 +202,7 @@ def stream_gemini(body: dict, open_stream=_open_stream, model: str | None = None
         raise GenerationError("GEMINI_API_KEY is not set")
     start = next(_rr) % len(keys)
     keys = keys[start:] + keys[:start]
-    if model:
-        models = [model]
-    else:
-        model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
-        models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
+    models = [model] if model else model_chain()
     last = None
     for m in models:
         for key in keys:

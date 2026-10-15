@@ -39,3 +39,5 @@
 
 | BSA<->IEA labels from the Tripura comparison of the Act | The UP Police PDF compares the Bill (clause numbers differ from the Act), so the 9-page table of the Act as passed is used. Section numbers only; no prose copied. Chunk ids unchanged, so no re-embedding. Not lawyer-verified. |
 | try_lawyers stops on the first bad-key error | A placeholder key made 25 calls fail and look like results. |
+
+| GEMINI_MODELS list; 429 on every key moves to the next model at once | Free-tier quotas are per model (3.5 Flash Lite 15 RPM / 500 RPD; 3.8 Flash only 5 RPM / 20 RPD). Waiting does not help when the daily quota is gone, so the next model is tried immediately. Rewrites use the same list when GEMINI_MODELS is set. |

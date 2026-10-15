@@ -168,3 +168,32 @@ def test_key_pool_rotates_and_skips_a_key_that_is_out_of_quota():
             assert e.code == 429
     finally:
         os.environ.pop("GEMINI_API_KEYS", None)
+
+
+def test_quota_on_first_model_moves_to_next_model_without_waiting():
+    import time as _t
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_MODELS"] = "m1,m2"
+    os.environ["GEMINI_API_KEYS"] = "k1"
+    G._rr = __import__("itertools").count()
+    seen = []
+
+    def post(url, key, body):
+        seen.append(url.split("/models/")[1].split(":")[0])
+        if seen[-1] == "m1":
+            raise G.GenerationError("Gemini HTTP 429: quota", 429)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    t0 = _t.time()
+    try:
+        assert G.call_gemini({}, post) == "ok"
+    finally:
+        os.environ.pop("GEMINI_MODELS", None)
+        os.environ.pop("GEMINI_API_KEYS", None)
+    assert seen == ["m1", "m2"] and _t.time() - t0 < 0.5
+    os.environ["GEMINI_MODEL"] = "only"
+    try:
+        assert G.model_chain() == ["only"]
+    finally:
+        os.environ.pop("GEMINI_MODEL", None)
+    assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL]
