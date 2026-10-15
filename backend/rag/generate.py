@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 
+NO_SOURCE = "NO_SOURCE"                     # the model's signal that the sources do not answer the question
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-lite-latest"
 FALLBACK_MODEL = "gemini-flash-latest"          # used if the lite model fails
@@ -39,7 +40,7 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict, voice
         f"Personality and tone: {persona}.\n\n"
         "STRICT RULES\n"
         "1. Use ONLY the SOURCES below. Do not use outside knowledge, and do not guess. If the sources do not "
-        "answer the question, say you do not have a reliable source for it.\n"
+        "answer the question, reply with exactly NO_SOURCE and nothing else (no citation, no explanation).\n"
         "2. Point to a source only by writing its id in square brackets exactly as given, for example [bns_2023-103]. "
         "Put the id right after the statement it supports. Use one id per pair of square brackets, and repeat the brackets for a second source, for example [bns_2023-103] [bns_2023-104]. Never invent an id.\n"
         "3. Do NOT write section numbers, article numbers, Act names, case names or years in your own words. "

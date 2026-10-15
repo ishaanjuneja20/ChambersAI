@@ -6,7 +6,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from backend.rag import judgments as J
-from backend.rag.generate import GenerationError, generate, generate_stream
+from backend.rag.generate import GenerationError, NO_SOURCE, generate, generate_stream
 from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
 from backend.rag.rewrite import rewrite_query
 from backend.rag.verify import verify_citations
@@ -76,6 +76,10 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     raw = generate(question, hits, lang, lawyer)          # may raise GenerationError
     if debug:
         refused["debug"]["seconds"]["generate"] = round(time.time() - t2, 1)
+    if NO_SOURCE in raw:                                  # the model says the sources don't answer it: refuse, don't cite
+        if debug:
+            refused["debug"]["reason"] = "model found no answer in the sources"
+        return refused
     text, citations, _dropped = verify_citations(raw, hits, numbered=True)
     if lang == "hi":                                     # Gemini sometimes ends sentences with the CJK full stop
         text = text.replace("\u3002", "\u0964")
@@ -127,6 +131,7 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
         order: list = []
         pending: list = []                                # sentences before the first valid citation
         started, sent_n, buf = False, 0, ""
+        stop: list = []                                   # set when the model answers NO_SOURCE
 
         def check(sentence):
             nonlocal sent_n
@@ -145,6 +150,10 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
         def handle(sentences):
             nonlocal started
             for sen in sentences:
+                if NO_SOURCE in sen:                      # model gave up: nothing may be spoken
+                    pending.clear()
+                    stop.append(True)
+                    return
                 text, speak, cited = check(sen)
                 if not speak:
                     continue
@@ -163,7 +172,9 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
             buf += piece
             done, buf = split_sentences(buf)
             yield from handle(done)
-        if buf.strip():
+            if stop or (not started and NO_SOURCE in buf):
+                break
+        if buf.strip() and not stop and NO_SOURCE not in buf:
             yield from handle([buf.strip()])
         if not started:
             yield refusal

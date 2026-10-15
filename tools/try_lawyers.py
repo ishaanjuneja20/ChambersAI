@@ -28,12 +28,18 @@ def main():
     ap.add_argument("--lawyers", default="consumer,property,labour,constitutional")
     ap.add_argument("--per", type=int, default=2)
     ap.add_argument("--root", default=".")
+    ap.add_argument("--pause", type=float, default=13, help="seconds between questions (free tier: ~15 requests/min, 3 calls per question)")
+    ap.add_argument("--only-errors", action="store_true", help="re-ask only the questions that errored in the last run")
     a = ap.parse_args()
     root = Path(a.root).resolve()
     lawyers = {l["id"]: l for l in json.loads((ROOT / "lawyers.json").read_text())}
     qs = json.loads((root / "tests/eval/questions.json").read_text(encoding="utf-8"))
     t = time.time(); warmup(); print(f"warm-up {time.time()-t:.1f}s")
     results = []
+    prev = root / "corpus/eval/lawyer_run.json"
+    redo = {(r["lawyer"], r["question"]) for r in json.loads(prev.read_text(encoding="utf-8")) if r["refused"] is None} \
+        if a.only_errors and prev.exists() else None
+    kept = [r for r in json.loads(prev.read_text(encoding="utf-8")) if r["refused"] is not None] if redo is not None else []
     for lid in a.lawyers.split(","):
         items = []
         for lang in ("en", "hi"):
@@ -42,6 +48,10 @@ def main():
         items += [(q["question"], f"trap:{q['lang']}:{q['id']}", []) for q in qs if q["lawyer"] == lid and q["type"] == "trap"]
         items += [(q, kind, []) for q, kind in EXTRA[lid]]
         for question, kind, gold in items:
+            if redo is not None and (lid, question) not in redo:
+                continue
+            if results:
+                time.sleep(a.pause)
             t0 = time.time()
             try:
                 out = answer(question, lawyers[lid])
@@ -54,6 +64,7 @@ def main():
             flag = "REFUSED" if out["refused"] else ("ERROR" if out["refused"] is None else "answered")
             print(f"\n[{lid}] {kind} ({sec:.1f}s) {flag}\nQ: {question}\n" +
                   (f"A: {out['answer'][:300]}\nCites: {out['citations']}\n" if flag != "REFUSED" else ""), flush=True)
+    results = kept + results
     outp = root / "corpus/eval/lawyer_run.json"
     outp.parent.mkdir(parents=True, exist_ok=True)
     outp.write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")

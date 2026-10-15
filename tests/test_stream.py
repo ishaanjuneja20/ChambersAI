@@ -83,3 +83,23 @@ def test_voice_prompt_asks_for_short_spoken_answer():
     system, _ = G.build_prompt("q", HITS, "en", LAWYER, voice=True)
     assert "spoken aloud" in system and "90 words" in system
     assert "spoken aloud" not in G.build_prompt("q", HITS, "en", LAWYER)[0]
+
+
+def test_no_source_signal_refuses_even_if_a_citation_follows():
+    evs = run(["NO_SOURCE"])
+    assert [e["type"] for e in evs] == ["refused"]
+    evs = run(["NO_SOURCE [a-1]. ", "Extra."])
+    assert [e["type"] for e in evs] == ["refused"]
+
+
+def test_answer_refuses_on_no_source_and_prompt_asks_for_it():
+    saved = (P._prepare, P.generate)
+    P._prepare = lambda *a, **k: (HITS, None)
+    P.generate = lambda *a, **k: "NO_SOURCE"
+    try:
+        out = P.answer("q", LAWYER, "hi")
+    finally:
+        P._prepare, P.generate = saved
+    assert out["refused"] is True and out["citations"] == []
+    system, _ = G.build_prompt("q", HITS, "en", LAWYER)
+    assert "NO_SOURCE" in system
