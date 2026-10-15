@@ -105,13 +105,14 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS, min_chars: int = MIN_CHARS
     return chunks
 
 
-def year_chunks(path: str, meta, doms) -> Iterator[dict]:
-    seen = set()
+def year_chunks(path: str, meta, doms, seen: Optional[set] = None) -> Iterator[dict]:
+    """`seen` is shared across years so a case that appears in two year files is kept once (first year wins)."""
+    seen = set() if seen is None else seen
     with gzip.open(path, "rt", encoding="utf-8") as f:
         for line in f:
             r = json.loads(line)
             p = r["path"]
-            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice; keep the first copy
+            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice, across year files; keep the first copy
                 continue
             seen.add(p)
             m = meta.get(p, {})
@@ -149,12 +150,13 @@ def main():
     meta, doms = load_meta(root), load_domains(root)
     print(f"metadata rows {len(meta):,}", flush=True)
 
+    seen: set = set()
     if a.count_only:
         tot = 0
         for y in years:
             src = root / "corpus" / "judgments" / f"year={y}.jsonl.gz"
             if src.exists():
-                n = sum(1 for _ in year_chunks(str(src), meta, doms))
+                n = sum(1 for _ in year_chunks(str(src), meta, doms, seen))
                 tot += n
                 print(f"{y}: {n:,} chunks", flush=True)
         print(f"total {tot:,} chunks")
@@ -172,9 +174,12 @@ def main():
         if not src.exists():
             continue
         if cf.exists() and (a.no_embed or ef.exists()):
+            seed = out / "cards" / f"year={y}.jsonl"  # cards hold exactly the cases kept for that year
+            seed = seed if seed.exists() else cf
+            seen.update(json.loads(l).get("path") for l in open(seed, encoding="utf-8") if l.strip())
             print(f"{y}: done, skipping", flush=True)
             continue
-        chunks = list(year_chunks(str(src), meta, doms))
+        chunks = list(year_chunks(str(src), meta, doms, seen))
         if not chunks:
             continue
         if emb is not None:

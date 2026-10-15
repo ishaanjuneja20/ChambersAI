@@ -54,3 +54,17 @@ def test_duplicate_cases_are_kept_once(tmp_path):
         g.write(json.dumps(rec) + "\n" + json.dumps(rec) + "\n")
     out = list(ch.year_chunks(str(f), {}, {}))
     assert len(out) == len({c["id"] for c in out}) and out
+
+
+def test_case_in_two_year_files_is_kept_once(tmp_path):
+    import gzip
+    import json
+    rec = {"year": 1951, "path": "1951_1_1_51", "text": "1. First paragraph of the case. " * 5}
+    seen = set()
+    total = []
+    for y in (1951, 1952):
+        f = tmp_path / f"year={y}.jsonl.gz"
+        with gzip.open(f, "wt", encoding="utf-8") as g:
+            g.write(json.dumps(dict(rec, year=y)) + "\n")
+        total += list(ch.year_chunks(str(f), {}, {}, seen))
+    assert len({c["id"] for c in total}) == len(total) and {c["year"] for c in total} == {1951}

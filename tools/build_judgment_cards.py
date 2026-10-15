@@ -86,13 +86,16 @@ def case_title(m: dict, path: str) -> str:
     return f"{a} versus {b}".strip() if a and b else path
 
 
-def build_year(path: str, meta: Dict[str, dict], doms: Dict[str, List[str]], limit: Optional[int]) -> List[dict]:
-    cards, seen = [], set()
+def build_year(path: str, meta: Dict[str, dict], doms: Dict[str, List[str]], limit: Optional[int],
+               seen: Optional[set] = None) -> List[dict]:
+    """`seen` is shared across years so a case that appears in two year files is kept once (first year wins)."""
+    cards = []
+    seen = set() if seen is None else seen
     with gzip.open(path, "rt", encoding="utf-8") as f:
         for line in f:
             r = json.loads(line)
             p = r["path"]
-            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice; keep the first copy
+            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice, across year files; keep the first copy
                 continue
             seen.add(p)
             m = meta.get(p, {})
@@ -168,16 +171,17 @@ def main():
     print(f"metadata rows {len(meta):,}, domain rows {len(doms):,}", flush=True)
     emb = None if a.no_embed else Embedder(a.device, a.batch_size)
 
-    t0, done_cards = time.time(), 0
+    t0, done_cards, seen = time.time(), 0, set()
     for y in years:
         src = root / "corpus" / "judgments" / f"year={y}.jsonl.gz"
         cf, ef = cdir / f"year={y}.jsonl", edir / f"year={y}.npy"
         if not src.exists():
             continue
         if cf.exists() and (a.no_embed or ef.exists()):
+            seen.update(json.loads(l)["path"] for l in open(cf, encoding="utf-8") if l.strip())
             print(f"{y}: done, skipping", flush=True)
             continue
-        cards = build_year(str(src), meta, doms, a.limit)
+        cards = build_year(str(src), meta, doms, a.limit, seen)
         missing = sum(1 for c in cards if not c["citation"] and not c["case_id"])
         if not cards:
             continue
