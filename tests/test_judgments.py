@@ -182,3 +182,13 @@ def test_eval_passes_the_rewrite_into_the_search(tmp_path):
     plain = J.search_judgments("orig", "", 1, make_index(), lambda t: rows_of(0, t))
     used = J.search_judgments("orig", "", 1, make_index(), lambda t: rows_of(0, t), rewritten=rewritten[0])
     assert plain[0]["chunk"]["id"].startswith("sc-2002") and used[0]["chunk"]["id"].startswith("sc-2001")
+
+
+def test_refusal_similarity_uses_the_question_not_the_rewrite():
+    idx = make_index()
+    emb = lambda t: np.array([[1, 0, 0], [0, 1, 0]][:len(t)], dtype="float32")     # question -> case 1, rewrite -> case 2
+    hits = J.search_judgments("q", "", 5, idx, emb, rewritten="legal looking words")
+    top = hits[0]
+    assert top["similarity"] > 0.99                                  # ranking sees the better of the two
+    other = next(h for h in hits if h["chunk"]["id"] == "sc-2002_1_1_9#0")
+    assert other["similarity"] > 0.99 and other["similarity_query"] < 0.01   # the rewrite alone found it: refusal does not trust that

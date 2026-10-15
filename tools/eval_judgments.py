@@ -162,17 +162,20 @@ def main():
         out["brute"] = {"case": ch / len(real), "para": ph / max(npnt, 1)}
         print(f"\nBrute force over all paragraphs ({time.time() - t1:.0f}s): case {ch / len(real):.2f}   para {ph / max(npnt, 1):.2f}")
 
-    # thresholds: best paragraph similarity from the default two-stage search
-    def best_sim(i, q):
-        h = J.search_judgments(q["question"], q["lawyer"], 1, index, lambda t, i=i: rows_of(i, t), rewritten=rewritten[i])
-        return h[0]["similarity"] if h else 0.0
-    real_s = sorted(best_sim(i, q) for i, q in real)
-    trap_s = sorted(best_sim(i, q) for i, q in traps)
-    out["threshold"] = {"real": real_s, "traps": trap_s}
-    print("\nRefusal threshold: share of real questions kept / traps refused")
-    for t in [x / 100 for x in range(40, 76, 4)]:
-        print(f"  {t:.2f}: kept {sum(v >= t for v in real_s) / len(real_s):.2f}   refused {sum(v < t for v in trap_s) / max(len(trap_s), 1):.2f}")
-    print("lowest real:", [round(v, 3) for v in real_s[:5]], " highest trap:", [round(v, 3) for v in trap_s[-3:]])
+    # thresholds. "question" = similarity of the question as asked (what the app uses to refuse);
+    # "better of both" = max over question and rewrite (shown only to see the problem: rewrites make traps look legal)
+    def best_sims(i, q):
+        h = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: rows_of(i, t), rewritten=rewritten[i])
+        return (max(x["similarity_query"] for x in h), max(x["similarity"] for x in h)) if h else (0.0, 0.0)
+    real_b = [best_sims(i, q) for i, q in real]
+    trap_b = [best_sims(i, q) for i, q in traps]
+    for label, col in (("question as asked (used for refusal)", 0), ("better of question and rewrite", 1)):
+        real_s, trap_s = sorted(v[col] for v in real_b), sorted(v[col] for v in trap_b)
+        out["threshold"][label] = {"real": real_s, "traps": trap_s}
+        print(f"\nRefusal threshold, {label}: share of real questions kept / traps refused")
+        for t in [x / 100 for x in range(40, 76, 4)]:
+            print(f"  {t:.2f}: kept {sum(v >= t for v in real_s) / len(real_s):.2f}   refused {sum(v < t for v in trap_s) / max(len(trap_s), 1):.2f}")
+        print("lowest real:", [round(v, 3) for v in real_s[:5]], " highest trap:", [round(v, 3) for v in trap_s[-3:]])
 
     d = root / "corpus" / "eval"
     d.mkdir(parents=True, exist_ok=True)

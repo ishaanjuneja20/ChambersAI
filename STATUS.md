@@ -8,7 +8,7 @@
 - [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
 - [ ] BSA<->Evidence Act mapping (no table yet)
 - [x] Judgments indexed: 38,366 cards + 1,413,250 paragraph vectors (bge-m3, built on the GPU PC, verified on the Mac: counts match per year, vectors unit length)
-- [~] Judgment retrieval: backend/rag/judgments.py written and unit-tested (2 stages, soft domain boost, citations from metadata); NOT yet run on the real data, not wired into pipeline.py/generate.py, no judgment test questions, threshold 0.60 is a placeholder
+- [~] Judgment retrieval: backend/rag/judgments.py written and unit-tested (2 stages, soft domain boost, citations from metadata); run on the real index (0.7 s load, ~0.02 s/query); 41 draft test questions (tests/eval/judgment_questions.json), right case in top 5 .69 (strict single-gold scoring), about 85% by manual reading; NOT yet wired into pipeline.py/generate.py; refusal threshold 0.60 (question-as-asked) is provisional; needs lawyer-reviewed questions with all acceptable cases and harder traps
 - [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00
 - [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions

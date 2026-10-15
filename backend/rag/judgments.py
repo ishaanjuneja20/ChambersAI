@@ -28,10 +28,12 @@ from typing import Optional
 import numpy as np
 
 DOMAIN_BOOST = 0.02
-N_CASES = 12          # cases passed from stage 1 to stage 2
-CARD_WEIGHT = 0.25    # how much the case-level match adds to a paragraph's score (untuned: see tools/eval_judgments.py)
+N_CASES = 50          # cases passed from stage 1 to stage 2 (12 -> 50 raised the right-case rate from .57 to .69 on the draft set)
+CARD_WEIGHT = 0.5     # how much the case-level match adds to a paragraph's score (best of 0 / .25 / .5 on the draft set)
 PER_CASE = 2          # at most this many paragraphs from one case, so the answer can lean on several cases
-# Provisional, NOT tuned: no judgment test questions exist yet. Compare with the Acts thresholds in retrieve.py.
+# Provisional (41 draft questions, 6 easy traps). Refuse when no returned paragraph has similarity_query >= this, i.e.
+# the question as the person asked it, NOT the rewrite: a rewrite dresses up off-topic questions in legal words
+# ("recipe for biryani" -> "writ petition ... jurisdiction") and would let them through. See DECISIONS.md.
 JUDGMENT_REFUSAL_THRESHOLD = 0.60
 
 _SPLIT = re.compile(r"[\s,|;]+")
@@ -153,14 +155,16 @@ def search_judgments(query: str, lawyer_domain: str, k: int, index: JudgmentInde
         if not rng:
             continue                                  # a judgment with no usable text has no paragraphs
         year, s, e = rng
-        psims = _sims(np.asarray(index.store.vectors(year)[s:e], dtype="float32"), Q)
+        block = np.asarray(index.store.vectors(year)[s:e], dtype="float32")
+        psims = _sims(block, Q)                       # better of the question and its rewrite: used for ranking
+        qsims = _sims(block, Q[:1])                   # the question as the person asked it: used for refusal
         best = np.argsort(-psims)[:per_case]
         for b in best:
             score = float(psims[b] + cw * card_sims[ci] + boost[ci])
-            cand.append((score, float(psims[b]), int(ci), year, s + int(b)))
+            cand.append((score, float(psims[b]), float(qsims[b]), int(ci), year, s + int(b)))
     cand.sort(key=lambda t: -t[0])
     hits = []
-    for score, psim, ci, year, row in cand[:k]:
+    for score, psim, qsim, ci, year, row in cand[:k]:
         case, rec = index.cases[ci], index.store.record(year, row)
         hits.append({
             "chunk": {
@@ -170,7 +174,7 @@ def search_judgments(query: str, lawyer_domain: str, k: int, index: JudgmentInde
                          "court": case["court"], "year": case["year"], "decision_date": case["decision_date"],
                          "para": rec.get("para"), "source_path": case["path"]},
             },
-            "score": score, "similarity": psim, "card_similarity": float(card_sims[ci]),
+            "score": score, "similarity": psim, "similarity_query": qsim, "card_similarity": float(card_sims[ci]),
         })
     return hits
 
