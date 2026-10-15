@@ -44,3 +44,5 @@
 
 | Only lite models in the chain (gemini-flash-lite-latest, then gemini-3.1-flash-lite) | Lowest latency was the requirement; 3.8 Flash has 5 RPM / 20 RPD on the free key so it was never a real fallback. The second lite model has its own 15 RPM / 500 RPD. |
 | Prompt rule: NO_SOURCE also when a source only mentions the topic in passing | The four-lawyer run answered legal-sounding questions about laws not in the corpus (patent application, salary income tax, cheque bounce) from tangential judgments. Needs re-checking with `try_lawyers.py --kinds trap`; the real fix is lawyer-written traps and a better judgment relevance test. |
+
+| Default chain: gemini-flash-lite-latest (3.5), gemini-3.1-flash-lite, gemini-2.5-flash-lite | Demo-key limits: 3.5 Flash Lite 15 RPM / 500 RPD, 3.1 Flash Lite 15 / 500, 2.5 Flash Lite 10 / 20; 2 Flash Lite has no quota (0 / 0); 3.8 Flash only 5 / 20 and slower. Together about 40 requests a minute and 1,020 a day, i.e. about 13 questions a minute and 340 a day at 3 calls each. Trap re-run after the NO_SOURCE prompt change: 15 of 16 refused, the English cheque-bounce question is still answered from a Supreme Court case (grounded). |

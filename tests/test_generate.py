@@ -196,4 +196,4 @@ def test_quota_on_first_model_moves_to_next_model_without_waiting():
         assert G.model_chain() == ["only"]
     finally:
         os.environ.pop("GEMINI_MODEL", None)
-    assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL]
+    assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL, G.LAST_RESORT_MODEL]

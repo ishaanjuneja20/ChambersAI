@@ -19,6 +19,7 @@ NO_SOURCE = "NO_SOURCE"                     # the model's signal that the source
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-lite-latest"
 FALLBACK_MODEL = "gemini-3.1-flash-lite"        # second lite model: same speed class, its own free-tier quota
+LAST_RESORT_MODEL = "gemini-2.5-flash-lite"     # third lite model: small free quota (10 RPM / 20 RPD on the demo key)
 RETRY_CODES = (429, 500, 502, 503, 504)
 WAITS = (1, 3)                               # seconds between attempts on a busy model
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
@@ -100,7 +101,7 @@ def model_chain() -> list[str]:
     chain = [m for m in re.split(r"[\s,;]+", raw) if m]
     if os.environ.get("GEMINI_MODELS"):
         return chain
-    return chain[:1] if chain else [DEFAULT_MODEL, FALLBACK_MODEL]
+    return chain[:1] if chain else [DEFAULT_MODEL, FALLBACK_MODEL, LAST_RESORT_MODEL]
 
 
 def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
