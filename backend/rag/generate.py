@@ -113,6 +113,6 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": user}]}],
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1500},
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096},
     }
     return call_gemini(body, post)
