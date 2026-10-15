@@ -116,3 +116,18 @@ def test_network_timeout_is_retried():
         return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
 
     assert G.generate("q", HITS, "en", LAWYER, post=slow) == "ok" and len(calls) == 2
+
+
+def test_thinking_off_by_default_and_400_falls_back():
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ.pop("GEMINI_THINKING_BUDGET", None)
+    bodies = []
+
+    def picky(url, key, body, timeout=60):
+        bodies.append("thinkingConfig" in body["generationConfig"])
+        if bodies[-1]:
+            raise G.GenerationError("Gemini HTTP 400: thinking not supported", 400)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    assert G.generate("q", HITS, "en", LAWYER, post=picky) == "ok" and bodies == [True, False]

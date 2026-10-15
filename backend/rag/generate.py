@@ -59,7 +59,7 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
     return system, user
 
 
-def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
+def _post(url: str, key: str, body: dict, timeout: int = 45) -> dict:
     req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST",
                                  headers={"Content-Type": "application/json", "x-goog-api-key": key})
     try:
@@ -115,4 +115,15 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
         "contents": [{"role": "user", "parts": [{"text": user}]}],
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096},
     }
+    # Thinking tokens made answers take 90-150 s; the answer only has to restate the sources, so turn it off.
+    # GEMINI_THINKING_BUDGET=-1 leaves the model default. A model that rejects the setting gets a plain retry.
+    budget = int(os.environ.get("GEMINI_THINKING_BUDGET", "0"))
+    if budget >= 0:
+        body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": budget}
+        try:
+            return call_gemini(body, post)
+        except GenerationError as e:
+            if e.code != 400:
+                raise
+            del body["generationConfig"]["thinkingConfig"]
     return call_gemini(body, post)
