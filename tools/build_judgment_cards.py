@@ -87,11 +87,14 @@ def case_title(m: dict, path: str) -> str:
 
 
 def build_year(path: str, meta: Dict[str, dict], doms: Dict[str, List[str]], limit: Optional[int]) -> List[dict]:
-    cards = []
+    cards, seen = [], set()
     with gzip.open(path, "rt", encoding="utf-8") as f:
         for line in f:
             r = json.loads(line)
             p = r["path"]
+            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice; keep the first copy
+                continue
+            seen.add(p)
             m = meta.get(p, {})
             title = case_title(m, p)
             citation = m.get("citation", "")

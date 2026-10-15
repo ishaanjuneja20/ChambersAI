@@ -106,10 +106,14 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS, min_chars: int = MIN_CHARS
 
 
 def year_chunks(path: str, meta, doms) -> Iterator[dict]:
+    seen = set()
     with gzip.open(path, "rt", encoding="utf-8") as f:
         for line in f:
             r = json.loads(line)
             p = r["path"]
+            if p in seen:  # extract_judgments.py wrote ~5,000 cases twice; keep the first copy
+                continue
+            seen.add(p)
             m = meta.get(p, {})
             base = {
                 "case_id": "sc-" + p,

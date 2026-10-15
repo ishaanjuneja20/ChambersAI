@@ -43,3 +43,14 @@ def test_unbroken_text_is_hard_split():
 
 def test_empty_text():
     assert ch.chunk_text("") == []
+
+
+def test_duplicate_cases_are_kept_once(tmp_path):
+    import gzip
+    import json
+    f = tmp_path / "year=1951.jsonl.gz"
+    rec = {"year": 1951, "path": "1951_1_1_51", "text": "1. First paragraph of the case. " * 5}
+    with gzip.open(f, "wt", encoding="utf-8") as g:
+        g.write(json.dumps(rec) + "\n" + json.dumps(rec) + "\n")
+    out = list(ch.year_chunks(str(f), {}, {}))
+    assert len(out) == len({c["id"] for c in out}) and out
