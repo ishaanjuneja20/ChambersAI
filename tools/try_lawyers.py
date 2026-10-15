@@ -29,6 +29,7 @@ def main():
     ap.add_argument("--per", type=int, default=2)
     ap.add_argument("--root", default=".")
     ap.add_argument("--pause", type=float, default=13, help="seconds between questions (free tier: ~15 requests/min, 3 calls per question)")
+    ap.add_argument("--kinds", default="", help="comma list of kind prefixes to run, e.g. trap,non_legal")
     ap.add_argument("--only-errors", action="store_true", help="re-ask only the questions that errored in the last run")
     a = ap.parse_args()
     root = Path(a.root).resolve()
@@ -49,6 +50,8 @@ def main():
         items += [(q, kind, []) for q, kind in EXTRA[lid]]
         for question, kind, gold in items:
             if redo is not None and (lid, question) not in redo:
+                continue
+            if a.kinds and not any(kind.startswith(k) for k in a.kinds.split(",")):
                 continue
             if results:
                 time.sleep(a.pause)

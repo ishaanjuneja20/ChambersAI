@@ -41,3 +41,6 @@
 | try_lawyers stops on the first bad-key error | A placeholder key made 25 calls fail and look like results. |
 
 | GEMINI_MODELS list; 429 on every key moves to the next model at once | Free-tier quotas are per model (3.5 Flash Lite 15 RPM / 500 RPD; 3.8 Flash only 5 RPM / 20 RPD). Waiting does not help when the daily quota is gone, so the next model is tried immediately. Rewrites use the same list when GEMINI_MODELS is set. |
+
+| Only lite models in the chain (gemini-flash-lite-latest, then gemini-3.1-flash-lite) | Lowest latency was the requirement; 3.8 Flash has 5 RPM / 20 RPD on the free key so it was never a real fallback. The second lite model has its own 15 RPM / 500 RPD. |
+| Prompt rule: NO_SOURCE also when a source only mentions the topic in passing | The four-lawyer run answered legal-sounding questions about laws not in the corpus (patent application, salary income tax, cheque bounce) from tangential judgments. Needs re-checking with `try_lawyers.py --kinds trap`; the real fix is lawyer-written traps and a better judgment relevance test. |

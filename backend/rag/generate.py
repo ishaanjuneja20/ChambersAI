@@ -4,7 +4,7 @@ Rules enforced here (CLAUDE.md): the model never writes citations itself. It may
 as [chunk-id]; backend/rag/verify.py turns known ids into the citation text from chunk metadata and drops
 unknown ones. Client text is never logged (rule 6): errors carry status codes only.
 
-Needs GEMINI_API_KEY (or several, comma-separated, in GEMINI_API_KEYS) in the environment (never in git). Model: GEMINI_MODEL (default gemini-flash-latest).
+Needs GEMINI_API_KEY (or several, comma-separated, in GEMINI_API_KEYS) in the environment (never in git). Models: GEMINI_MODELS="a,b" (default gemini-flash-lite-latest then gemini-3.1-flash-lite; both lite for speed, separate free-tier quotas) or GEMINI_MODEL for just one.
 """
 from __future__ import annotations
 import itertools
@@ -18,7 +18,7 @@ import urllib.request
 NO_SOURCE = "NO_SOURCE"                     # the model's signal that the sources do not answer the question
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-lite-latest"
-FALLBACK_MODEL = "gemini-flash-latest"          # used if the lite model fails
+FALLBACK_MODEL = "gemini-3.1-flash-lite"        # second lite model: same speed class, its own free-tier quota
 RETRY_CODES = (429, 500, 502, 503, 504)
 WAITS = (1, 3)                               # seconds between attempts on a busy model
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
@@ -40,7 +40,9 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict, voice
         f"Personality and tone: {persona}.\n\n"
         "STRICT RULES\n"
         "1. Use ONLY the SOURCES below. Do not use outside knowledge, and do not guess. If the sources do not "
-        "answer the question, reply with exactly NO_SOURCE and nothing else (no citation, no explanation).\n"
+        "directly answer the question, reply with exactly NO_SOURCE and nothing else (no citation, no explanation). "
+        "That includes a question about a law or topic the sources do not actually contain when a source only mentions "
+        "it in passing or in a different context: never build an answer about one law from sources about another.\n"
         "2. Point to a source only by writing its id in square brackets exactly as given, for example [bns_2023-103]. "
         "Put the id right after the statement it supports. Use one id per pair of square brackets, and repeat the brackets for a second source, for example [bns_2023-103] [bns_2023-104]. Never invent an id.\n"
         "3. Do NOT write section numbers, article numbers, Act names, case names or years in your own words. "
