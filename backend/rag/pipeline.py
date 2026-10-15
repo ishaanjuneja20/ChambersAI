@@ -1,10 +1,12 @@
 """question -> retrieve -> refuse? -> Gemini -> verify citations. Used by the API and tools/try_ask.py."""
 from __future__ import annotations
+import json
 import os
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from backend.rag import judgments as J
-from backend.rag.generate import generate
+from backend.rag.generate import GenerationError, generate, generate_stream
 from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
 from backend.rag.rewrite import rewrite_query
 from backend.rag.verify import verify_citations
@@ -35,10 +37,8 @@ def _judgment_hits(question: str, domain: str, jr: str | None, k: int = 3) -> li
     return [h for h in hits if h["similarity_query"] >= J.JUDGMENT_REFUSAL_THRESHOLD]
 
 
-def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
-    lang = lang or detect_lang(question)
-    refused = {"answer": REFUSAL.get(lang, REFUSAL["en"]), "citations": [], "refused": True}
-    debug = os.environ.get("CHAMBERS_DEBUG") == "1"       # numbers and section names only, never the question text
+def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
+    """Rewrite + retrieve. Returns (hits, debug_info); hits is empty when nothing clears its threshold."""
     rewrite_on = os.environ.get("CHAMBERS_REWRITE", "1") != "0"
     t0 = time.time()
     rewritten = jr = None
@@ -52,16 +52,26 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     th = refusal_threshold(lang)
     hits = hits if hits and hits[0]["similarity"] >= th else []     # statutes only count when reliable
     jhits = _judgment_hits(question, lawyer["domain"], jr)
+    info = None
     if debug:
-        refused["debug"] = {"lang": lang, "threshold": th, "rewrite": rewritten,
-                            "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]],
-                            "seconds": {"rewrite": round(t1 - t0, 1), "retrieve": round(time.time() - t1, 1)},
-                            "judgments": [(h["chunk"]["citation"], round(h["similarity_query"], 3)) for h in jhits]}
-    if not hits and not jhits:
+        info = {"lang": lang, "threshold": th, "rewrite": rewritten,
+                "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]],
+                "seconds": {"rewrite": round(t1 - t0, 1), "retrieve": round(time.time() - t1, 1)},
+                "judgments": [(h["chunk"]["citation"], round(h["similarity_query"], 3)) for h in jhits]}
+    return hits + jhits, info
+
+
+def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
+    lang = lang or detect_lang(question)
+    refused = {"answer": REFUSAL.get(lang, REFUSAL["en"]), "citations": [], "refused": True}
+    debug = os.environ.get("CHAMBERS_DEBUG") == "1"       # numbers and section names only, never the question text
+    hits, info = _prepare(question, lawyer, lang, debug)
+    if debug:
+        refused["debug"] = info
+    if not hits:
         if debug:
             refused["debug"]["reason"] = "best similarity below threshold"
         return refused
-    hits = hits + jhits
     t2 = time.time()
     raw = generate(question, hits, lang, lawyer)          # may raise GenerationError
     if debug:
@@ -77,3 +87,87 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     if debug:
         out["debug"] = refused["debug"]
     return out
+
+
+# ------------------------------------------------------------------ streaming (voice)
+_MARKER = re.compile(r"\s*\[\d+(?:,\s*\d+)*\]")
+_ENDERS = ".!?\u0964\u3002"
+
+
+def split_sentences(buf: str):
+    """(finished sentences, remainder). A sentence ends at . ! ? or the Hindi danda followed by white space or at
+    a blank line; never inside [square brackets] (source ids, citation numbers)."""
+    out, start, depth = [], 0, 0
+    for i, ch in enumerate(buf):
+        if ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth = max(0, depth - 1)
+        elif depth == 0 and (ch in _ENDERS or ch == "\n") and (ch == "\n" or i + 1 < len(buf) and buf[i + 1].isspace()):
+            piece = buf[start:i + 1].strip()
+            if piece:
+                out.append(piece)
+            start = i + 1
+    return out, buf[start:]
+
+
+def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: bool = True, stream=generate_stream):
+    """Yields dict events: {"type": "sentence", "text", "speak", "new_citations": [{"n", "text"}]} for each verified
+    sentence, then {"type": "done", "citations": [...]}; or {"type": "refused", "answer"}; or {"type": "error"}.
+    `text` keeps the [n] markers for the screen; `speak` has them removed for text-to-speech. Nothing is yielded
+    until a sentence with a valid citation has appeared, so a refusal can still be made cleanly before any speech."""
+    lang = lang or detect_lang(question)
+    refusal = {"type": "refused", "answer": REFUSAL.get(lang, REFUSAL["en"])}
+    debug = os.environ.get("CHAMBERS_DEBUG") == "1"
+    try:
+        hits, info = _prepare(question, lawyer, lang, debug)
+        if not hits:
+            yield refusal
+            return
+        order: list = []
+        pending: list = []                                # sentences before the first valid citation
+        started, sent_n, buf = False, 0, ""
+
+        def check(sentence):
+            nonlocal sent_n
+            if lang == "hi":
+                sentence = sentence.replace("\u3002", "\u0964")
+            text, _c, _d = verify_citations(sentence, hits, numbered=True, order=order)
+            speak = _MARKER.sub("", text).strip()
+            return text, speak, bool(_MARKER.search(text))
+
+        def emit(text, speak):
+            nonlocal sent_n
+            new = [{"n": n + 1, "text": order[n]} for n in range(sent_n, len(order))]
+            sent_n = len(order)
+            return {"type": "sentence", "text": text, "speak": speak, "new_citations": new}
+
+        def handle(sentences):
+            nonlocal started
+            for sen in sentences:
+                text, speak, cited = check(sen)
+                if not speak:
+                    continue
+                if started:
+                    yield emit(text, speak)
+                elif cited:
+                    started = True
+                    for t, sp in pending:
+                        yield emit(t, sp)
+                    pending.clear()
+                    yield emit(text, speak)
+                else:
+                    pending.append((text, speak))
+
+        for piece in stream(question, hits, lang, lawyer, voice=voice):
+            buf += piece
+            done, buf = split_sentences(buf)
+            yield from handle(done)
+        if buf.strip():
+            yield from handle([buf.strip()])
+        if not started:
+            yield refusal
+            return
+        yield {"type": "done", "citations": order}
+    except GenerationError as e:
+        yield {"type": "error", "message": str(e)}

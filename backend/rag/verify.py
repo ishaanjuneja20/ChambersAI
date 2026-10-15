@@ -13,14 +13,15 @@ ID_LIKE = re.compile(r"[a-z0-9_]+-[A-Za-z0-9_\-#]+")   # judgment ids look like 
 SPLIT = re.compile(r"\s*[,;،]\s*")
 
 
-def verify_citations(answer: str, hits: list[dict], numbered: bool = False):
+def verify_citations(answer: str, hits: list[dict], numbered: bool = False, order: list | None = None):
     """Returns (clean_answer, citations, dropped_ids). Known ids become their metadata citation;
     unknown ids are removed so no internal id or invented source reaches the reader.
     numbered=True: the text carries [1], [2] ... in order of first use and `citations` is the list in that order
-    (citation i is citations[i-1]); the same citation text always gets the same number."""
+    (citation i is citations[i-1]); the same citation text always gets the same number.
+    `order` lets a caller that checks one sentence at a time keep one numbering across calls (list is extended)."""
     known = {h["chunk"]["id"]: h["chunk"]["citation"] for h in hits}
     used, dropped = [], []
-    order: list[str] = []                       # citation texts in order of first use (numbered mode)
+    order = order if order is not None else []  # citation texts in order of first use (numbered mode)
 
     def repl(m):
         parts = [p for p in SPLIT.split(m.group(1).strip()) if p]

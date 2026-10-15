@@ -31,3 +31,14 @@ strip the markers with `re.sub(r"\s*\[\d+(?:,\s*\d+)*\]", "", answer)` so the vo
 
 ## GET /lawyers
 List of entries from `lawyers.json`.
+
+## POST /ask/stream (voice)
+Request: same as `/ask`, plus `"voice": true` (default; asks for a short answer, about 90 words, that sounds right spoken).
+Response: `text/event-stream`. Each `data:` line is one JSON event:
+- `{"type":"sentence","text":"... [1].","speak":"... .","new_citations":[{"n":1,"text":"HMA s.13"}]}`
+  one verified sentence. Show `text` on screen, send `speak` (no markers) to text-to-speech, add `new_citations` to the list.
+- `{"type":"done","citations":[...]}` end of the answer (the full numbered list).
+- `{"type":"refused","answer":"I don't have a reliable source for this."}` nothing was sent before this; speak the text.
+- `{"type":"error","message":"..."}` Gemini failed; show a retry message.
+Nothing is sent until a sentence with a valid citation exists, so a refusal never arrives after speech has started.
+Browser example and the mouth-from-loudness lip sync: `docs/VOICE_FRONTEND.md`.

@@ -30,7 +30,7 @@ class GenerationError(RuntimeError):
         self.code = code
 
 
-def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
+def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict, voice: bool = False):
     name = lawyer.get("name") if lawyer.get("name") not in (None, "", "TBD") else f"the {lawyer['domain']} lawyer"
     persona = lawyer.get("personality") if lawyer.get("personality") not in (None, "", "TBD") else \
         "calm, clear and reassuring; plain words, no jargon"
@@ -55,6 +55,9 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
         system += ("\n8. Some sources are paragraphs from Supreme Court judgments. Say what the court held or "
                    "observed, never present a judgment paragraph as the text of a statute, and give each judgment [id] "
                    "where it supports the point.")
+    if voice:
+        system += ("\n9. This answer will be spoken aloud. Keep the whole answer under about 90 words, in plain "
+                   "spoken sentences: no lists, no headings, no bullet points. Put the [id] right after the sentence it supports.")
     sources = "\n\n".join(
         f"[{h['chunk']['id']}] {h['chunk']['citation']}\n{h['chunk']['text'][:MAX_SOURCE_CHARS]}" for h in hits)
     user = f"SOURCES\n{sources}\n\nQUESTION\n{question}"
@@ -146,3 +149,82 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
                 raise
             del body["generationConfig"]["thinkingConfig"]
     return call_gemini(body, post)
+
+
+
+# ---------------------------------------------------------------- streaming (for the voice endpoint)
+API_STREAM = "https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse"
+
+
+def _open_stream(url: str, key: str, body: dict, timeout: int = 45):
+    """Yield the text pieces of a streamGenerateContent (SSE) response as they arrive."""
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "x-goog-api-key": key})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            for raw in r:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                try:
+                    parts = json.loads(line[5:])["candidates"][0]["content"]["parts"]
+                except (KeyError, IndexError, TypeError, ValueError):
+                    continue                     # keep-alives, safety metadata, empty chunks
+                text = "".join(p.get("text", "") for p in parts)
+                if text:
+                    yield text
+    except urllib.error.HTTPError as e:
+        try:
+            msg = json.loads(e.read())["error"]["message"][:200]
+        except Exception:
+            msg = ""
+        raise GenerationError(f"Gemini HTTP {e.code}: {msg}".strip(), e.code) from None
+    except GenerationError:
+        raise
+    except Exception as e:
+        raise GenerationError(f"Gemini request failed ({type(e).__name__})", 504) from None
+
+
+def stream_gemini(body: dict, open_stream=_open_stream, model: str | None = None):
+    """Like call_gemini but yields text pieces. Keys and models are tried until one starts streaming; once text
+    has begun to flow there is no retry (the caller has already used it)."""
+    keys = api_keys()
+    if not keys:
+        raise GenerationError("GEMINI_API_KEY is not set")
+    start = next(_rr) % len(keys)
+    keys = keys[start:] + keys[:start]
+    if model:
+        models = [model]
+    else:
+        model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
+        models = [model] if os.environ.get("GEMINI_MODEL") else [model, FALLBACK_MODEL]
+    last = None
+    for m in models:
+        for key in keys:
+            try:
+                gen = open_stream(API_STREAM.format(model=m), key, body)
+                first = next(gen)
+            except StopIteration:
+                raise GenerationError("Gemini returned no answer (blocked or empty)") from None
+            except GenerationError as e:
+                last = e
+                if e.code in RETRY_CODES:
+                    continue
+                raise
+            yield first
+            yield from gen
+            return
+    raise last or GenerationError("Gemini request failed")
+
+
+def generate_stream(question: str, hits: list[dict], lang: str, lawyer: dict, voice: bool = True, open_stream=_open_stream):
+    system, user = build_prompt(question, hits, lang, lawyer, voice=voice)
+    body = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024},
+    }
+    budget = int(os.environ.get("GEMINI_THINKING_BUDGET", "-1"))
+    if budget >= 0:
+        body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": budget}
+    yield from stream_gemini(body, open_stream)
