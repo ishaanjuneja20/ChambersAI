@@ -49,6 +49,10 @@ def build_prompt(question: str, hits: list[dict], lang: str, lawyer: dict):
         f"6. Reply entirely in {LANG_NAME.get(lang, 'English')}. Keep the [id] markers as they are.\n"
         "7. End with one short sentence saying this is general information, not a substitute for a licensed advocate."
     )
+    if any(h["chunk"].get("kind") == "judgment_para" for h in hits):
+        system += ("\n8. Some sources are paragraphs from Supreme Court judgments. Say what the court held or "
+                   "observed, never present a judgment paragraph as the text of a statute, and give each judgment [id] "
+                   "where it supports the point.")
     sources = "\n\n".join(
         f"[{h['chunk']['id']}] {h['chunk']['citation']}\n{h['chunk']['text'][:MAX_SOURCE_CHARS]}" for h in hits)
     user = f"SOURCES\n{sources}\n\nQUESTION\n{question}"

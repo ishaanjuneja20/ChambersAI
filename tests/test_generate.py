@@ -82,3 +82,22 @@ def test_rewrite_returns_first_line_and_falls_back_on_error():
         raise G.GenerationError("Gemini HTTP 400: bad", 400)
 
     assert W.rewrite_query("fired without notice", post=boom) == "fired without notice"
+
+
+def test_pipeline_uses_judgments_and_filters_by_question_similarity():
+    from backend.rag import pipeline as P
+    jh = lambda sq: {"chunk": {"id": "sc-2001_1_1_9#12", "kind": "judgment_para", "citation": "A v. B, (2001) 1 SCR 9 (SC, 2001), from para 12", "text": "The Court held..."},
+                     "score": 1.0, "similarity": 0.9, "similarity_query": sq, "card_similarity": 0.7}
+    saved = (P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.generate)
+    P.retrieve = lambda *a, **k: []
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    P.generate = lambda q, hits, lang, lawyer: "The Court held this [sc-2001_1_1_9#12]."
+    try:
+        P.J.retrieve_judgments = lambda *a, **k: [jh(0.7)]
+        out = P.answer("q", LAWYER, "en")
+        assert not out["refused"] and out["citations"] == ["A v. B, (2001) 1 SCR 9 (SC, 2001), from para 12"]
+        P.J.retrieve_judgments = lambda *a, **k: [jh(0.5)]          # rewrite may inflate; question alone is too weak
+        assert P.answer("q", LAWYER, "en")["refused"]
+    finally:
+        P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.generate = saved
