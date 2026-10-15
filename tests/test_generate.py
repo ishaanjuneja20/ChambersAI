@@ -101,3 +101,18 @@ def test_pipeline_uses_judgments_and_filters_by_question_similarity():
         assert P.answer("q", LAWYER, "en")["refused"]
     finally:
         P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.generate = saved
+
+
+def test_network_timeout_is_retried():
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    G.WAITS = (0, 0, 0)
+    calls = []
+
+    def slow(url, key, body, timeout=60):
+        calls.append(1)
+        if len(calls) < 2:
+            raise G.GenerationError("Gemini request failed (timeout)", 504)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    assert G.generate("q", HITS, "en", LAWYER, post=slow) == "ok" and len(calls) == 2

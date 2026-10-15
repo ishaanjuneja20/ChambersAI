@@ -73,7 +73,7 @@ def _post(url: str, key: str, body: dict, timeout: int = 60) -> dict:
             msg = ""
         raise GenerationError(f"Gemini HTTP {e.code}: {msg}".strip(), e.code) from None
     except Exception as e:
-        raise GenerationError(f"Gemini request failed ({type(e).__name__})") from None
+        raise GenerationError(f"Gemini request failed ({type(e).__name__})", 504) from None   # network/timeouts are retried
 
 
 def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
