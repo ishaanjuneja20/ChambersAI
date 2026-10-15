@@ -118,10 +118,10 @@ def test_network_timeout_is_retried():
     assert G.generate("q", HITS, "en", LAWYER, post=slow) == "ok" and len(calls) == 2
 
 
-def test_thinking_off_by_default_and_400_falls_back():
+def test_thinking_budget_zero_and_400_falls_back():
     os.environ["GEMINI_API_KEY"] = "test"
     os.environ.pop("GEMINI_MODEL", None)
-    os.environ.pop("GEMINI_THINKING_BUDGET", None)
+    os.environ["GEMINI_THINKING_BUDGET"] = "0"
     bodies = []
 
     def picky(url, key, body, timeout=60):

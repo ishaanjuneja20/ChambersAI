@@ -14,10 +14,10 @@ import urllib.error
 import urllib.request
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DEFAULT_MODEL = "gemini-flash-latest"
-FALLBACK_MODEL = "gemini-flash-lite-latest"     # used if the main model stays overloaded
+DEFAULT_MODEL = "gemini-flash-lite-latest"
+FALLBACK_MODEL = "gemini-flash-latest"          # used if the lite model fails
 RETRY_CODES = (429, 500, 502, 503, 504)
-WAITS = (2, 5, 10)                               # seconds between attempts on a busy model
+WAITS = (1, 3)                               # seconds between attempts on a busy model
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
 MAX_SOURCE_CHARS = 3500
 
@@ -115,9 +115,9 @@ def generate(question: str, hits: list[dict], lang: str, lawyer: dict, post=_pos
         "contents": [{"role": "user", "parts": [{"text": user}]}],
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096},
     }
-    # Thinking tokens made answers take 90-150 s; the answer only has to restate the sources, so turn it off.
-    # GEMINI_THINKING_BUDGET=-1 leaves the model default. A model that rejects the setting gets a plain retry.
-    budget = int(os.environ.get("GEMINI_THINKING_BUDGET", "0"))
+    # Optional: GEMINI_THINKING_BUDGET=0 turns thinking off on models that allow it (flash-lite rejects the setting,
+    # flash-latest was overloaded/over quota on the free tier). Default -1 sends nothing. A 400 retries without it.
+    budget = int(os.environ.get("GEMINI_THINKING_BUDGET", "-1"))
     if budget >= 0:
         body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": budget}
         try:
