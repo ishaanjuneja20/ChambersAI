@@ -143,3 +143,27 @@ def test_disk_round_trip(tmp_path):
     assert [c["path"] for c in idx.cases] == ["2001_1_1_9", "2002_1_1_9"]       # duplicate card dropped
     hits = J.search_judgments("q", "", 2, idx, embed_murder)
     assert hits[0]["chunk"]["text"] == "murder para" and hits[0]["chunk"]["meta"]["source_path"] == "2001_1_1_9"
+
+
+def test_rewrite_prompt_switches_to_judgments_and_does_not_leak_test_topics():
+    from backend.rag import rewrite as W
+    seen = {}
+
+    def fake(body, post, model=None):
+        seen["prompt"] = body["contents"][0]["parts"][0]["text"]
+        return "some query"
+
+    orig = W.call_gemini
+    W.call_gemini = fake
+    try:
+        W.rewrite_query("q", target="judgments")
+        assert "Supreme Court of India judgments" in seen["prompt"]
+        W.rewrite_query("q")
+        assert "Indian statutes" in seen["prompt"]
+    finally:
+        W.call_gemini = orig
+    # the example topics in the judgment prompt must not be topics of the test questions
+    import json
+    qs = " ".join(q["question"].lower() for q in json.load(open(root / "tests" / "eval" / "judgment_questions.json")))
+    for word in ("salary", "wall", "landlord", "tenant", "eviction"):
+        assert word not in qs

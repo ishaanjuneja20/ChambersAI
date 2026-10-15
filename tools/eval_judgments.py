@@ -30,26 +30,55 @@ def case_of(chunk_id: str) -> str:
     return chunk_id[3:].rsplit("#", 1)[0]
 
 
-def brute_force(index, Q, k=5):
-    """Top-k paragraphs over everything, per query. Q: (nq, d) float32. Only cases that survive the dedupe count."""
+def brute_force(index, Q, k=5, groups=None):
+    """Top-k paragraphs over everything, per query. Q: (nrows, d) float32. groups[i] = the rows of Q that belong to
+    query i (the question and its rewrite; the better score counts). Only cases that survive the dedupe count."""
+    groups = groups or [[i] for i in range(len(Q))]
     try:
         import torch
         Qt = torch.from_numpy(Q)
         scores = lambda block: (torch.from_numpy(block) @ Qt.T).numpy()      # torch: numpy's BLAS is unreliable on some Macs
     except ImportError:
         scores = lambda block: np.einsum("rd,qd->rq", block, Q)
-    top = [[] for _ in range(len(Q))]
+    top = [[] for _ in range(len(groups))]
     for year in sorted({y for y, _, _ in index.ranges.values()}):
         vecs = index.store.vectors(year)
         keep = [(p, s, e) for p, (y, s, e) in index.ranges.items() if y == year]
         for p, s, e in keep:                       # per case so repeated cases are never scored twice
             sims = scores(np.asarray(vecs[s:e], dtype="float32"))   # (rows, nq)
-            for qi in range(len(Q)):
-                j = int(np.argmax(sims[:, qi]))
-                top[qi].append((float(sims[j, qi]), p, j))
-        for qi in range(len(Q)):
+            for qi, g in enumerate(groups):
+                col = sims[:, g].max(axis=1)
+                j = int(np.argmax(col))
+                top[qi].append((float(col[j]), p, j))
+        for qi in range(len(groups)):
             top[qi] = sorted(top[qi], reverse=True)[:k]
     return top
+
+
+def load_queries(qs, embed, root, rewrite):
+    """Returns (Q rows, groups, rows_of). With rewrite, each question gets a second row: its English legal rewrite
+    (cached in corpus/eval/judgment_rewrites.json so a re-run costs nothing)."""
+    texts = [q["question"] for q in qs]
+    rew = {}
+    if rewrite:
+        from backend.rag.rewrite import rewrite_query
+        cache = Path(root) / "corpus" / "eval" / "judgment_rewrites.json"
+        old = json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else {}
+        for q in qs:
+            if q["id"] not in old:
+                old[q["id"]] = rewrite_query(q["question"], target="judgments")
+            rew[q["id"]] = old[q["id"]]
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(old, ensure_ascii=False, indent=1), encoding="utf-8")
+    all_texts, groups = list(texts), [[i] for i in range(len(texts))]
+    for i, q in enumerate(qs):
+        r = rew.get(q["id"])
+        if r and r != q["question"]:
+            groups[i].append(len(all_texts))
+            all_texts.append(r)
+    Q = np.asarray(embed(all_texts), dtype="float32")
+    # search_judgments embeds [query] or [query, rewritten]; hand back the matching rows
+    return Q, groups, (lambda i, t: Q[groups[i][:len(t)]])
 
 
 def main():
@@ -57,6 +86,8 @@ def main():
     ap.add_argument("--root", default=".")
     ap.add_argument("--questions", default=None)
     ap.add_argument("--no-brute", action="store_true")
+    ap.add_argument("--rewrite", action="store_true",
+                    help="also search with a Gemini rewrite of each question (needs GEMINI_API_KEY; sends the TEST questions only)")
     a = ap.parse_args()
     root = Path(a.root).resolve()
     qpath = Path(a.questions) if a.questions else Path(__file__).resolve().parents[1] / "tests" / "eval" / "judgment_questions.json"
@@ -67,7 +98,7 @@ def main():
     t0 = time.time()
     index = J.load_judgment_index(root)
     embed = R.get_embedder()
-    Q = np.asarray(embed([q["question"] for q in qs]), dtype="float32")
+    Q, groups, rows_of = load_queries(qs, embed, root, a.rewrite)
     print(f"index + embeddings {time.time() - t0:.0f}s; {len(qs)} questions", flush=True)
 
     real = [(i, q) for i, q in enumerate(qs) if q["type"] != "trap"]
@@ -75,7 +106,7 @@ def main():
     out = {"n_questions": len(qs), "stage1": {}, "two_stage": {}, "brute": {}, "threshold": {}}
 
     # stage 1 recall
-    card_sims = [np.einsum("ij,j->i", index.card_vectors, Q[i]) for i, _ in real]
+    card_sims = [np.max([np.einsum("ij,j->i", index.card_vectors, Q[r]) for r in groups[i]], axis=0) for i, _ in real]
     paths = [c["path"] for c in index.cases]
     for n in (5, 12, 25, 50):
         hit = 0
@@ -97,7 +128,7 @@ def main():
         for cw in (0.0, 0.25, 0.5):
             case_hit = para_hit = n_point = 0
             for i, q in real:
-                hits = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: Q[[i] * len(t)],
+                hits = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: rows_of(i, t),
                                           n_cases=n_cases, card_weight=cw)
                 ids = [h["chunk"]["id"] for h in hits]
                 case_hit += q["gold_cases"][0] in {case_of(x) for x in ids}
@@ -110,7 +141,7 @@ def main():
     # brute force upper bound
     if not a.no_brute:
         t1 = time.time()
-        top = brute_force(index, Q)
+        top = brute_force(index, Q, groups=groups)
         ch = ph = npnt = 0
         for i, q in real:
             ids = [f"sc-{p}#{j}" for _, p, j in top[i]]
@@ -123,7 +154,7 @@ def main():
 
     # thresholds: best paragraph similarity from the default two-stage search
     def best_sim(i, q):
-        h = J.search_judgments(q["question"], q["lawyer"], 1, index, lambda t, i=i: Q[[i] * len(t)])
+        h = J.search_judgments(q["question"], q["lawyer"], 1, index, lambda t, i=i: rows_of(i, t))
         return h[0]["similarity"] if h else 0.0
     real_s = sorted(best_sim(i, q) for i, q in real)
     trap_s = sorted(best_sim(i, q) for i, q in traps)
