@@ -131,3 +131,10 @@ def test_thinking_budget_zero_and_400_falls_back():
         return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
 
     assert G.generate("q", HITS, "en", LAWYER, post=picky) == "ok" and bodies == [True, False]
+
+
+def test_numbered_citations_share_numbers_and_follow_first_use():
+    hits = [{"chunk": {"id": "a-1", "citation": "Act s.1"}}, {"chunk": {"id": "sc-2#3", "citation": "A v. B (2001), from para 3"}}]
+    text, cits, dropped = verify_citations("X [sc-2#3]. Y [a-1]. Z [sc-2#3] [a-1] [zz-9].", hits, numbered=True)
+    assert text.startswith("X [1]. Y [2]. Z [1] [2]"), text
+    assert cits == ["A v. B (2001), from para 3", "Act s.1"] and dropped == ["zz-9"]

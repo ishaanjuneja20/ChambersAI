@@ -13,11 +13,14 @@ ID_LIKE = re.compile(r"[a-z0-9_]+-[A-Za-z0-9_\-#]+")   # judgment ids look like 
 SPLIT = re.compile(r"\s*[,;،]\s*")
 
 
-def verify_citations(answer: str, hits: list[dict]):
+def verify_citations(answer: str, hits: list[dict], numbered: bool = False):
     """Returns (clean_answer, citations, dropped_ids). Known ids become their metadata citation;
-    unknown ids are removed so no internal id or invented source reaches the reader."""
+    unknown ids are removed so no internal id or invented source reaches the reader.
+    numbered=True: the text carries [1], [2] ... in order of first use and `citations` is the list in that order
+    (citation i is citations[i-1]); the same citation text always gets the same number."""
     known = {h["chunk"]["id"]: h["chunk"]["citation"] for h in hits}
     used, dropped = [], []
+    order: list[str] = []                       # citation texts in order of first use (numbered mode)
 
     def repl(m):
         parts = [p for p in SPLIT.split(m.group(1).strip()) if p]
@@ -32,8 +35,17 @@ def verify_citations(answer: str, hits: list[dict]):
                     used.append(p)
             else:
                 dropped.append(p)
+        if numbered and good:
+            nums = []
+            for g in good:
+                if g not in order:
+                    order.append(g)
+                nums.append(str(order.index(g) + 1))
+            return "[" + ", ".join(nums) + "]"
         return "[" + "; ".join(good) + "]" if good else ""
 
     clean = GROUP_RE.sub(repl, answer)
     clean = re.sub(r"[ \t]{2,}", " ", clean).strip()
+    if numbered:
+        return clean, order, dropped
     return clean, [known[c] for c in used], dropped
