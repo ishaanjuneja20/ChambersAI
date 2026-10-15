@@ -74,7 +74,7 @@ def load_domains(root: Path) -> Dict[str, List[str]]:
     if p.exists():
         with open(p, encoding="utf-8", newline="") as f:
             for row in csv.DictReader(f):
-                out[row["path"]] = [d for d in re.split(r"[,|;]\s*", row.get("domains", "")) if d]
+                out[row["path"]] = [d for d in re.split(r"[\s,|;]+", row.get("domains", "")) if d]
     return out
 
 

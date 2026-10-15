@@ -7,7 +7,8 @@
 - [ ] Hindi chunks: deferred, OCR too noisy to align by section (see docs/CHUNKING.md); test Hindi->English retrieval instead
 - [x] BNS<->IPC / BNSS<->CrPC citation mapping (numbers only; spot-checked, not lawyer-verified)
 - [ ] BSA<->Evidence Act mapping (no table yet)
-- [~] Judgments: case cards built by tools/build_judgment_cards.py (code + tests done, full run on the Mac pending); stage 2 paragraph search, judgment test questions and judgment refusal threshold still to do
+- [x] Judgments indexed: 38,366 cards + 1,413,250 paragraph vectors (bge-m3, built on the GPU PC, verified on the Mac: counts match per year, vectors unit length)
+- [~] Judgment retrieval: backend/rag/judgments.py written and unit-tested (2 stages, soft domain boost, citations from metadata); NOT yet run on the real data, not wired into pipeline.py/generate.py, no judgment test questions, threshold 0.60 is a placeholder
 - [x] Draft test set (tests/eval/questions.json: 76 answerable + 20 trap questions, EN + HI) and tools/eval_embeddings.py; lexical baseline: EN hit@5 0.61, HI 0.00
 - [x] Ran tfidf / e5-small / e5-base / bge-m3: bge-m3 chosen (EN hit@5 .92, HI .95). Gemini embeddings + query rewrite untested (free-tier rate limit)
 - [ ] Lawyer review of the test set; add harder questions

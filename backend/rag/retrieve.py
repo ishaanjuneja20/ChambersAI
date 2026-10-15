@@ -89,6 +89,14 @@ def set_backend(index=None, embedder=None):
     _index, _embedder = index, embedder
 
 
+def get_embedder():
+    """The shared query embedder (loads bge-m3 on first use); judgments.py reuses it so the model is loaded once."""
+    global _embedder
+    if _embedder is None:
+        _embedder = _default_embedder()
+    return _embedder
+
+
 def search(query: str, lawyer_domain: str, k: int, index: Index, embed, rewritten: str | None = None) -> list[dict]:
     """`rewritten` is an optional English legal rewrite of the question; each section keeps its better score."""
     texts = [query] + ([rewritten] if rewritten and rewritten != query else [])

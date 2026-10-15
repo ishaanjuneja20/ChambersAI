@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 
 GROUP_RE = re.compile(r"\[([^\[\]]{1,400})\]")
-ID_LIKE = re.compile(r"[a-z0-9_]+-[A-Za-z0-9\-]+")
+ID_LIKE = re.compile(r"[a-z0-9_]+-[A-Za-z0-9_\-#]+")   # judgment ids look like sc-2001_1_1_9#12
 SPLIT = re.compile(r"\s*[,;،]\s*")
 
 
