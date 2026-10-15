@@ -59,7 +59,7 @@ def card_text(title: str, citation: str, year: object, text: str, chars: int = C
 
 
 def load_meta(root: Path) -> Dict[str, dict]:
-    csv.field_size_limit(sys.maxsize)
+    csv.field_size_limit(2**31 - 1)  # sys.maxsize overflows a C long on Windows
     keep = ("title", "petitioner", "respondent", "citation", "case_id", "decision_date", "court", "year")
     meta: Dict[str, dict] = {}
     with open(root / "judgments_metadata_all.csv", encoding="utf-8", newline="") as f:
