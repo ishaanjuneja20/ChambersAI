@@ -39,10 +39,10 @@ def main():
         for it in items:
             reviews[it["id"]].append((name, it))
     n_rev = len({n for rs in reviews.values() for n, _ in rs})
-    need = n_rev // 2 + 1
     out, flags = [], []
     for q in qs:
         rs = reviews.get(q["id"], [])
+        need = len(rs) // 2 + 1                       # majority of the reviewers who answered THIS question
         row = dict(q)
         if q["type"] == "trap":
             v = Counter(it.get("trap_verdict", "n/a") for _, it in rs)
@@ -73,7 +73,7 @@ def main():
             row["missing_case_suggestions"] = [it["missing_case"] for _, it in rs if it.get("missing_case")]
         out.append(row)
     (root / "tests/eval/judgment_questions.reviewed.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"{n_rev} reviewers, majority = {need}; wrote tests/eval/judgment_questions.reviewed.json")
+    print(f"{n_rev} reviewers (majority is taken per question among those who answered it); wrote tests/eval/judgment_questions.reviewed.json")
     print(f"{len(flags)} flags for a human check:")
     for qid, why, detail in flags:
         print(f"  {qid}: {why} {detail}")
