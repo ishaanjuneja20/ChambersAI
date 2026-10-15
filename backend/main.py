@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Optional
 from pathlib import Path
 
@@ -6,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from backend.rag.generate import GenerationError
-from backend.rag.pipeline import answer
+from backend.rag.pipeline import answer, warmup
 
 app = FastAPI(title="ChambersAI")
 LAWYERS = json.loads((Path(__file__).parent.parent / "lawyers.json").read_text())
@@ -16,6 +17,12 @@ class AskRequest(BaseModel):
     lawyer: str
     question: str
     lang: Optional[str] = None      # "en" | "hi"; detected from the question when omitted
+
+
+@app.on_event("startup")
+def _warm():
+    if os.environ.get("CHAMBERS_WARMUP", "1") != "0":
+        warmup()
 
 
 @app.get("/health")

@@ -13,6 +13,15 @@ REFUSAL = {"en": "I don't have a reliable source for this.",
            "hi": "इस विषय पर मेरे पास कोई विश्वसनीय स्रोत नहीं है।"}
 
 
+def warmup() -> None:
+    """Load bge-m3 and both indexes now (server start) so the first question doesn't pay for it."""
+    from backend.rag import retrieve as R
+    R.get_embedder()
+    retrieve("warm up", "criminal", k=1)
+    if _judgments_on():
+        J.retrieve_judgments("warm up", "criminal", k=1)
+
+
 def _judgments_on() -> bool:
     return os.environ.get("CHAMBERS_JUDGMENTS", "1") != "0" and J.judgments_available()
 
