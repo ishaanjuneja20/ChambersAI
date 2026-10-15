@@ -30,7 +30,7 @@ export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle
           <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt={`${lawyer.name}, AI advocate persona`} onError={onError} />
         )}
         <svg className="avatar__mouth-overlay" viewBox="0 0 200 200" aria-hidden="true">
-          <ellipse cx="100" cy="128" rx="18" ry={mouthOpenRy} fill="#2e1a47" opacity={status === "speaking" ? 0.8 : 0} />
+          <ellipse cx="100" cy="128" rx="18" ry={mouthOpenRy} fill="#050506" opacity={status === "speaking" ? 0.8 : 0} />
         </svg>
         {status === "listening" && <span className="avatar__ring avatar__ring--listening" />}
         {status === "speaking" && <span className="avatar__ring avatar__ring--speaking" />}

@@ -1,10 +1,3 @@
-:root {
-  --chambers-deep: #2e1a47; /* dark purple background the white logo is meant for */
-  --chambers-accent: #a78bfa; /* lavender glow / accent */
-  --chambers-ink: #241536;
-  --chambers-paper: #f7f5fc;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -18,8 +11,11 @@ body,
 body {
   margin: 0;
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  background: var(--chambers-paper);
-  color: var(--chambers-ink);
+  background: var(--bg);
+  /* A very faint radial glow at the top for depth — not a colored gradient, just white at low opacity. */
+  background-image: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(255, 255, 255, 0.055), transparent 60%);
+  background-repeat: no-repeat;
+  color: var(--text);
 }
 
 .sr-only {
@@ -35,8 +31,10 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--chambers-accent);
+  outline: 3px solid var(--text);
   outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--glow-soft);
+  border-radius: 0.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

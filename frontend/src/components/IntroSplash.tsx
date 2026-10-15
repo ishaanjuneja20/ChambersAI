@@ -135,7 +135,7 @@ export default function IntroSplash({ forcePlay = false, onDone }: IntroSplashPr
             position: "absolute",
             inset: "-18%",
             borderRadius: "50%",
-            background: "radial-gradient(circle, var(--chambers-accent) 0%, transparent 65%)",
+            background: "radial-gradient(circle, var(--glow) 0%, transparent 65%)",
             pointerEvents: "none",
           }}
           initial={{ opacity: 0 }}

@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--chambers-deep);
+  background: var(--bg);
   overflow: hidden;
 }
 
@@ -24,6 +24,8 @@
   object-fit: contain;
   pointer-events: none;
   user-select: none;
+  /* soft white glow behind the logo */
+  filter: drop-shadow(0 0 22px var(--glow-soft));
 }
 
 .intro__skip {

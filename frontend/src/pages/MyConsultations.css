@@ -16,16 +16,22 @@
 
 .consultations-page__header h1 {
   margin: 0;
-  color: var(--chambers-ink);
+  color: var(--text);
 }
 
 .consultations-page__search {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border-radius: 0.7rem;
-  border: 1px solid #d9d2ec;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
   font-size: 0.9rem;
   font-family: inherit;
+}
+
+.consultations-page__search::placeholder {
+  color: var(--text-faint);
 }
 
 .session-list {
@@ -43,18 +49,25 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.session-list__item strong {
+  color: var(--text);
 }
 
 .session-list__meta {
   margin: 0.15rem 0 0;
   font-size: 0.8rem;
-  color: #8a7f98;
+  color: var(--text-muted);
 }
 
 .session-list__last {
   margin: 0.3rem 0 0;
   font-size: 0.85rem;
-  color: #645a73;
+  color: var(--text-muted);
 }
 
 .session-list__actions {
@@ -64,6 +77,6 @@
 }
 
 .empty-note {
-  color: #8a7f98;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }

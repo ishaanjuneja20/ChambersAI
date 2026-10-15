@@ -13,7 +13,8 @@
   aspect-ratio: 1 / 1;
   border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(46, 26, 71, 0.06), 0 4px 14px rgba(46, 26, 71, 0.08);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .lawyer-card__portrait-wrap img {
@@ -23,22 +24,24 @@
   display: block;
 }
 
+/* Recommended-lawyer highlight — a key moment, one of the few places glow is allowed. */
 .lawyer-card--matched .lawyer-card__portrait-wrap {
-  outline: 3px solid var(--chambers-accent);
+  outline: 2px solid var(--text);
   outline-offset: 3px;
+  box-shadow: 0 0 24px var(--glow);
 }
 
 .lawyer-card__name {
   margin: 0.7rem 0 0.1rem;
   font-size: 0.98rem;
   font-weight: 700;
-  color: var(--chambers-ink);
+  color: var(--text);
 }
 
 .lawyer-card__practice {
   margin: 0;
   font-size: 0.84rem;
-  color: #645a73;
+  color: var(--text-muted);
 }
 
 .lawyer-card__badge {
@@ -48,8 +51,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: #f1ecfb;
-  color: var(--chambers-deep);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0.18rem 0.55rem;
 }

@@ -14,7 +14,7 @@ export default function LawyerCard({ lawyer, matched }: { lawyer: Lawyer; matche
     <button type="button" className={`lawyer-card${matched ? " lawyer-card--matched" : ""}`} onClick={() => navigate(`/lawyers/${lawyer.id}`)}>
       <motion.div
         className="lawyer-card__portrait-wrap"
-        whileHover={prefersReducedMotion ? undefined : { scale: 1.04, y: -4, boxShadow: "0 8px 24px rgba(46,26,71,0.22)" }}
+        whileHover={prefersReducedMotion ? undefined : { scale: 1.04, y: -4, boxShadow: "0 10px 30px rgba(255,255,255,0.22)" }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         {failed ? (

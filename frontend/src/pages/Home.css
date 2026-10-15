@@ -4,9 +4,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #f1ecfb;
-  color: var(--chambers-deep);
-  border: 1px solid #ddd0f5;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0.2rem 0.65rem;
 }
@@ -22,18 +22,18 @@
 
 .home-page h1 {
   margin: 0 0 0.3rem;
-  color: var(--chambers-ink);
+  color: var(--text);
 }
 
 .home-page__intro p {
   margin: 0;
-  color: #645a73;
+  color: var(--text-muted);
 }
 
 .describe-box {
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1.1rem;
-  box-shadow: 0 1px 2px rgba(46, 26, 71, 0.05), 0 6px 20px rgba(46, 26, 71, 0.07);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -43,15 +43,21 @@
 .describe-box__input {
   width: 100%;
   border-radius: 0.7rem;
-  border: 1px solid #d9d2ec;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
   padding: 0.75rem;
   font-size: 0.95rem;
   font-family: inherit;
   resize: vertical;
 }
 
+.describe-box__input::placeholder {
+  color: var(--text-faint);
+}
+
 .describe-box__input:focus-visible {
-  border-color: var(--chambers-accent);
+  border-color: var(--text);
 }
 
 .describe-box__actions {
@@ -61,13 +67,15 @@
   flex-wrap: wrap;
 }
 
+/* A key moment (the recommended-lawyer highlight) — one of the few places glow is allowed. */
 .match-banner {
-  background: #f1ecfb;
-  border: 1px solid #ddd0f5;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 0 20px var(--glow-soft);
   border-radius: 0.8rem;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
-  color: #4c2d7a;
+  color: var(--text);
 }
 
 .lawyer-grid {

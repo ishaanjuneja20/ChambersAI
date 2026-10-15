@@ -29,36 +29,39 @@
 
 /* ---- idle mic button ---- */
 .voice-bubble--button {
-  background: #f1ecfb;
-  color: var(--chambers-deep);
-  border: 1px solid #ddd0f5;
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
 .voice-bubble--button:hover {
-  background: #e6def5;
+  box-shadow: 0 0 14px var(--glow-soft);
+  border-color: var(--text-muted);
 }
 
 .voice-bubble--button:focus-visible {
-  outline: 3px solid var(--chambers-accent);
+  outline: 3px solid var(--text);
   outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--glow-soft);
 }
 
 /* ---- expanded glass bubble ---- */
 .voice-bubble--expanded {
-  --glow: 0.5;
-  background: radial-gradient(circle at 35% 25%, rgba(90, 60, 140, 0.55), rgba(20, 10, 35, 0.78) 70%);
+  --glow: 0.35;
+  background: radial-gradient(circle at 35% 25%, rgba(60, 60, 66, 0.55), rgba(5, 5, 6, 0.82) 70%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
     inset 0 18px 30px -16px rgba(255, 255, 255, 0.35),
-    0 10px 30px rgba(139, 92, 246, var(--glow, 0.35)),
-    0 2px 10px rgba(46, 26, 71, 0.3);
+    0 10px 30px rgba(255, 255, 255, var(--glow, 0.35)),
+    0 2px 10px rgba(0, 0, 0, 0.5);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .voice-bubble--expanded {
-    background: radial-gradient(circle at 35% 25%, rgba(90, 60, 140, 0.92), rgba(20, 10, 35, 0.96) 70%);
+    background: radial-gradient(circle at 35% 25%, rgba(40, 40, 46, 0.95), rgba(5, 5, 6, 0.98) 70%);
   }
 }
 
@@ -106,8 +109,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ff5d5d;
-  box-shadow: 0 0 6px rgba(255, 93, 93, 0.9);
+  background: var(--danger);
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.9);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -163,13 +166,13 @@
 .voice-bubble__transcript {
   margin: 0.5rem 0 0;
   font-size: 0.82rem;
-  color: #645a73;
+  color: var(--text-muted);
   text-align: center;
   max-width: 260px;
 }
 
 .voice-bubble-error {
   font-size: 0.8rem;
-  color: #a3273a;
+  color: var(--danger);
   margin: 0.3rem 0 0;
 }

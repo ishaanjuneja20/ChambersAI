@@ -1,7 +1,7 @@
 .sources-panel {
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(46, 26, 71, 0.05), 0 6px 20px rgba(46, 26, 71, 0.07);
   padding: 1.1rem;
   display: flex;
   flex-direction: column;
@@ -12,11 +12,11 @@
 .sources-panel h3 {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--chambers-ink);
+  color: var(--text);
 }
 
 .sources-panel__empty {
-  color: #8a7f98;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin: 0;
 }
@@ -34,7 +34,8 @@
   display: block;
   text-decoration: none;
   color: inherit;
-  border: 1px solid #e6def5;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
   border-radius: 0.7rem;
   padding: 0.55rem 0.7rem;
 }
@@ -51,22 +52,22 @@
 }
 
 .source-badge__tag--verified {
-  background: #e3f3e8;
-  color: #2e7d4f;
+  background: rgba(74, 222, 128, 0.14);
+  color: var(--success);
 }
 
 .source-badge__tag--interpretation {
-  background: #fdf3e3;
-  color: #8a6116;
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--warning);
 }
 
 .source-badge__tag--none {
-  background: #fdecec;
-  color: #a3273a;
+  background: rgba(248, 113, 113, 0.14);
+  color: var(--danger);
 }
 
 .source-badge__label {
   display: block;
   font-size: 0.85rem;
-  color: var(--chambers-ink);
+  color: var(--text);
 }

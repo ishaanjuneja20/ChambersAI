@@ -1,0 +1,21 @@
+/* Single source of truth for color. No purple/violet/lavender anywhere — black + white only,
+   with white glow used sparingly as an accent (see components' own CSS for where it's allowed). */
+:root {
+  --bg: #050506;
+  --surface: #0e0e11;
+  --surface-raised: #16161a;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text: #f5f5f7;
+  --text-muted: #a1a1aa;
+  --text-faint: #86868f; /* lightened from a near-identical gray so placeholder/footnote text clears 4.5:1 AA against --surface-raised */
+
+  --glow: rgba(255, 255, 255, 0.35);
+  --glow-soft: rgba(255, 255, 255, 0.12);
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
