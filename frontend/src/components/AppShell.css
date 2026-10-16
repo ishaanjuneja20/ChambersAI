@@ -31,11 +31,22 @@
   justify-content: space-between;
   padding: 0 0.4rem;
   min-height: 32px;
+  overflow: hidden;
 }
 
 .sidebar__logo {
   height: 22px;
+  min-width: 0;
+  flex-shrink: 1;
   filter: drop-shadow(0 0 10px var(--glow-soft));
+}
+
+.sidebar--collapsed .sidebar__top {
+  justify-content: center;
+}
+
+.sidebar--collapsed .sidebar__logo {
+  display: none;
 }
 
 .sidebar__collapse-btn {
