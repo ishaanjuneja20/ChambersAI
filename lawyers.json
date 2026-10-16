@@ -1,0 +1,8 @@
+[
+  {"id": "criminal", "name": "TBD", "domain": "criminal", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"},
+  {"id": "family", "name": "TBD", "domain": "family", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"},
+  {"id": "consumer", "name": "TBD", "domain": "consumer", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"},
+  {"id": "property", "name": "TBD", "domain": "property", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"},
+  {"id": "labour", "name": "TBD", "domain": "labour", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"},
+  {"id": "constitutional", "name": "TBD", "domain": "constitutional", "personality": "TBD", "voice_id": "TBD", "avatar": "TBD"}
+]
