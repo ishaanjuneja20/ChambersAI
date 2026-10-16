@@ -1,19 +1,29 @@
-/* Single source of truth for color. No purple/violet/lavender anywhere — black + white only,
-   with white glow used sparingly as an accent (see components' own CSS for where it's allowed). */
+/* Single source of truth for color. Deep black base with a blue-violet gradient as the one
+   strong accent — used sparingly (buttons, highlighted words, active states, focus rings),
+   never as a large tint. */
 :root {
-  --bg: #050506;
-  --surface: #0e0e11;
-  --surface-raised: #16161a;
+  --bg: #0a0a0c;
+  --bg-nav: #101012;
+  --surface: #0f0f11;
+  --surface-raised: #171719;
+  --surface-banner: #202020;
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  --text: #f5f5f7;
-  --text-muted: #a1a1aa;
-  --text-faint: #86868f; /* lightened from a near-identical gray so placeholder/footnote text clears 4.5:1 AA against --surface-raised */
+  --text: #f2f2f5;
+  --text-muted: #9a9aa6;
+  --text-faint: #6a6a75;
 
-  --glow: rgba(255, 255, 255, 0.35);
-  --glow-soft: rgba(255, 255, 255, 0.12);
+  --accent: #194bfd;
+  --accent-violet: #5c32fc;
+  --accent-magenta: #ad13fb;
+
+  --grad-primary: linear-gradient(90deg, #383ffc, #5c32fc);
+  --grad-primary-hover: linear-gradient(90deg, #4850ff, #6c40ff);
+
+  --glow-blue: rgba(56, 63, 252, 0.45);
+  --glow-soft: rgba(92, 50, 252, 0.18);
 
   --success: #4ade80;
   --warning: #fbbf24;

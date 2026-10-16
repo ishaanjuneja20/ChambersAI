@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import IntroSplash from "./components/IntroSplash";
 import ProtectedShellLayout from "./components/ProtectedShellLayout";
@@ -17,6 +17,14 @@ import Chat from "./pages/Chat";
 
 export default function App() {
   const [introVisible, setIntroVisible] = useState(true);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      document.body.classList.toggle("tab-hidden", document.hidden);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
   return (
     <AuthProvider>

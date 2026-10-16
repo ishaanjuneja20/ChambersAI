@@ -12,8 +12,8 @@ body {
   margin: 0;
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
-  /* A very faint radial glow at the top for depth — not a colored gradient, just white at low opacity. */
-  background-image: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(255, 255, 255, 0.055), transparent 60%);
+  /* A very faint blue radial glow at the top for depth. */
+  background-image: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(56, 63, 252, 0.08), transparent 60%);
   background-repeat: no-repeat;
   color: var(--text);
 }
@@ -31,10 +31,93 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--text);
+  outline: 2px solid var(--accent-violet);
   outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--glow-soft);
+  box-shadow: 0 0 0 5px var(--glow-soft);
   border-radius: 0.25rem;
+}
+
+/* ---- shared helpers: hero cursor glow, scroll reveal, card spotlight ---- */
+
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  width: 640px;
+  height: 640px;
+  left: var(--hero-glow-x, 50%);
+  top: var(--hero-glow-y, 0%);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--glow-soft), transparent 70%);
+  transition: left 0.4s ease, top 0.4s ease;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal--shown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover,
+.card:focus-within {
+  transform: translateY(-2px);
+  border-color: var(--accent-violet);
+  box-shadow: 0 10px 28px var(--glow-soft);
+}
+
+.spotlight-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 50%), var(--glow-soft), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.spotlight-card:hover::before,
+.spotlight-card:focus-within::before {
+  opacity: 1;
+}
+
+.page-fade {
+  animation: page-fade-in 0.22s ease both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body.tab-hidden * {
+  animation-play-state: paused !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -43,5 +126,10 @@ body {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
   }
 }

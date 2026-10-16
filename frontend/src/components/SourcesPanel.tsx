@@ -26,7 +26,7 @@ function SourceBadge({ citation }: { citation: Citation }) {
 
 export default function SourcesPanel({ citations }: { citations: Citation[] }) {
   return (
-    <aside className="sources-panel" aria-label="Sources">
+    <aside className="sources-panel card" aria-label="Sources">
       <h3>Sources</h3>
       {citations.length === 0 ? (
         <p className="sources-panel__empty">No sources cited yet.</p>

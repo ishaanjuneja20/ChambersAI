@@ -24,6 +24,7 @@
 }
 
 .auth-shell__brand {
+  position: relative;
   background: var(--bg);
   color: var(--text);
   padding: 2.5rem;
@@ -31,6 +32,13 @@
   flex-direction: column;
   justify-content: center;
   gap: 1rem;
+  overflow: hidden;
+}
+
+.auth-shell__badge {
+  position: relative;
+  margin-top: 0.5rem;
+  opacity: 0.8;
 }
 
 .auth-shell__logo {
@@ -87,6 +95,7 @@
   color: var(--text);
   font-size: 0.95rem;
   font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .auth-form input::placeholder {
@@ -94,7 +103,9 @@
 }
 
 .auth-form input:focus-visible {
-  border-color: var(--text);
+  border-color: var(--accent-violet);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--glow-soft);
 }
 
 .auth-error {
@@ -122,17 +133,22 @@
   padding: 0.65rem 1.3rem;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, box-shadow 0.15s;
+  transition: background-color 0.15s, background 0.2s, color 0.15s, border-color 0.15s, opacity 0.15s, box-shadow 0.15s,
+    transform 0.15s;
 }
 
 .btn--primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--grad-primary);
+  color: #ffffff;
 }
 .btn--primary:hover,
 .btn--primary:focus-visible {
-  background: #ffffff;
-  box-shadow: 0 0 18px var(--glow);
+  background: var(--grad-primary-hover);
+  box-shadow: 0 6px 24px var(--glow-blue);
+  transform: translateY(-2px);
+}
+.btn--primary:active {
+  transform: scale(0.98) translateY(0);
 }
 .btn--primary:disabled {
   background: var(--surface-raised);
@@ -140,6 +156,7 @@
   opacity: 1;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
 .btn--outline {
@@ -148,8 +165,11 @@
   color: var(--text);
 }
 .btn--outline:hover {
-  background: var(--surface-raised);
-  border-color: var(--text);
+  background: var(--glow-soft);
+  border-color: var(--accent-violet);
+}
+.btn--outline:active {
+  transform: scale(0.98);
 }
 
 .btn--ghost {
@@ -164,12 +184,20 @@
 .link-button {
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--accent);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
   font-size: 0.88rem;
   text-align: left;
+}
+
+.link-button svg {
+  transition: transform 0.15s ease;
+}
+
+.link-button:hover svg {
+  transform: translateX(2px);
 }
 
 .auth-divider {

@@ -38,6 +38,14 @@
   background: var(--surface-raised);
   border-radius: 0.7rem;
   padding: 0.55rem 0.7rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+a.source-badge:hover,
+a.source-badge:focus-visible {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 12px var(--glow-soft);
+  transform: translateY(-1px);
 }
 
 .source-badge__tag {

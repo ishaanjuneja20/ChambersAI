@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { deleteAllSessions } from "../lib/sessionsStore";
+import Reveal from "../components/Reveal";
+import Decorations from "../components/Decorations";
 import "./Profile.css";
 import "./Home.css";
 
@@ -18,16 +20,17 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
+      <Decorations />
       <h1>Profile & Settings</h1>
       {user?.isDemo && <span className="home-placeholder__badge">Demo mode</span>}
 
-      <section className="profile-section card">
+      <Reveal as="section" className="profile-section card">
         <h2>Account</h2>
         <p>{user?.email}</p>
         {user?.isDemo && <p>Sample account — nothing here is saved beyond this browser.</p>}
-      </section>
+      </Reveal>
 
-      <section className="profile-section card">
+      <Reveal as="section" className="profile-section card">
         <h2>Language</h2>
         <div className="language-toggle" role="radiogroup" aria-label="Preferred language">
           <button
@@ -50,23 +53,23 @@ export default function Profile() {
           </button>
         </div>
         {lang === "hi" && <p>Hindi answers aren't available in this demo yet — questions will still be answered in English.</p>}
-      </section>
+      </Reveal>
 
-      <section className="profile-section card">
+      <Reveal as="section" className="profile-section card">
         <h2>Voice settings</h2>
         <p>Each lawyer's voice is set by their persona on the backend; there's nothing to configure here yet.</p>
-      </section>
+      </Reveal>
 
-      <section className="profile-section card">
+      <Reveal as="section" className="profile-section card">
         <h2>Privacy</h2>
         <ul>
           <li>Your conversations are encrypted at rest (AES-GCM).</li>
           <li>To generate answers and speech, your audio and text pass through Google Gemini and Fish Audio — this is not end-to-end encrypted.</li>
           <li>You can delete your data at any time below.</li>
         </ul>
-      </section>
+      </Reveal>
 
-      <section className="profile-section card">
+      <Reveal as="section" className="profile-section card">
         <h2>Account actions</h2>
         <button type="button" className="btn btn--outline" onClick={handleDeleteAccountData}>
           Delete my account data
@@ -86,7 +89,7 @@ export default function Profile() {
         <button type="button" className="btn btn--outline" onClick={() => signOut()}>
           Log out
         </button>
-      </section>
+      </Reveal>
     </div>
   );
 }

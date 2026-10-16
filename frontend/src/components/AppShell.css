@@ -7,7 +7,7 @@
 .sidebar {
   width: 100%;
   height: 100%;
-  background: var(--surface);
+  background: var(--bg-nav);
   border-right: 1px solid var(--border);
   color: var(--text);
   display: flex;
@@ -35,7 +35,6 @@
 
 .sidebar__logo {
   height: 22px;
-  /* soft white glow behind the logo — one of the few places glow belongs */
   filter: drop-shadow(0 0 10px var(--glow-soft));
 }
 
@@ -68,6 +67,7 @@
 }
 
 .nav-item__link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -79,22 +79,44 @@
   font-size: 0.92rem;
   font-weight: 600;
   min-height: 44px;
+  overflow: hidden;
   transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s;
+}
+
+.nav-item__link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--grad-primary);
+  transform: translateX(-3px);
+  transition: transform 0.18s ease;
+}
+
+.nav-item__link:hover::before,
+.nav-item__link:focus-visible::before,
+.nav-item__link.active::before {
+  transform: translateX(0);
 }
 
 .nav-item__link:hover,
 .nav-item__link:focus-visible {
   background: var(--surface-raised);
   border-color: var(--border-strong);
-  box-shadow: 0 0 16px var(--glow-soft);
   color: var(--text);
 }
 
 .nav-item__link.active {
   background: var(--surface-raised);
   border-color: var(--border-strong);
-  box-shadow: 0 0 20px var(--glow);
+  box-shadow: 0 0 20px var(--glow-soft);
   color: var(--text);
+}
+
+.nav-item__link.active .nav-item__icon {
+  color: var(--accent);
 }
 
 .nav-item__icon {
@@ -184,6 +206,14 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    transition: background-color 0.2s ease, backdrop-filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .shell__mobile-bar--scrolled {
+    background: rgba(16, 16, 18, 0.75);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
   .shell__mobile-bar button {

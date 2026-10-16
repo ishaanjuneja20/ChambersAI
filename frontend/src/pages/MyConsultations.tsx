@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteAllSessions, deleteSession, listSessions, type ConsultationSession } from "../lib/sessionsStore";
+import Reveal from "../components/Reveal";
+import Decorations from "../components/Decorations";
 import "./MyConsultations.css";
 
 export default function MyConsultations() {
@@ -30,6 +32,7 @@ export default function MyConsultations() {
 
   return (
     <div className="consultations-page">
+      <Decorations />
       <div className="consultations-page__header">
         <h1>My Consultations</h1>
         {sessions.length > 0 && (
@@ -50,8 +53,8 @@ export default function MyConsultations() {
         <p className="empty-note">{sessions.length === 0 ? 'No consultations yet. Start one from "New Consultation".' : "No matches."}</p>
       ) : (
         <ul className="session-list">
-          {filtered.map((s) => (
-            <li key={s.id} className="session-list__item card">
+          {filtered.map((s, i) => (
+            <Reveal as="li" key={s.id} className="session-list__item card" delay={Math.min(i, 6) * 40}>
               <div>
                 <strong>{s.title}</strong>
                 <p className="session-list__meta">
@@ -67,7 +70,7 @@ export default function MyConsultations() {
                   Delete
                 </button>
               </div>
-            </li>
+            </Reveal>
           ))}
         </ul>
       )}

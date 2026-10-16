@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Home, MessageSquarePlus, History, Settings, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-react";
 import "./AppShell.css";
@@ -85,8 +85,16 @@ function Sidebar({ collapsed, onToggleCollapse, onRequestClose }: SidebarProps) 
 export default function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => writeCollapsed(collapsed), [collapsed]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -127,7 +135,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       <div className="shell__main">
-        <div className="shell__mobile-bar">
+        <div className={`shell__mobile-bar${scrolled ? " shell__mobile-bar--scrolled" : ""}`}>
           <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Menu size={22} />
           </button>
@@ -135,7 +143,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <img src="/brand/logo-white.png" alt="ChambersAI" />
           </span>
         </div>
-        <div className="shell__content">{children}</div>
+        <div className="shell__content page-fade" key={location.pathname}>
+          {children}
+        </div>
       </div>
     </div>
   );

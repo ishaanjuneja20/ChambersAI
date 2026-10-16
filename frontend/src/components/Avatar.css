@@ -42,12 +42,12 @@
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  border: 3px solid var(--text);
+  border: 3px solid var(--accent-violet);
   pointer-events: none;
 }
 
 .avatar__ring--listening {
-  box-shadow: 0 0 18px var(--glow-soft);
+  box-shadow: 0 0 18px var(--glow-blue);
   animation: avatar-pulse 1.1s ease-in-out infinite;
 }
 

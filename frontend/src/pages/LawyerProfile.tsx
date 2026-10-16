@@ -6,6 +6,8 @@ import type { Lawyer } from "../lib/demoLawyers";
 import PlaceholderPortrait from "../components/PlaceholderPortrait";
 import { useImageFallback } from "../hooks/useImageFallback";
 import PagePlaceholder from "../components/PagePlaceholder";
+import Decorations from "../components/Decorations";
+import Reveal from "../components/Reveal";
 import "./LawyerProfile.css";
 
 export default function LawyerProfile() {
@@ -40,12 +42,13 @@ export default function LawyerProfile() {
 
   return (
     <div className="lawyer-profile">
+      <Decorations />
       <div className="lawyer-profile__header">
         <div className="lawyer-profile__portrait">
           {failed ? (
             <PlaceholderPortrait seed={lawyer.id} />
           ) : (
-            <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt="" onError={onError} />
+            <img className="lawyer-profile__photo" src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt="" onError={onError} />
           )}
         </div>
 
@@ -78,33 +81,33 @@ export default function LawyerProfile() {
 
       <p className="lawyer-profile__persona-label">AI advocate persona. Not a real person or a licensed advocate.</p>
 
-      <div className="lawyer-profile__section">
+      <Reveal as="div" className="lawyer-profile__section">
         <h2>About</h2>
         <p>{lawyer.description}</p>
-      </div>
+      </Reveal>
 
-      <div className="lawyer-profile__section">
+      <Reveal as="div" className="lawyer-profile__section">
         <h2>Experience</h2>
         <p>{lawyer.experience}</p>
-      </div>
+      </Reveal>
 
-      <div className="lawyer-profile__section">
+      <Reveal as="div" className="lawyer-profile__section">
         <h2>Specializations</h2>
         <ul className="chip-list">
           {lawyer.specializations.map((s) => (
             <li key={s}>{s}</li>
           ))}
         </ul>
-      </div>
+      </Reveal>
 
-      <div className="lawyer-profile__section">
+      <Reveal as="div" className="lawyer-profile__section">
         <h2>Languages</h2>
         <ul className="chip-list">
           {lawyer.languages.map((l) => (
             <li key={l}>{l}</li>
           ))}
         </ul>
-      </div>
+      </Reveal>
     </div>
   );
 }

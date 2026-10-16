@@ -12,12 +12,18 @@
 }
 
 .home-page {
+  position: relative;
   max-width: 1040px;
   margin: 0 auto;
   padding: 1.75rem 1.5rem 3rem;
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+}
+
+.home-page > *:not(.decorations) {
+  position: relative;
+  z-index: 1;
 }
 
 .home-page h1 {
@@ -57,7 +63,9 @@
 }
 
 .describe-box__input:focus-visible {
-  border-color: var(--text);
+  border-color: var(--accent-violet);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--glow-soft);
 }
 
 .describe-box__actions {
@@ -67,10 +75,10 @@
   flex-wrap: wrap;
 }
 
-/* A key moment (the recommended-lawyer highlight) — one of the few places glow is allowed. */
+/* A key moment (the recommended-lawyer highlight) — the gradient accent's main standout use. */
 .match-banner {
   background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--accent-violet);
   box-shadow: 0 0 20px var(--glow-soft);
   border-radius: 0.8rem;
   padding: 0.75rem 1rem;

@@ -34,10 +34,10 @@ interface Blob {
 }
 
 const BLOBS: Blob[] = [
-  { seed: 1.3, color: "255,255,255", baseR: 0.34, band: "low" }, // pure white
-  { seed: 7.1, color: "210,215,224", baseR: 0.3, band: "mid" }, // silver
-  { seed: 4.6, color: "196,208,224", baseR: 0.28, band: "high" }, // soft cool-white, faint iridescent hint
-  { seed: 11.9, color: "236,230,222", baseR: 0.2, band: "mid" }, // warm white hint
+  { seed: 1.3, color: "255,255,255", baseR: 0.34, band: "low" }, // soft white
+  { seed: 7.1, color: "56,63,252", baseR: 0.3, band: "mid" }, // blue
+  { seed: 4.6, color: "92,50,252", baseR: 0.28, band: "high" }, // violet
+  { seed: 11.9, color: "173,19,251", baseR: 0.2, band: "mid" }, // magenta
 ];
 
 interface Ribbon {
@@ -53,10 +53,10 @@ interface Ribbon {
 }
 
 const RIBBONS: Ribbon[] = [
-  { seed: 0.4, freqA: 1.6, freqB: 2.9, speedA: 0.6, speedB: -0.35, dir: 1, phase: 0, hue: "255,255,255", band: "low" }, // white
-  { seed: 3.2, freqA: 2.3, freqB: 1.1, speedA: -0.45, speedB: 0.5, dir: -1, phase: 1.4, hue: "214,219,230", band: "mid" }, // silver
-  { seed: 6.7, freqA: 1.1, freqB: 2.6, speedA: 0.3, speedB: 0.7, dir: 1, phase: 2.6, hue: "200,214,230", band: "high" }, // cool-white, faint iridescent hint
-  { seed: 9.1, freqA: 2.8, freqB: 1.4, speedA: -0.55, speedB: -0.2, dir: -1, phase: 4.1, hue: "255,255,255", band: "mid" }, // white
+  { seed: 0.4, freqA: 1.6, freqB: 2.9, speedA: 0.6, speedB: -0.35, dir: 1, phase: 0, hue: "255,255,255", band: "low" }, // soft white
+  { seed: 3.2, freqA: 2.3, freqB: 1.1, speedA: -0.45, speedB: 0.5, dir: -1, phase: 1.4, hue: "56,63,252", band: "mid" }, // blue
+  { seed: 6.7, freqA: 1.1, freqB: 2.6, speedA: 0.3, speedB: 0.7, dir: 1, phase: 2.6, hue: "92,50,252", band: "high" }, // violet
+  { seed: 9.1, freqA: 2.8, freqB: 1.4, speedA: -0.55, speedB: -0.2, dir: -1, phase: 4.1, hue: "173,19,251", band: "mid" }, // magenta
 ];
 
 export function drawBubbleFrame(ctx: CanvasRenderingContext2D, input: BubbleFrameInput): void {

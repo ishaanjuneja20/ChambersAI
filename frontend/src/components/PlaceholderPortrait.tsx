@@ -16,7 +16,7 @@ export default function PlaceholderPortrait({ seed }: { seed: string }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(160deg, ${tints[index]}, #050506)`,
+        background: `linear-gradient(160deg, ${tints[index]}, var(--bg))`,
       }}
       aria-hidden="true"
     >

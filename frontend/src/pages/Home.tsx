@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import LawyerCard from "../components/LawyerCard";
 import VoiceButton from "../components/voice/VoiceButton";
+import Decorations from "../components/Decorations";
+import Reveal from "../components/Reveal";
 import { getLawyers } from "../lib/lawyersApi";
 import type { Lawyer } from "../lib/demoLawyers";
 import { matchLawyer } from "../lib/matchApi";
@@ -38,6 +40,7 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      <Decorations />
       <div className="home-page__intro">
         <h1>{user?.isDemo ? "Welcome back" : "What's going on?"}</h1>
         <p>Describe your situation, or pick a lawyer below. We'll highlight a good match for you.</p>
@@ -71,8 +74,10 @@ export default function Home() {
       )}
 
       <div className="lawyer-grid">
-        {lawyers.map((lawyer) => (
-          <LawyerCard key={lawyer.id} lawyer={lawyer} matched={matched?.lawyerId === lawyer.id} />
+        {lawyers.map((lawyer, i) => (
+          <Reveal key={lawyer.id} delay={Math.min(i, 6) * 40}>
+            <LawyerCard lawyer={lawyer} matched={matched?.lawyerId === lawyer.id} />
+          </Reveal>
         ))}
       </div>
     </div>

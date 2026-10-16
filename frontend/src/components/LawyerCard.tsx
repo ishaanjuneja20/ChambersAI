@@ -3,24 +3,31 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { Lawyer } from "../lib/demoLawyers";
 import PlaceholderPortrait from "./PlaceholderPortrait";
 import { useImageFallback } from "../hooks/useImageFallback";
+import { useSpotlight } from "../hooks/useSpotlight";
 import "./LawyerCard.css";
 
 export default function LawyerCard({ lawyer, matched }: { lawyer: Lawyer; matched?: boolean }) {
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
   const { failed, onError } = useImageFallback();
+  const spotlightRef = useSpotlight<HTMLButtonElement>();
 
   return (
-    <button type="button" className={`lawyer-card${matched ? " lawyer-card--matched" : ""}`} onClick={() => navigate(`/lawyers/${lawyer.id}`)}>
+    <button
+      ref={spotlightRef}
+      type="button"
+      className={`lawyer-card spotlight-card${matched ? " lawyer-card--matched" : ""}`}
+      onClick={() => navigate(`/lawyers/${lawyer.id}`)}
+    >
       <motion.div
         className="lawyer-card__portrait-wrap"
-        whileHover={prefersReducedMotion ? undefined : { scale: 1.04, y: -4, boxShadow: "0 10px 30px rgba(255,255,255,0.22)" }}
+        whileHover={prefersReducedMotion ? undefined : { scale: 1.04, y: -4 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         {failed ? (
           <PlaceholderPortrait seed={lawyer.id} />
         ) : (
-          <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt="" onError={onError} />
+          <img className="lawyer-card__photo" src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt="" onError={onError} />
         )}
       </motion.div>
       <p className="lawyer-card__name">{lawyer.name}</p>

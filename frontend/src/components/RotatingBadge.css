@@ -1,0 +1,42 @@
+.rotating-badge {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.rotating-badge__ring {
+  position: absolute;
+  inset: 0;
+  animation: rotating-badge-spin 24s linear infinite;
+}
+
+.rotating-badge__ring text {
+  fill: var(--text-faint);
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rotating-badge__star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotating-badge__ring {
+    animation: none;
+  }
+}
+
+@keyframes rotating-badge-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

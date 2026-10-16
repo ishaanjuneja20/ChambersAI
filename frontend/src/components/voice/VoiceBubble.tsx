@@ -138,7 +138,7 @@ export default function VoiceBubble({
         for (let i = 0; i < freqData.length; i++) sum += freqData[i];
         level = sum / freqData.length / 255;
       }
-      el.style.setProperty("--glow", String(0.3 + level * 0.7));
+      el.style.setProperty("--rim-glow", String(0.3 + level * 0.7));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

@@ -3,6 +3,7 @@
   text-align: left;
   background: none;
   border: none;
+  border-radius: 1rem;
   padding: 0;
   cursor: pointer;
   font: inherit;
@@ -10,25 +11,47 @@
 }
 
 .lawyer-card__portrait-wrap {
+  position: relative;
+  z-index: 1;
   aspect-ratio: 1 / 1;
   border-radius: 1rem;
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.lawyer-card__portrait-wrap img {
+.lawyer-card:hover .lawyer-card__portrait-wrap,
+.lawyer-card:focus-visible .lawyer-card__portrait-wrap {
+  border-color: var(--accent-violet);
+  box-shadow: 0 10px 30px var(--glow-soft);
+}
+
+.lawyer-card__portrait-wrap img,
+.lawyer-card__portrait-wrap > div {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-/* Recommended-lawyer highlight — a key moment, one of the few places glow is allowed. */
+.lawyer-card__photo {
+  filter: grayscale(1) contrast(1.08);
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.lawyer-card:hover .lawyer-card__photo,
+.lawyer-card:focus-visible .lawyer-card__photo,
+.lawyer-card:active .lawyer-card__photo {
+  filter: grayscale(0) contrast(1.02);
+  transform: scale(1.05);
+}
+
+/* Recommended-lawyer highlight — a key moment, the gradient accent. */
 .lawyer-card--matched .lawyer-card__portrait-wrap {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--accent-violet);
   outline-offset: 3px;
-  box-shadow: 0 0 24px var(--glow);
+  box-shadow: 0 0 24px var(--glow-blue);
 }
 
 .lawyer-card__name {
@@ -45,15 +68,23 @@
 }
 
 .lawyer-card__badge {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   margin-top: 0.4rem;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: var(--surface-raised);
-  color: var(--text);
-  border: 1px solid var(--border-strong);
+  background: var(--grad-primary);
+  color: #fff;
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 0.18rem 0.55rem;
+}
+
+.lawyer-card__name,
+.lawyer-card__practice {
+  position: relative;
+  z-index: 1;
 }

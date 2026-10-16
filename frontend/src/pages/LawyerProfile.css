@@ -1,7 +1,13 @@
 .lawyer-profile {
+  position: relative;
   max-width: 880px;
   margin: 0 auto;
   padding: 1.75rem 1.5rem 3rem;
+}
+
+.lawyer-profile > *:not(.decorations) {
+  position: relative;
+  z-index: 1;
 }
 
 .lawyer-profile__header {
@@ -26,6 +32,16 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.lawyer-profile__photo {
+  filter: grayscale(1) contrast(1.08);
+  transition: filter 0.3s ease;
+}
+
+.lawyer-profile__portrait:hover .lawyer-profile__photo,
+.lawyer-profile__portrait:active .lawyer-profile__photo {
+  filter: grayscale(0) contrast(1.02);
 }
 
 .lawyer-profile__identity {
@@ -109,4 +125,10 @@
   padding: 0.35rem 0.85rem;
   font-size: 0.85rem;
   font-weight: 600;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chip-list li:hover {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 10px var(--glow-soft);
 }
