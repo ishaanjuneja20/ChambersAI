@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Square, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import Avatar from "../components/Avatar";
 import SourcesPanel from "../components/SourcesPanel";
 import HandoffBanner from "../components/HandoffBanner";
-import VoiceButton, { type VoiceButtonHandle } from "../components/voice/VoiceButton";
+import MeetInputBar from "../components/MeetInputBar";
+import { type VoiceButtonHandle } from "../components/voice/VoiceButton";
 import type { ConsultStatus } from "../lib/consultTypes";
 import { useConsultationSession } from "../hooks/useConsultationSession";
 import { useSessionId } from "../hooks/useSessionId";
@@ -106,47 +107,24 @@ export default function Meet() {
           ))}
           {liveCaption && <p className="meet__turn meet__turn--lawyer">{liveCaption.text.slice(0, liveCaption.visibleChars) || "…"}</p>}
         </div>
-        <p className="meet__disclaimer">
-          General information, not legal advice.
-          {!speechSupported && " (Voice playback isn't supported in this browser — captions still work.)"}
-        </p>
 
         <div className="meet__controls">
-          <div className="meet__controls-row">
-            <textarea
-              className="describe-box__input"
-              rows={2}
-              placeholder="Type a question, or hold the mic / Space bar to talk…"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              disabled={status !== "idle"}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleTextSubmit();
-                }
-              }}
-            />
-          </div>
-          <div className="meet__controls-row">
-            <div style={{ position: "relative" }}>
-              <VoiceButton
-                ref={voiceButtonRef}
-                anchor="above"
-                disabled={status !== "idle" && status !== "listening"}
-                processing={status === "processing"}
-                onResult={(result) => void submitQuestion(result)}
-                onListeningChange={(isListening) => setStatus(isListening ? "listening" : "idle")}
-              />
-            </div>
-            <button type="button" className="btn btn--primary" onClick={handleTextSubmit} disabled={status !== "idle" || !text.trim()}>
-              Send
-            </button>
-            <button type="button" className="btn btn--outline meet__stop" onClick={handleStop} disabled={status === "idle"}>
-              <Square size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
-              Stop
-            </button>
-          </div>
+          <MeetInputBar
+            sessionId={sessionId}
+            text={text}
+            onTextChange={setText}
+            onSubmit={handleTextSubmit}
+            onStop={handleStop}
+            status={status}
+            onVoiceResult={(result) => void submitQuestion(result)}
+            onListeningChange={(isListening) => setStatus(isListening ? "listening" : "idle")}
+            voiceDisabled={status !== "idle" && status !== "listening"}
+            voiceButtonRef={voiceButtonRef}
+          />
+          <p className="meet__disclaimer">
+            General information, not legal advice.
+            {!speechSupported && " (Voice playback isn't supported in this browser — captions still work.)"}
+          </p>
           <div className="meet__controls-row">
             <button
               type="button"

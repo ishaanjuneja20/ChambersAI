@@ -24,6 +24,9 @@ export interface VoiceButtonProps {
 
 export interface VoiceButtonHandle {
   cancel: () => void;
+  /** Starts hands-free listening if idle, or stops and sends if currently listening. For a
+   * trigger other than this button itself (e.g. a separate tap-to-toggle control). */
+  toggleHandsFree: () => void;
 }
 
 function isTypingTarget(): boolean {
@@ -65,7 +68,12 @@ const VoiceButton = forwardRef<VoiceButtonHandle, VoiceButtonProps>(function Voi
     onListeningChange?.(false);
   };
 
-  useImperativeHandle(ref, () => ({ cancel: cancelListening }));
+  const toggleHandsFree = () => {
+    if (listening) void finishListening();
+    else void beginListening();
+  };
+
+  useImperativeHandle(ref, () => ({ cancel: cancelListening, toggleHandsFree }));
 
   const onPressStart = () => {
     if (disabled || processing) return;
