@@ -171,10 +171,6 @@ export default function IntroSplash({ forcePlay = false, onDone }: IntroSplashPr
           }
         />
       </motion.div>
-
-      <button type="button" className="intro__skip" onClick={skip}>
-        Skip
-      </button>
     </motion.div>
   );
 }
