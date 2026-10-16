@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Volume2 } from "lucide-react";
 import { getLawyer } from "../lib/lawyersApi";
 import type { Lawyer } from "../lib/demoLawyers";
 import PlaceholderPortrait from "../components/PlaceholderPortrait";
@@ -33,13 +32,6 @@ export default function LawyerProfile() {
     return <PagePlaceholder title="Lawyer not found" note="This profile doesn't exist." />;
   }
 
-  const handleHearVoice = () => {
-    if (!lawyer.sampleAudioUrl) return;
-    new Audio(lawyer.sampleAudioUrl).play().catch(() => {
-      /* ignore: sample not playable in this browser/deployment */
-    });
-  };
-
   return (
     <div className="lawyer-profile">
       <Decorations />
@@ -56,17 +48,6 @@ export default function LawyerProfile() {
           <h1>{lawyer.name}</h1>
           <p className="lawyer-profile__type">{lawyer.practice} advocate persona</p>
           <p>{lawyer.tagline}</p>
-
-          <button
-            type="button"
-            className="btn btn--outline lawyer-profile__hear-voice"
-            onClick={handleHearVoice}
-            disabled={!lawyer.sampleAudioUrl}
-            title={lawyer.sampleAudioUrl ? "Play a voice sample" : "Voice sample not available in demo mode"}
-          >
-            <Volume2 size={16} style={{ marginRight: 6, verticalAlign: "-3px" }} />
-            Hear voice
-          </button>
         </div>
 
         <div className="lawyer-profile__cta">
