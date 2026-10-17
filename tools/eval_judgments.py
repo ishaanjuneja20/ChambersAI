@@ -68,6 +68,7 @@ def load_queries(qs, embed, root, rewrite):
         for q in qs:
             if old.get(q["id"], q["question"]) == q["question"]:      # missing, or an earlier failed call
                 got = rewrite_query(q["question"], target="judgments")
+                time.sleep(4.5)                                        # stay under the free tier's 15 requests a minute
                 if got != q["question"]:                               # a failed call returns the question unchanged: don't cache it
                     old[q["id"]] = got
             rew[q["id"]] = old.get(q["id"], q["question"])
@@ -96,6 +97,8 @@ def main():
     ap.add_argument("--root", default=".")
     ap.add_argument("--questions", default=None)
     ap.add_argument("--no-brute", action="store_true")
+    ap.add_argument("--grid", default="12,50,100,200,400", help="comma separated n_cases values for the two-stage sweep")
+    ap.add_argument("--weights", default="0,0.25,0.5", help="comma separated card weights for the two-stage sweep")
     ap.add_argument("--rewrite", action="store_true",
                     help="also search with a Gemini rewrite of each question (needs GEMINI_API_KEY; sends the TEST questions only)")
     a = ap.parse_args()
@@ -134,14 +137,17 @@ def main():
 
     # two-stage settings
     print("\nTwo-stage: right case in top 5 hits (case) / gold paragraph in top 5 (para, point questions)")
-    for n_cases in (5, 12, 25, 50):
-        for cw in (0.0, 0.25, 0.5):
+    grid = [int(x) for x in a.grid.split(",")]
+    weights = [float(x) for x in a.weights.split(",")]
+    for n_cases in grid:
+        for cw in weights:
             case_hit = para_hit = n_point = 0
             for i, q in real:
                 hits = J.search_judgments(q["question"], q["lawyer"], 5, index, lambda t, i=i: rows_of(i, t),
                                           rewritten=rewritten[i], n_cases=n_cases, card_weight=cw)
                 ids = [h["chunk"]["id"] for h in hits]
-                case_hit += q["gold_cases"][0] in {case_of(x) for x in ids}
+                ok_cases = set(q.get("acceptable_cases") or q["gold_cases"])          # reviewed set if present
+                case_hit += bool(ok_cases & {case_of(x) for x in ids})
                 if q["type"] == "point":
                     n_point += 1
                     para_hit += bool(set(ids) & set(q["gold_chunks"]))
