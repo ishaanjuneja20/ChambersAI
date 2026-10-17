@@ -45,8 +45,11 @@ def rewrite_query(question: str, post=_post, target: str = "statutes") -> str:
     body = {"contents": [{"role": "user", "parts": [{"text": prompt + question}]}],
             "generationConfig": {"temperature": 0, "maxOutputTokens": 400}}
     try:
-        text = call_gemini(body, post, model=os.environ.get("GEMINI_REWRITE_MODEL") or (None if os.environ.get("GEMINI_MODELS") else REWRITE_MODEL))
+        text = call_gemini(body, post, model=os.environ.get("GEMINI_REWRITE_MODEL") or None)   # None = the model chain
     except GenerationError:
+        if os.environ.get("CHAMBERS_TRACE"):
+            import sys
+            print("[gemini] rewrite failed, using the question as asked", file=sys.stderr, flush=True)
         return question
     line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""
     return line[:300] or question

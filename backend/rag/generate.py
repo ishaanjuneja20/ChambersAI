@@ -19,7 +19,6 @@ NO_SOURCE = "NO_SOURCE"                     # the model's signal that the source
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-lite-latest"
 FALLBACK_MODEL = "gemini-3.1-flash-lite"        # second lite model: same speed class, its own free-tier quota
-LAST_RESORT_MODEL = "gemini-2.5-flash-lite"     # third lite model: small free quota (10 RPM / 20 RPD on the demo key)
 RETRY_CODES = (429, 500, 502, 503, 504)
 WAITS = (1, 3)                               # seconds between attempts on a busy model
 LANG_NAME = {"en": "English", "hi": "Hindi (Devanagari script)"}
@@ -104,7 +103,14 @@ def model_chain() -> list[str]:
     chain = [m for m in re.split(r"[\s,;]+", raw) if m]
     if os.environ.get("GEMINI_MODELS"):
         return chain
-    return chain[:1] if chain else [DEFAULT_MODEL, FALLBACK_MODEL, LAST_RESORT_MODEL]
+    return chain[:1] if chain else [DEFAULT_MODEL, FALLBACK_MODEL]
+
+
+def _trace(model: str, status, t0: float) -> None:
+    """CHAMBERS_TRACE=1: one line per Gemini attempt on stderr (model, status code, seconds). No content, no keys."""
+    if os.environ.get("CHAMBERS_TRACE"):
+        import sys
+        print(f"[gemini] {model} -> {status} in {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
 
 
 def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
@@ -120,11 +126,16 @@ def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
         for wait in (0,) + WAITS:
             time.sleep(wait)
             for key in keys:
+                t0 = time.time()
                 try:
                     data = post(API.format(model=m), key, body)
+                    _trace(m, "ok", t0)
                     break
                 except GenerationError as e:
                     last = e
+                    _trace(m, e.code or "err", t0)
+                    if e.code == 404 and m != models[-1]:
+                        break                   # model retired / not available to this key: next model
                     if e.code == 429 and key != keys[-1]:
                         continue                # this key is out of quota: try the next one straight away
                     if e.code not in RETRY_CODES:
@@ -132,7 +143,7 @@ def call_gemini(body: dict, post=_post, model: str | None = None) -> str:
                     break
             if data is not None:
                 break
-            if last is not None and last.code == 429 and m != models[-1]:
+            if last is not None and last.code in (404, 429) and m != models[-1]:
                 break                           # every key is over quota for this model: next model, no waiting
         if data is not None:
             break
