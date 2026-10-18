@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D avatar test</title>
+<style>
+  :root { --bg:#f6f5f2; --fg:#1d1d1b; --muted:#6b6a65; --card:#fff; --line:#dcdad3; --accent:#2f5d50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161715; --fg:#ecebe6; --muted:#9d9b93; --card:#21221f; --line:#383a35; --accent:#7fc4ae; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; } p.sub { margin:0 0 14px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,320px); gap:16px; align-items:start; }
+  .grid > div { min-width:0; }
+  .col-stage { position:sticky; top:8px; z-index:2; }
+  @media (max-width:820px) { .grid { grid-template-columns:minmax(0,1fr); } .col-stage { background:var(--bg); padding-bottom:6px; } #view { height:46vh !important; } }
+  #view { width:100%; height:72vh; min-height:280px; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; position:relative; }
+  #view canvas { display:block; width:100%; height:100%; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+  label { display:block; margin:10px 0 2px; font-size:13px; color:var(--muted); }
+  input[type=range] { width:100%; height:28px; } input[type=file] { width:100%; font-size:13px; }
+  button { font:inherit; padding:10px 14px; min-height:40px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .meter { height:10px; background:var(--line); border-radius:5px; overflow:hidden; margin-top:8px; }
+  .meter i { display:block; height:100%; width:0; background:var(--accent); }
+  #status { margin:8px 0 0; font-size:13px; color:var(--muted); min-height:20px; }
+  audio { width:100%; margin-top:6px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.1.2/lib/three-vrm.module.js"
+} }
+</script>
+</head>
+<body>
+<main>
+  <h1>3D avatar test</h1>
+  <p class="sub">Load a .vrm model and a voice. The mouth shapes follow the sound. Everything runs in your browser; nothing is uploaded.</p>
+  <div class="grid">
+    <div class="col-stage"><div id="view"></div><p id="status">1. Choose a .vrm model on the right.</p></div>
+    <div>
+      <div class="card"><h2>1. Model (.vrm)</h2><input type="file" id="vrmFile" accept=".vrm,.glb"></div>
+      <div class="card"><h2>2. Voice</h2>
+        <input type="file" id="audFile" accept="audio/*"><audio id="aud" controls></audio>
+        <button id="mic" style="margin-top:8px">Use the microphone instead</button>
+        <div class="meter"><i id="bar"></i></div></div>
+      <div class="card"><h2>3. Tune</h2>
+        <label>Manual mouth opening (no sound playing)</label><input type="range" id="manual" min="0" max="100" value="0">
+        <label>Sensitivity to loudness</label><input type="range" id="gain" min="1" max="20" value="8">
+        <label>Camera height</label><input type="range" id="camy" min="-50" max="50" value="0">
+        <label>Camera distance</label><input type="range" id="camz" min="30" max="150" value="70">
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+
+const $ = (id) => document.getElementById(id);
+const status = (t) => { $("status").textContent = t; };
+const view = $("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
+scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+const light = new THREE.DirectionalLight(0xffffff, 1.6); light.position.set(1, 2, 2); scene.add(light);
+
+function resize() {
+  const w = view.clientWidth, h = view.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize); resize();
+
+let vrm = null, headY = 1.45;
+const loader = new GLTFLoader();
+loader.register((p) => new VRMLoaderPlugin(p));
+
+$("vrmFile").onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f);
+  status("Loading the model...");
+  loader.load(url, (gltf) => {
+    URL.revokeObjectURL(url);
+    if (vrm) { scene.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); }
+    vrm = gltf.userData.vrm;
+    if (!vrm) { status("That file is not a VRM model."); return; }
+    VRMUtils.rotateVRM0(vrm);
+    scene.add(vrm.scene);
+    const head = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode("head");
+    if (head) { const v = new THREE.Vector3(); head.getWorldPosition(v); headY = v.y; }
+    // relaxed arms so it does not stand in a T-pose
+    const lu = vrm.humanoid.getNormalizedBoneNode("leftUpperArm"), ru = vrm.humanoid.getNormalizedBoneNode("rightUpperArm");
+    if (lu) lu.rotation.z = 1.2; if (ru) ru.rotation.z = -1.2;
+    status("Model loaded. Now play a voice, use the microphone, or drag the manual slider.");
+  }, undefined, (err) => { status("Could not load the model: " + (err.message || err)); });
+};
+
+// ---- audio
+let audioCtx = null, analyser = null, tdata = null, fdata = null, srcNode = null, playing = false, usingMic = false, micStream = null;
+function ensureCtx() {
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; tdata = new Float32Array(analyser.fftSize); fdata = new Uint8Array(analyser.frequencyBinCount); }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+$("audFile").onchange = (e) => { const f = e.target.files[0]; if (f) { $("aud").src = URL.createObjectURL(f); status("Press play on the voice."); } };
+$("aud").addEventListener("play", () => {
+  try { ensureCtx(); if (!srcNode) { srcNode = audioCtx.createMediaElementSource($("aud")); srcNode.connect(analyser); analyser.connect(audioCtx.destination); } playing = true; usingMic = false; }
+  catch (err) { status("Audio could not start: " + err.message); }
+});
+$("aud").addEventListener("pause", () => { playing = false; });
+$("aud").addEventListener("ended", () => { playing = false; });
+$("mic").onclick = () => {
+  if (usingMic) { usingMic = false; micStream && micStream.getTracks().forEach((t) => t.stop()); $("mic").textContent = "Use the microphone instead"; return; }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => { ensureCtx(); micStream = s; audioCtx.createMediaStreamSource(s).connect(analyser); usingMic = true; $("mic").textContent = "Stop the microphone"; })
+    .catch((err) => status("The microphone is not available here (" + err.name + "). Use a voice file instead."));
+};
+
+// returns { level 0..1, centroid 0..1 } or null
+function analyse() {
+  if (!analyser || !(playing || usingMic)) return null;
+  analyser.getFloatTimeDomainData(tdata);
+  let s = 0; for (let i = 0; i < tdata.length; i++) s += tdata[i] * tdata[i];
+  const level = Math.min(1, Math.sqrt(s / tdata.length) * parseFloat($("gain").value) * 1.4);
+  analyser.getByteFrequencyData(fdata);
+  const sr = audioCtx.sampleRate, binHz = sr / analyser.fftSize;
+  let num = 0, den = 0;
+  for (let i = 2; i < fdata.length; i++) { const hz = i * binHz; if (hz > 4000) break; num += hz * fdata[i]; den += fdata[i]; }
+  const centroid = den > 0 ? Math.min(1, Math.max(0, (num / den - 300) / 2200)) : 0.3;
+  return { level, centroid };
+}
+
+const SHAPES = ["ou", "oh", "aa", "ee", "ih"]; // low to high spectral centroid
+const cur = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
+let level = 0, centroid = 0.3, blinkT = 2, blink = 0, t0 = performance.now();
+
+function setMouth(dt, a) {
+  const target = a ? a.level : parseInt($("manual").value, 10) / 100;
+  if (a) centroid += (a.centroid - centroid) * 0.2;
+  level += (target - level) * (target > level ? 0.6 : 0.25);
+  $("bar").style.width = Math.round(level * 100) + "%";
+  // spread the opening across the two nearest mouth shapes
+  const pos = centroid * (SHAPES.length - 1), lo = Math.floor(pos), hi = Math.min(SHAPES.length - 1, lo + 1), f = pos - lo;
+  const goal = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
+  goal[SHAPES[lo]] += level * (1 - f); goal[SHAPES[hi]] += level * f;
+  if (!a) { goal.aa = level; goal.ou = goal.oh = goal.ee = goal.ih = 0; }
+  for (const k in cur) { cur[k] += (goal[k] - cur[k]) * Math.min(1, dt * 30); if (vrm && vrm.expressionManager) vrm.expressionManager.setValue(k, Math.min(1, cur[k])); }
+}
+
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.1, (now - t0) / 1000); t0 = now;
+  const a = analyse();
+  setMouth(dt, a);
+  if (vrm) {
+    const em = vrm.expressionManager;
+    blinkT -= dt; if (blinkT < 0) { blink = 1; blinkT = 2 + Math.random() * 3; }
+    blink = Math.max(0, blink - dt * 8); em && em.setValue("blink", blink > 0.5 ? 1 : blink * 2);
+    const head = vrm.humanoid.getNormalizedBoneNode("head"), spine = vrm.humanoid.getNormalizedBoneNode("spine");
+    const tt = now / 1000, talk = level;
+    if (head) { head.rotation.y = Math.sin(tt * 0.6) * 0.06; head.rotation.x = Math.sin(tt * 0.9) * 0.03 + talk * 0.05; }
+    if (spine) spine.rotation.z = Math.sin(tt * 0.5) * 0.015;
+    vrm.update(dt);
+  }
+  const cy = headY + parseInt($("camy").value, 10) / 100 * 0.5 - 0.05, cz = parseInt($("camz").value, 10) / 100 * 1.6;
+  camera.position.set(0, cy, cz); camera.lookAt(0, cy, 0);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
