@@ -1,0 +1,420 @@
+[
+ {
+  "id": "x1-en",
+  "pair": "x1",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "My employer fired me without any notice. What can I do?",
+  "gold": [
+   "IndustrialRelationsCode_2020:70"
+  ]
+ },
+ {
+  "id": "x1-hi",
+  "pair": "x1",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मेरी कंपनी ने मुझे बिना नोटिस के निकाल दिया, मैं क्या कर सकता हूँ?",
+  "gold": [
+   "IndustrialRelationsCode_2020:70"
+  ]
+ },
+ {
+  "id": "x2-en",
+  "pair": "x2",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "answerable",
+  "question": "I bought a defective phone and the shop will not refund my money. What should I do?",
+  "gold": [
+   "ConsumerProtectionAct_2019:39",
+   "ConsumerProtectionAct_2019:35"
+  ]
+ },
+ {
+  "id": "x2-hi",
+  "pair": "x2",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मैंने एक खराब फोन खरीदा और दुकानदार पैसे वापस नहीं कर रहा है, मैं क्या करूँ?",
+  "gold": [
+   "ConsumerProtectionAct_2019:39",
+   "ConsumerProtectionAct_2019:35"
+  ]
+ },
+ {
+  "id": "x3-en",
+  "pair": "x3",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "My husband beats me. What protection can I get from the law?",
+  "gold": [
+   "DomesticViolenceAct_2005:18",
+   "DomesticViolenceAct_2005:12"
+  ]
+ },
+ {
+  "id": "x3-hi",
+  "pair": "x3",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मेरा पति मुझे मारता-पीटता है, मुझे कानून से क्या सुरक्षा मिल सकती है?",
+  "gold": [
+   "DomesticViolenceAct_2005:18",
+   "DomesticViolenceAct_2005:12"
+  ]
+ },
+ {
+  "id": "x4-en",
+  "pair": "x4",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How can we get a divorce if both of us agree?",
+  "gold": [
+   "HinduMarriageAct_1955:13B",
+   "SpecialMarriageAct_1954:28"
+  ]
+ },
+ {
+  "id": "x4-hi",
+  "pair": "x4",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "अगर पति-पत्नी दोनों राज़ी हों तो तलाक कैसे मिलेगा?",
+  "gold": [
+   "HinduMarriageAct_1955:13B",
+   "SpecialMarriageAct_1954:28"
+  ]
+ },
+ {
+  "id": "x5-en",
+  "pair": "x5",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "My landlord wants to throw me out without giving any notice. Is that allowed?",
+  "gold": [
+   "TransferOfPropertyAct_1882:106",
+   "TransferOfPropertyAct_1882:111"
+  ]
+ },
+ {
+  "id": "x5-hi",
+  "pair": "x5",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मकान मालिक मुझे बिना नोटिस दिए घर से निकालना चाहता है, क्या यह सही है?",
+  "gold": [
+   "TransferOfPropertyAct_1882:106",
+   "TransferOfPropertyAct_1882:111"
+  ]
+ },
+ {
+  "id": "x6-en",
+  "pair": "x6",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Is it compulsory to register the sale of my house?",
+  "gold": [
+   "RegistrationAct_1908:17",
+   "TransferOfPropertyAct_1882:54"
+  ]
+ },
+ {
+  "id": "x6-hi",
+  "pair": "x6",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या मकान की बिक्री का दस्तावेज़ रजिस्टर कराना ज़रूरी है?",
+  "gold": [
+   "RegistrationAct_1908:17",
+   "TransferOfPropertyAct_1882:54"
+  ]
+ },
+ {
+  "id": "x7-en",
+  "pair": "x7",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "The police are refusing to register my FIR. What should I do?",
+  "gold": [
+   "BNSS_2023:173"
+  ]
+ },
+ {
+  "id": "x7-hi",
+  "pair": "x7",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "पुलिस मेरी एफआईआर दर्ज नहीं कर रही है, मैं क्या करूँ?",
+  "gold": [
+   "BNSS_2023:173"
+  ]
+ },
+ {
+  "id": "x8-en",
+  "pair": "x8",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "I was arrested for a bailable offence. Can I get bail?",
+  "gold": [
+   "BNSS_2023:478"
+  ]
+ },
+ {
+  "id": "x8-hi",
+  "pair": "x8",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "अगर जमानती अपराध में गिरफ्तार हुआ हूँ तो क्या मुझे ज़मानत मिल सकती है?",
+  "gold": [
+   "BNSS_2023:478"
+  ]
+ },
+ {
+  "id": "x9-en",
+  "pair": "x9",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "I asked a government office for information under RTI but they are not replying. What now?",
+  "gold": [
+   "RTIAct_2005:19",
+   "RTIAct_2005:7"
+  ]
+ },
+ {
+  "id": "x9-hi",
+  "pair": "x9",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मैंने आरटीआई में जानकारी माँगी पर विभाग जवाब नहीं दे रहा, अब क्या करूँ?",
+  "gold": [
+   "RTIAct_2005:19",
+   "RTIAct_2005:7"
+  ]
+ },
+ {
+  "id": "x10-en",
+  "pair": "x10",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "I was sexually harassed at my workplace. Where do I complain?",
+  "gold": [
+   "POSHAct_2013:9",
+   "POSHAct_2013:4"
+  ]
+ },
+ {
+  "id": "x10-hi",
+  "pair": "x10",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "ऑफिस में मेरे साथ यौन उत्पीड़न हुआ है, शिकायत कहाँ करूँ?",
+  "gold": [
+   "POSHAct_2013:9",
+   "POSHAct_2013:4"
+  ]
+ },
+ {
+  "id": "x11-en",
+  "pair": "x11",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "When do I get my gratuity after leaving my job?",
+  "gold": [
+   "CodeOnSocialSecurity_2020:53"
+  ]
+ },
+ {
+  "id": "x11-hi",
+  "pair": "x11",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "नौकरी छोड़ने के बाद ग्रेच्युटी कब मिलती है?",
+  "gold": [
+   "CodeOnSocialSecurity_2020:53"
+  ]
+ },
+ {
+  "id": "x12-en",
+  "pair": "x12",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "The builder gave me possession of my flat two years late. What can I do?",
+  "gold": [
+   "RERA_2016:18"
+  ]
+ },
+ {
+  "id": "x12-hi",
+  "pair": "x12",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "बिल्डर ने फ्लैट का कब्ज़ा दो साल देर से दिया, मैं क्या कर सकता हूँ?",
+  "gold": [
+   "RERA_2016:18"
+  ]
+ },
+ {
+  "id": "x13-en",
+  "pair": "x13",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Someone stole my phone. What is the punishment for this?",
+  "gold": [
+   "BNS_2023:303"
+  ]
+ },
+ {
+  "id": "x13-hi",
+  "pair": "x13",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "किसी ने मेरा फोन चुरा लिया, इसकी क्या सज़ा है?",
+  "gold": [
+   "BNS_2023:303"
+  ]
+ },
+ {
+  "id": "x14-en",
+  "pair": "x14",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "The police arrested me but did not tell me the reason. Is that legal?",
+  "gold": [
+   "BNSS_2023:47",
+   "Constitution_of_India:22"
+  ]
+ },
+ {
+  "id": "x14-hi",
+  "pair": "x14",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "पुलिस ने मुझे गिरफ्तार किया पर कारण नहीं बताया, क्या यह सही है?",
+  "gold": [
+   "BNSS_2023:47",
+   "Constitution_of_India:22"
+  ]
+ },
+ {
+  "id": "x15-en",
+  "pair": "x15",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Does a daughter get a share in her father's property?",
+  "gold": [
+   "HinduSuccessionAct_1956:6"
+  ]
+ },
+ {
+  "id": "x15-hi",
+  "pair": "x15",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या बेटी को पिता की संपत्ति में हिस्सा मिलता है?",
+  "gold": [
+   "HinduSuccessionAct_1956:6"
+  ]
+ },
+ {
+  "id": "xt1-en",
+  "pair": "xt1",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "trap",
+  "question": "Can I claim the interest on my home loan as a deduction in my income tax return?",
+  "gold": []
+ },
+ {
+  "id": "xt1-hi",
+  "pair": "xt1",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "trap",
+  "question": "क्या मैं अपने होम लोन के ब्याज पर इनकम टैक्स में छूट ले सकता हूँ?",
+  "gold": []
+ },
+ {
+  "id": "xt2-en",
+  "pair": "xt2",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "My cheque bounced. How do I recover the money?",
+  "gold": []
+ },
+ {
+  "id": "xt2-hi",
+  "pair": "xt2",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "trap",
+  "question": "मेरा चेक बाउंस हो गया है, पैसे वापस कैसे लूँ?",
+  "gold": []
+ },
+ {
+  "id": "xt3-en",
+  "pair": "xt3",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "How do I register a private limited company?",
+  "gold": []
+ },
+ {
+  "id": "xt3-hi",
+  "pair": "xt3",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "trap",
+  "question": "प्राइवेट लिमिटेड कंपनी कैसे रजिस्टर करें?",
+  "gold": []
+ },
+ {
+  "id": "xt4-en",
+  "pair": "xt4",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "I want to patent my invention. What is the process?",
+  "gold": []
+ },
+ {
+  "id": "xt4-hi",
+  "pair": "xt4",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "trap",
+  "question": "मैं अपने आविष्कार का पेटेंट कैसे कराऊँ?",
+  "gold": []
+ }
+]
