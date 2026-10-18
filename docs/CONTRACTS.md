@@ -41,8 +41,8 @@ Rules the frontend and voice code can rely on (locked by `tests/test_contract.py
 - Typical time: 2 to 4 s on the lite Gemini models (3 Gemini calls: two query rewrites in parallel, then the answer).
 - Errors: unknown `lawyer` -> HTTP 404; Gemini unavailable -> HTTP 503 with a short message (show a retry message).
 For text-to-speech, strip the markers with `re.sub(r"\s*\[\d+(?:,\s*\d+)*\]", "", answer)` so the voice does not read numbers aloud.
-A mistaken premise in the question (for example "which Article abolished the death penalty") is corrected from the sources when a source
-states the opposite; if no source does, the answer is a refusal. A refusal is never wrong, only unhelpful: the app prefers it to guessing.
+The app prefers a refusal to a guess: when the sources do not state what the court held or what the statute provides on the point asked,
+it refuses. A question with a false premise (for example "which Article abolished the death penalty") is normally refused too; it is not corrected.
 
 Not part of the contract (may change without notice): which sources are retrieved, similarity thresholds, the Gemini models, the wording of the
 disclaimer sentence, answer length, the content of `debug`.

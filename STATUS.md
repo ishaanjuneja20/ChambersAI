@@ -36,3 +36,11 @@ Chunks live on the data folder (`corpus/chunks/acts/`), not in git. Re-run `pyth
 - `corpus/review/send/SEND_part1..6.txt` regenerated (old ones in `send_round1/`); same candidates/key, only answers are new.
 - Next: (1) send new SEND files to the reviewers (answer check only) or spot-check f08, f18, p02, f16, p03, p08 by hand; (2) rescore with tools/score_review.py; (3) pack still shows 600-char excerpts vs 3,500 seen by the model; (4) check Machhi Singh / Neeraja Chaudhary / Minerva Mills (1980) in the index; (5) false-premise traps t10/t17/t20 (refuse vs correct premise); (6) EN vs HI cheque-bounce inconsistency; (7) merge PRs #2 to #7 in order.
 - Security: the Gemini key was pasted in chat repeatedly. Revoke it in Google AI Studio; new key only in `.chambers_env`.
+
+## Where we stopped (2026-10-18): RAG frozen
+- Second review round scored (2 full AI reviewers + 1 partial; reviewed set in tests/eval/judgment_questions.reviewed.json): 28 of 35 real questions have a case both reviewers accept; most "partly" verdicts come from the 600-character excerpts the reviewers saw.
+- Full run on the final code (tools/run_answers.py): real questions answered 29 of 35 (baseline), traps refused 18-19 of 20. Remaining refusals: f03, p08, h01 and sometimes f08/h04/p10 (retrieval misses, see DECISIONS.md).
+- `answer()`, `/ask` and `/ask/stream` output is FROZEN (docs/CONTRACTS.md, tests/test_contract.py). Backend/frontend/voice can build on it.
+- Open, optional: add the two Muslim Women Acts to the family statutes (needs the official PDFs); a second look at the false-premise traps; lawyer review when a lawyer is available; Hindi judgment retrieval (h04 gets no judgments).
+- Next for the team: frontend to /ask, voice (see Parked list above), hosting, rate limit, CORS.
+- Merge order for the open PRs: #2 to #7, then the final-pass PR.
