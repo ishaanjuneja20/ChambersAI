@@ -9,7 +9,9 @@ J='Content-Type: application/json'
 curl -s "$URL/lawyers" | grep -q '"id"' && ok "/lawyers lists the lawyers" || bad "/lawyers"
 [ "$(code -X POST -H "$J" -d '{"lawyer":"nobody","question":"hi"}' "$URL/ask")" = 404 ] && ok "unknown lawyer -> 404" || bad "unknown lawyer should be 404"
 LONG=$(python3 -c "print('x'*700)")
-[ "$(code -X POST -H "$J" -d "{\"lawyer\":\"criminal\",\"question\":\"$LONG\"}" "$URL/ask")" = 413 ] && ok "long question -> 413" || bad "long question should be 413"
+BODY="{\"lawyer\":\"criminal\",\"question\":\"$LONG\"}"       # built first: macOS bash 3.2 mishandles quotes nested in $( )
+STATUS=$(code -X POST -H "$J" -d "$BODY" "$URL/ask")
+[ "$STATUS" = 413 ] && ok "long question -> 413" || bad "long question should be 413 (got $STATUS)"
 curl -s -D - -o /dev/null -H "Origin: $ORIGIN" "$URL/health" | grep -qi "access-control-allow-origin: $ORIGIN" && ok "CORS allows $ORIGIN" || bad "CORS does not allow $ORIGIN (set CHAMBERS_ALLOWED_ORIGINS)"
 curl -s -D - -o /dev/null -H "Origin: https://evil.example" "$URL/health" | grep -qi "access-control-allow-origin" && bad "CORS allows a stranger" || ok "CORS refuses other origins"
 echo "  asking one real question (takes a few seconds)..."
