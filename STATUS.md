@@ -44,3 +44,4 @@ Chunks live on the data folder (`corpus/chunks/acts/`), not in git. Re-run `pyth
 - Open, optional: add the two Muslim Women Acts to the family statutes (needs the official PDFs); a second look at the false-premise traps; lawyer review when a lawyer is available; Hindi judgment retrieval (h04 gets no judgments).
 - Next for the team: frontend to /ask, voice (see Parked list above), hosting, rate limit, CORS.
 - Merge order for the open PRs: #2 to #7, then the final-pass PR.
+- Update (2026-10-18, evening): the 2019 Muslim Women Marriage Act is in (3,550 statute chunks); triple talaq (f08, h01) now answers from s.3 and s.2. The 1986 Act is held back (no official copy). Data is Mac-only: corpus/chunks/acts/MuslimWomenMarriageAct_2019.jsonl and the embeddings.

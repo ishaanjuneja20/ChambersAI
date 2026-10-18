@@ -67,6 +67,9 @@ def load_index(data_dir=None, model_dir="bge-m3") -> Index:
     emb = root / "corpus" / "embeddings" / model_dir
     ids = json.loads((emb / "ids.json").read_text())
     vectors = np.load(emb / "docs.npy")
+    if len(ids) != len(set(ids)):
+        raise RuntimeError("duplicate ids in embeddings/ids.json: a stray *.jsonl (backup copy?) is in corpus/chunks/acts/; "
+                           "move it out and re-run tools/update_act_embeddings.py")
     missing = [i for i in ids if i not in by_id]
     if missing:
         raise RuntimeError(f"{len(missing)} embedded chunk ids not in chunk files (e.g. {missing[:3]}); "
