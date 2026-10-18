@@ -33,6 +33,8 @@ ACTS = {
     "HinduMarriageAct_1955": ("family", "Hindu Marriage Act, 1955", 1955, "HMA", "s"),
     "HinduSuccessionAct_1956": ("family", "Hindu Succession Act, 1956", 1956, "HSA", "s"),
     "SpecialMarriageAct_1954": ("family", "Special Marriage Act, 1954", 1954, "SMA", "s"),
+    "MuslimWomenMarriageAct_2019": ("family", "Muslim Women (Protection of Rights on Marriage) Act, 2019", 2019, "Muslim Women Marriage Act", "s"),
+    "MuslimWomenDivorceAct_1986": ("family", "Muslim Women (Protection of Rights on Divorce) Act, 1986", 1986, "Muslim Women Divorce Act", "s"),
     "CodeOnSocialSecurity_2020": ("labour", "Code on Social Security, 2020", 2020, "SS Code", "s"),
     "CodeOnWages_2019": ("labour", "Code on Wages, 2019", 2019, "Wages Code", "s"),
     "IndustrialRelationsCode_2020": ("labour", "Industrial Relations Code, 2020", 2020, "IR Code", "s"),
@@ -46,7 +48,8 @@ ACTS = {
     "TransferOfPropertyAct_1882": ("property", "Transfer of Property Act, 1882", 1882, "TPA", "s"),
 }
 
-HEAD_RE = re.compile(r"^(?P<ind> {2,}|\t+)(?:\d{1,2}\*?\[|\*?\[)?(?P<num>\d{1,3}[A-Z]{0,2})\.\s+(?P<rest>\S.*)$")
+# "24.Agreements void ..." (no space after the dot, as in the Indian Contract Act and HAMA s.4) is accepted when a capital letter follows
+HEAD_RE = re.compile(r"^(?P<ind> {2,}|\t+)(?:\d{1,2}\*?\[|\*?\[)?(?P<num>\d{1,3}[A-Z]{0,2})\.(?:\s+|(?=[A-Z]))(?P<rest>\S.*)$")
 OMIT_RE = re.compile(r"\b(Omitted|Repealed|Rep\.)", re.I)
 TITLE_DASH_RE = re.compile(r"^(?P<title>.{1,300}?)\s*\]?\.?\s*\]?\s*[%s]{1,2}" % DASH)
 TOC_RE = re.compile(r"^\s{0,}\[?(?P<num>\d{1,3}[A-Z]{0,2})\.\s+(?P<title>\S.*?)\.?\s*$")

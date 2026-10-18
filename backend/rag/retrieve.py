@@ -35,8 +35,24 @@ _index = None          # lazily loaded Index
 _embedder = None       # callable: list[str] -> np.ndarray (n, d), L2-normalised
 
 
+# Hindi typed in English letters ("mera divorce ho gaya hai"). Only words that are not English words, so ordinary
+# English questions are never mistaken for it.
+_HINGLISH = frozenset("""hai hain tha thi the hoga hogi hota hoti ho gaya gayi gaye raha rahi rahe kya kyun kyon kaise kab kahan
+kitna kitni kitne kaun kuch koi mera meri mere mujhe mujhse mujhko tumhara aapka aapki hamara uska uski unka nahi nahin
+aur lekin agar toh bhi hi mein ko ke ki ka se maang sakta sakti sakte chahiye karna karni karne kar karo kare karein
+wala wali wale liye saath pe par jab tab abhi phir bahut zyada kam""".split()) - {"the", "ho", "se", "par", "hi", "pe", "kam", "ka", "tha"}
+_WORD = re.compile(r"[a-z]+")
+
+
+def _is_hinglish(text: str) -> bool:
+    words = _WORD.findall(text.lower())
+    hits = sum(w in _HINGLISH for w in words)
+    return hits >= 2 and hits / max(1, len(words)) >= 0.25
+
+
 def detect_lang(text: str) -> str:
-    return "hi" if _DEVANAGARI.search(text) else "en"
+    """"hi" for Devanagari or for Hindi typed in English letters (the answer then comes back in Hindi); else "en"."""
+    return "hi" if _DEVANAGARI.search(text) or _is_hinglish(text) else "en"
 
 
 def refusal_threshold(lang: str) -> float:
@@ -67,6 +83,9 @@ def load_index(data_dir=None, model_dir="bge-m3") -> Index:
     emb = root / "corpus" / "embeddings" / model_dir
     ids = json.loads((emb / "ids.json").read_text())
     vectors = np.load(emb / "docs.npy")
+    if len(ids) != len(set(ids)):
+        raise RuntimeError("duplicate ids in embeddings/ids.json: a stray *.jsonl (backup copy?) is in corpus/chunks/acts/; "
+                           "move it out and re-run tools/update_act_embeddings.py")
     missing = [i for i in ids if i not in by_id]
     if missing:
         raise RuntimeError(f"{len(missing)} embedded chunk ids not in chunk files (e.g. {missing[:3]}); "
@@ -80,13 +99,32 @@ def _default_embedder():
     # "punishment for murder"). One short query is fast on CPU. Override with CHAMBERS_DEVICE if needed.
     model = SentenceTransformer(MODEL_NAME, device=os.environ.get("CHAMBERS_DEVICE", "cpu"))
     model.max_seq_length = 512
-    return lambda texts: model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+    cache: dict = {}                                   # the same text is embedded by the statute and the judgment search
+
+    def embed(texts):
+        todo = [t for t in dict.fromkeys(texts) if t not in cache]
+        if todo:
+            for t, v in zip(todo, model.encode(todo, normalize_embeddings=True, show_progress_bar=False)):
+                cache[t] = v
+            while len(cache) > 256:
+                cache.pop(next(iter(cache)))
+        return np.stack([cache[t] for t in texts])
+
+    return embed
 
 
 def set_backend(index=None, embedder=None):
     """Inject an index/embedder (tests, or to preload at server start)."""
     global _index, _embedder
     _index, _embedder = index, embedder
+
+
+def get_embedder():
+    """The shared query embedder (loads bge-m3 on first use); judgments.py reuses it so the model is loaded once."""
+    global _embedder
+    if _embedder is None:
+        _embedder = _default_embedder()
+    return _embedder
 
 
 def search(query: str, lawyer_domain: str, k: int, index: Index, embed, rewritten: str | None = None) -> list[dict]:

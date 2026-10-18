@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add 'formerly IPC/CrPC' information to the BNS and BNSS chunks (idempotent; safe to rerun).
+"""Add 'formerly IPC/CrPC/IEA' information to the BNS, BNSS and BSA chunks (idempotent; safe to rerun).
 
 Needs corpus/citation_map.json (tools/build_citation_map.py) and corpus/chunks/acts/*.jsonl
 (tools/chunk_acts.py). For each chunk it sets:
@@ -12,7 +12,7 @@ Usage (from the data folder):  python3 tools/apply_citation_map.py --root .
 import argparse, json, os
 from pathlib import Path
 
-ACTS = {"BNS_2023": "bns", "BNSS_2023": "bnss"}
+ACTS = {"BNS_2023": "bns", "BNSS_2023": "bnss", "BSA_2023": "bsa"}
 MAX_LABEL = 4
 
 
