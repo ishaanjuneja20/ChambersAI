@@ -36,7 +36,7 @@ out_dir = root / a.out
 out_dir.mkdir(parents=True, exist_ok=True)
 
 for qid, lw_id, q, lang in todo:
-    lw = lawyers[lw_id]
+    lw = lawyers.get(lw_id) or {"id": "", "domain": "", "name": "TBD", "personality": "TBD"}   # traps have no lawyer
     os.environ["CHAMBERS_DEBUG"] = "1"
     hits, info = _prepare(q, lw, lang, True)
     th = refusal_threshold(lang)
