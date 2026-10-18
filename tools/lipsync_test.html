@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lip-sync test</title>
+<style>
+  :root { --bg:#f6f5f2; --fg:#1d1d1b; --muted:#6b6a65; --card:#fff; --line:#dcdad3; --accent:#2f5d50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161715; --fg:#ecebe6; --muted:#9d9b93; --card:#21221f; --line:#383a35; --accent:#7fc4ae; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px; padding-bottom:48px; }
+  .grid > div { min-width:0; }
+  .col-stage { position:sticky; top:8px; z-index:2; }
+  h1 { font-size:20px; margin:0 0 4px; } p.sub { margin:0 0 18px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns: minmax(0,1fr) minmax(260px,320px); gap:16px; align-items:start; }
+  @media (max-width:820px) { .grid { grid-template-columns: minmax(0,1fr); } .col-stage { background:var(--bg); padding-bottom:6px; } .stage { min-height:0; } canvas { max-height:46vh !important; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+  .stage { display:flex; justify-content:center; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:260px; align-items:center; }
+  canvas { display:block; max-width:100%; max-height:78vh; width:auto; height:auto; cursor:crosshair; border-radius:6px; touch-action:manipulation; }
+  .step { margin:0 0 14px; } .step b { color:var(--accent); }
+  label { display:block; margin:10px 0 2px; font-size:13px; color:var(--muted); }
+  input[type=range] { width:100%; height:28px; } input[type=file] { width:100%; font-size:13px; }
+  button { font:inherit; padding:10px 14px; min-height:40px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .meter { height:10px; background:var(--line); border-radius:5px; overflow:hidden; margin-top:6px; }
+  .meter i { display:block; height:100%; width:0; background:var(--accent); }
+  #status { margin:10px 0 0; font-size:13px; color:var(--muted); min-height:20px; }
+  audio { width:100%; margin-top:6px; }
+  ul.look { margin:6px 0 0 18px; padding:0; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lip-sync test</h1>
+  <p class="sub">Does a mouth that moves with the loudness of the voice look acceptable on a photoreal face? Everything runs in your browser: no image or sound is uploaded anywhere.</p>
+  <div class="grid">
+    <div class="col-stage">
+      <div class="stage"><canvas id="c" width="480" height="320"></canvas></div>
+      <p id="status">1. Choose a front-facing face picture (mouth closed) on the right.</p>
+    </div>
+    <div>
+      <div class="card">
+        <h2>1. Face</h2>
+        <input type="file" id="imgFile" accept="image/*">
+        <p class="step" style="margin-top:8px">Then click on the picture: <b id="nextClick">left corner of the mouth</b>. Three clicks: left mouth corner, right mouth corner, bottom of the chin.</p>
+        <button id="reset">Start the clicks again</button>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>2. Voice</h2>
+        <input type="file" id="audFile" accept="audio/*">
+        <audio id="aud" controls></audio>
+        <button id="mic" style="margin-top:8px">Use the microphone instead</button>
+        <div class="meter"><i id="bar"></i></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>3. Tune</h2>
+        <label>Manual mouth opening (when no sound is playing)</label>
+        <input type="range" id="manual" min="0" max="100" value="0">
+        <label>Sensitivity to loudness</label>
+        <input type="range" id="gain" min="1" max="20" value="7">
+        <label>How far the jaw can drop</label>
+        <input type="range" id="maxopen" min="5" max="40" value="18">
+        <label><input type="checkbox" id="dark" checked> Dark mouth opening</label>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <h2>What to look for</h2>
+    <ul class="look">
+      <li>Does the chin stretch or the skin smear around the lips? Does the face look like a puppet or a ghost?</li>
+      <li>Is it believable for 5 to 10 seconds of speech, at the size it will be shown in the app?</li>
+      <li>If not: use a few real mouth-shape images swapped by loudness, or a lip-sync service, instead of this.</li>
+    </ul>
+  </div>
+</main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $("c"), ctx = cv.getContext("2d", { willReadFrequently: true });
+  var base = null, W = 0, H = 0, pts = [], cal = null;
+  var names = ["left corner of the mouth", "right corner of the mouth", "bottom of the chin", "done: now play a voice"];
+  var level = 0, analyser = null, buf = null, audioCtx = null, usingMic = false, playing = false, micStream = null;
+
+  function status(t) { $("status").textContent = t; }
+  function smooth(t) { return t * t * (3 - 2 * t); }
+
+  function drawBase() { if (base) ctx.putImageData(base, 0, 0); }
+
+  function loadImage(file) {
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      var s = Math.min(1, 720 / Math.max(im.width, im.height));
+      W = Math.round(im.width * s); H = Math.round(im.height * s);
+      cv.width = W; cv.height = H;
+      ctx.drawImage(im, 0, 0, W, H);
+      base = ctx.getImageData(0, 0, W, H);
+      pts = []; cal = null; $("nextClick").textContent = names[0];
+      status("Click the left corner of the mouth on the picture.");
+      URL.revokeObjectURL(url);
+    };
+    im.onerror = function () { status("That file could not be read as a picture."); };
+    im.src = url;
+  }
+
+  function calibrate() {
+    var a = pts[0], b = pts[1], c = pts[2];
+    var mouthY = (a.y + b.y) / 2, cx = (a.x + b.x) / 2, mw = Math.abs(b.x - a.x), jaw = c.y - mouthY;
+    if (jaw < 10 || mw < 6) { status("The chin must be clearly below the mouth. Press 'Start the clicks again'."); pts = []; $("nextClick").textContent = names[0]; return; }
+    var rx = jaw * 1.5, x0 = Math.max(0, Math.floor(cx - rx)), x1 = Math.min(W, Math.ceil(cx + rx));
+    var y0 = Math.max(0, Math.floor(mouthY - 2)), y1 = Math.min(H - 1, Math.ceil(c.y + jaw * 0.8));
+    var wx = new Float32Array(x1 - x0), wy = new Float32Array(y1 - y0 + 1), i;
+    for (i = 0; i < wx.length; i++) { var t = Math.abs(x0 + i - cx) / rx; wx[i] = t >= 1 ? 0 : 0.5 * (1 + Math.cos(Math.PI * t)); }
+    for (i = 0; i < wy.length; i++) {
+      var y = y0 + i; if (y <= mouthY) { wy[i] = 0; continue; }
+      var u = (y - mouthY) / jaw;
+      wy[i] = u <= 1 ? smooth(u) : Math.max(0, smooth(Math.max(0, 1 - (u - 1) / 0.8)));
+    }
+    cal = { mouthY: mouthY, cx: cx, mw: mw, jaw: jaw, x0: x0, x1: x1, y0: y0, y1: y1, wx: wx, wy: wy };
+    status("Ready. Play a voice file (or use the microphone), or drag the manual slider.");
+  }
+
+  cv.addEventListener("click", function (e) {
+    if (!base || pts.length >= 3) return;
+    var r = cv.getBoundingClientRect();
+    pts.push({ x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height });
+    $("nextClick").textContent = names[Math.min(pts.length, 3)];
+    ctx.fillStyle = "#ff3b30"; ctx.beginPath(); ctx.arc(pts[pts.length - 1].x, pts[pts.length - 1].y, 3, 0, 7); ctx.fill();
+    if (pts.length === 3) { drawBase(); calibrate(); }
+  });
+  $("reset").onclick = function () { pts = []; cal = null; drawBase(); $("nextClick").textContent = names[0]; status("Click the left corner of the mouth."); };
+  $("imgFile").onchange = function (e) { if (e.target.files[0]) loadImage(e.target.files[0]); };
+
+  // ---- audio
+  function ensureCtx() {
+    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; buf = new Float32Array(analyser.fftSize); }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  }
+  var srcNode = null;
+  $("audFile").onchange = function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    $("aud").src = URL.createObjectURL(f); status("Press play on the voice.");
+  };
+  $("aud").addEventListener("play", function () {
+    try { ensureCtx(); if (!srcNode) { srcNode = audioCtx.createMediaElementSource($("aud")); srcNode.connect(analyser); analyser.connect(audioCtx.destination); } playing = true; usingMic = false; }
+    catch (err) { status("Audio could not start: " + err.message); }
+  });
+  $("aud").addEventListener("pause", function () { playing = false; });
+  $("aud").addEventListener("ended", function () { playing = false; });
+  $("mic").onclick = function () {
+    if (usingMic) { usingMic = false; if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); }); $("mic").textContent = "Use the microphone instead"; return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      ensureCtx(); micStream = s; audioCtx.createMediaStreamSource(s).connect(analyser); usingMic = true; $("mic").textContent = "Stop the microphone";
+    }).catch(function (err) { status("The microphone is not available here (" + err.name + "). Use a voice file instead."); });
+  };
+
+  function loudness() {
+    if (!analyser || !(playing || usingMic)) return null;
+    analyser.getFloatTimeDomainData(buf);
+    var s = 0; for (var i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    return Math.min(1, Math.sqrt(s / buf.length) * parseFloat($("gain").value) * 1.4);
+  }
+
+  // ---- render loop
+  function frame() {
+    var target = loudness();
+    if (target === null) target = parseInt($("manual").value, 10) / 100;
+    level += (target - level) * (target > level ? 0.6 : 0.25);
+    $("bar").style.width = Math.round(level * 100) + "%";
+    if (base && cal) render(level);
+    requestAnimationFrame(frame);
+  }
+  function render(open) {
+    var D = open * (parseInt($("maxopen").value, 10) / 100) * cal.jaw;
+    drawBase();
+    if (D < 0.5) return;
+    var w = cal.x1 - cal.x0, h = cal.y1 - cal.y0 + 1, out = ctx.createImageData(w, h), src = base.data, dst = out.data;
+    for (var yy = 0; yy < h; yy++) {
+      var y = cal.y0 + yy, wyv = cal.wy[yy];
+      for (var xx = 0; xx < w; xx++) {
+        var ys = y - D * cal.wx[xx] * wyv; if (ys < 0) ys = 0;
+        var yi = Math.floor(ys), f = ys - yi, y2 = Math.min(H - 1, yi + 1), x = cal.x0 + xx;
+        var i1 = (yi * W + x) * 4, i2 = (y2 * W + x) * 4, o = (yy * w + xx) * 4;
+        dst[o] = src[i1] + (src[i2] - src[i1]) * f; dst[o + 1] = src[i1 + 1] + (src[i2 + 1] - src[i1 + 1]) * f;
+        dst[o + 2] = src[i1 + 2] + (src[i2 + 2] - src[i1 + 2]) * f; dst[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(out, cal.x0, cal.y0);
+    if ($("dark").checked) {
+      ctx.fillStyle = "rgba(45,12,16,0.92)"; ctx.beginPath();
+      ctx.ellipse(cal.cx, cal.mouthY + D * 0.45, cal.mw * (0.28 + 0.16 * open), Math.max(0.5, D * 0.5), 0, 0, 6.2832); ctx.fill();
+    }
+  }
+  window.__lipsync = { get cal() { return cal; } };
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
