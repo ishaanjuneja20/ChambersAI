@@ -62,7 +62,7 @@ def test_non_retryable_error_stops_immediately():
 
     def bad(url, key, body, timeout=60):
         calls.append(1)
-        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+        raise G.GenerationError("Gemini HTTP 403: bad key", 403)
 
     try:
         G.generate("q", HITS, "en", LAWYER, post=bad)
@@ -79,6 +79,181 @@ def test_rewrite_returns_first_line_and_falls_back_on_error():
         "retrenchment notice compensation"
 
     def boom(*a, **k):
-        raise G.GenerationError("Gemini HTTP 400: bad", 400)
+        raise G.GenerationError("Gemini HTTP 403: bad key", 403)
 
     assert W.rewrite_query("fired without notice", post=boom) == "fired without notice"
+
+
+def test_pipeline_uses_judgments_and_filters_by_question_similarity():
+    from backend.rag import pipeline as P
+    jh = lambda sq: {"chunk": {"id": "sc-2001_1_1_9#12", "kind": "judgment_para", "citation": "A v. B, (2001) 1 SCR 9 (SC, 2001), from para 12", "text": "The Court held..."},
+                     "score": 1.0, "similarity": 0.9, "similarity_query": sq, "card_similarity": 0.7}
+    saved = (P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.generate)
+    P.retrieve = lambda *a, **k: []
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    P.generate = lambda q, hits, lang, lawyer: "The Court held this [sc-2001_1_1_9#12]."
+    try:
+        P.J.retrieve_judgments = lambda *a, **k: [jh(0.7)]
+        out = P.answer("q", LAWYER, "en")
+        assert not out["refused"] and out["citations"] == ["A v. B, (2001) 1 SCR 9 (SC, 2001), from para 12"]
+        P.J.retrieve_judgments = lambda *a, **k: [jh(0.5)]          # rewrite may inflate; question alone is too weak
+        assert P.answer("q", LAWYER, "en")["refused"]
+    finally:
+        P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.generate = saved
+
+
+def test_network_timeout_is_retried():
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    G.WAITS = (0, 0, 0)
+    calls = []
+
+    def slow(url, key, body, timeout=60):
+        calls.append(1)
+        if len(calls) < 2:
+            raise G.GenerationError("Gemini request failed (timeout)", 504)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    assert G.generate("q", HITS, "en", LAWYER, post=slow) == "ok" and len(calls) == 2
+
+
+def test_thinking_budget_zero_and_400_falls_back():
+    os.environ["GEMINI_API_KEY"] = "test"
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_THINKING_BUDGET"] = "0"
+    bodies = []
+
+    def picky(url, key, body, timeout=60):
+        bodies.append("thinkingConfig" in body["generationConfig"])
+        if bodies[-1]:
+            raise G.GenerationError("Gemini HTTP 400: thinking not supported", 400)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    assert G.generate("q", HITS, "en", LAWYER, post=picky) == "ok" and bodies == [True, False]
+
+
+def test_numbered_citations_share_numbers_and_follow_first_use():
+    hits = [{"chunk": {"id": "a-1", "citation": "Act s.1"}}, {"chunk": {"id": "sc-2#3", "citation": "A v. B (2001), from para 3"}}]
+    text, cits, dropped = verify_citations("X [sc-2#3]. Y [a-1]. Z [sc-2#3] [a-1] [zz-9].", hits, numbered=True)
+    assert text.startswith("X [1]. Y [2]. Z [1] [2]"), text
+    assert cits == ["A v. B (2001), from para 3", "Act s.1"] and dropped == ["zz-9"]
+
+
+def test_key_pool_rotates_and_skips_a_key_that_is_out_of_quota():
+    os.environ.pop("GEMINI_API_KEY", None)
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_API_KEYS"] = "k1, k2 k3"
+    G.WAITS = (0, 0, 0)
+    assert G.api_keys() == ["k1", "k2", "k3"]
+    seen = []
+
+    def post(url, key, body, timeout=60):
+        seen.append(key)
+        if key == "k1":
+            raise G.GenerationError("Gemini HTTP 429: quota", 429)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    try:
+        for _ in range(3):
+            assert G.call_gemini({}, post, model="m") == "ok"
+        # every call succeeded; a call that started on k1 moved straight on to k2 without waiting
+        assert set(seen) == {"k1", "k2", "k3"} and seen.count("k1") == 1
+        seen.clear()
+        os.environ["GEMINI_API_KEYS"] = "k1"
+        try:
+            G.call_gemini({}, post, model="m")
+            assert False
+        except G.GenerationError as e:
+            assert e.code == 429
+    finally:
+        os.environ.pop("GEMINI_API_KEYS", None)
+
+
+def test_quota_on_first_model_moves_to_next_model_without_waiting():
+    import time as _t
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_MODELS"] = "m1,m2"
+    os.environ["GEMINI_API_KEYS"] = "k1"
+    G._rr = __import__("itertools").count()
+    seen = []
+
+    def post(url, key, body):
+        seen.append(url.split("/models/")[1].split(":")[0])
+        if seen[-1] == "m1":
+            raise G.GenerationError("Gemini HTTP 429: quota", 429)
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    t0 = _t.time()
+    try:
+        assert G.call_gemini({}, post) == "ok"
+    finally:
+        os.environ.pop("GEMINI_MODELS", None)
+        os.environ.pop("GEMINI_API_KEYS", None)
+    assert seen == ["m1", "m2"] and _t.time() - t0 < 0.5
+    os.environ["GEMINI_MODEL"] = "only"
+    try:
+        assert G.model_chain() == ["only"]
+    finally:
+        os.environ.pop("GEMINI_MODEL", None)
+    assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL]
+
+
+def test_soft_statutes_only_when_judgments_cleared_and_statute_just_under_threshold():
+    from backend.rag import pipeline as P
+    sh = lambda i, s: {"chunk": {"id": f"hma-{i}", "kind": "act_section", "citation": f"HMA s.{i}", "text": "x"}, "score": s, "similarity": s}
+    jh = {"chunk": {"id": "sc-2001_1_1_9#12", "kind": "judgment_para", "citation": "A v. B", "text": "The Court held"},
+          "score": 1.0, "similarity": 0.9, "similarity_query": 0.7, "card_similarity": 0.7}
+    saved = (P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN)
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    try:
+        P.J.retrieve_judgments = lambda *a, **k: [jh]
+        P.retrieve = lambda *a, **k: [sh(1, 0.62), sh(2, 0.60), sh(3, 0.59), sh(4, 0.595), sh(5, 0.50)]
+        hits, _ = P._prepare("q", LAWYER, "en", False)
+        assert [h["chunk"]["citation"] for h in hits] == ["HMA s.1", "HMA s.2", "HMA s.3", "A v. B"]   # 3 closest within 0.05 of 0.64
+        P.retrieve = lambda *a, **k: [sh(1, 0.55)]                                                 # too far under
+        assert [h["chunk"]["id"] for h in P._prepare("q", LAWYER, "en", False)[0]] == ["sc-2001_1_1_9#12"]
+        P.retrieve = lambda *a, **k: [sh(1, 0.62)]
+        P.STATUTE_MARGIN = 0.0                                                                      # switched off
+        assert [h["chunk"]["id"] for h in P._prepare("q", LAWYER, "en", False)[0]] == ["sc-2001_1_1_9#12"]
+        P.STATUTE_MARGIN = 0.05
+        P.J.retrieve_judgments = lambda *a, **k: []                                                 # no judgment cleared: refuse
+        assert P._prepare("q", LAWYER, "en", False)[0] == []
+    finally:
+        P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN = saved
+
+
+def test_hinglish_is_translated_for_search_and_uses_english_thresholds():
+    from backend.rag import pipeline as P
+    seen = {}
+    jh = {"chunk": {"id": "sc-1#1", "kind": "judgment_para", "citation": "A v. B", "text": "t"}, "score": 1.0,
+          "similarity": 0.9, "similarity_query": 0.7, "card_similarity": 0.7}
+    sh = {"chunk": {"id": "hma-25", "kind": "act_section", "citation": "HMA s.25", "text": "x"}, "score": 0.62, "similarity": 0.62}
+    saved = (P.retrieve, P.rewrite_query, P.translate_to_english, P.J.judgments_available, P.J.retrieve_judgments)
+    P.translate_to_english = lambda q, **k: "my wife wants 50 lakh alimony"
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    P.J.retrieve_judgments = lambda q, *a, **k: seen.setdefault("j", q) and [jh]
+    P.retrieve = lambda q, *a, **k: seen.setdefault("s", q) and [sh]
+    try:
+        hits, info = P._prepare("meri wife 50L alimony maang rahi hai", LAWYER, "hi", True)
+        assert seen == {"j": "my wife wants 50 lakh alimony", "s": "my wife wants 50 lakh alimony"}
+        assert info["lang"] == "hi" and info["search_lang"] == "en" and info["threshold"] == 0.64
+        seen.clear()                                                   # Devanagari is not translated
+        P.translate_to_english = lambda q, **k: 1 / 0
+        info = P._prepare("तलाक के बाद गुजारा भत्ता", LAWYER, "hi", True)[1]
+        assert info["search_lang"] == "hi" and info["threshold"] == 0.60 and seen["s"].startswith("तलाक")
+    finally:
+        P.retrieve, P.rewrite_query, P.translate_to_english, P.J.judgments_available, P.J.retrieve_judgments = saved
+
+
+def test_prompt_has_the_no_assumed_facts_rule():
+    system, _ = G.build_prompt("q", HITS, "en", LAWYER)
+    assert "Do not assume facts the user has not stated" in system and "NO_SOURCE" in system
+    assert "mistaken assumption" not in system                      # tried and removed: see DECISIONS.md (false premises)
+    os.environ["CHAMBERS_STRICT_RULES"] = "0"
+    try:
+        assert "Do not assume facts" not in G.build_prompt("q", HITS, "en", LAWYER)[0]
+    finally:
+        os.environ.pop("CHAMBERS_STRICT_RULES", None)

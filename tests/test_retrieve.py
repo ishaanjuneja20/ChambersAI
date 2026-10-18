@@ -38,6 +38,15 @@ def test_lang_and_thresholds():
     assert R.refusal_threshold("hi") < R.refusal_threshold("en")
 
 
+def test_hinglish_is_hindi_and_english_is_not():
+    for q in ["mera divorce ho gaya hai meri wife mujhse 50L alimony maang rahi hai", "kya mujhe bail mil sakti hai",
+              "property ka kya hoga agar pita ki death ho jaye"]:
+        assert R.detect_lang(q) == "hi", q
+    for q in ["what is the punishment for murder", "Is instant triple talaq valid?", "can my landlord evict me without notice",
+              "what does section 420 say about cheating", "the wife claims alimony after divorce"]:
+        assert R.detect_lang(q) == "en", q
+
+
 def test_verify_drops_unknown_ids_and_uses_metadata_citation():
     idx, emb = make()
     hits = R.search("q", "criminal", 5, idx, emb)
