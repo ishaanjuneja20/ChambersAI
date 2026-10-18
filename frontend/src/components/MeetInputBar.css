@@ -1,0 +1,198 @@
+.meet-input {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  position: sticky;
+  bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 5;
+}
+
+.meet-input-bar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 56px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.4rem 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s, border-radius 0.15s;
+}
+
+.meet-input-bar--has-files {
+  border-radius: 1.5rem;
+  padding-top: 0.6rem;
+}
+
+.meet-input-bar:focus-within {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 0 4px var(--glow-soft);
+}
+
+.meet-input-bar--drag {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 0 4px var(--glow-soft);
+}
+
+.meet-input-bar__row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.meet-input-bar__field {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  padding: 0.4rem 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meet-input-bar__field:focus {
+  outline: none;
+}
+
+.meet-input-bar__field::placeholder {
+  color: var(--text-faint);
+}
+
+.meet-input-bar__field:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.meet-input-bar__icon-btn,
+.meet-input-bar__round {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.meet-input-bar__icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.meet-input-bar__icon-btn:hover:not(:disabled) {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 10px var(--glow-soft);
+}
+
+.meet-input-bar__icon-btn:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.meet-input-bar__round {
+  background: var(--grad-primary);
+  border: none;
+  color: #ffffff;
+}
+
+.meet-input-bar__round:hover:not(:disabled) {
+  background: var(--grad-primary-hover);
+  box-shadow: 0 4px 18px var(--glow-blue);
+}
+
+.meet-input-bar__round:disabled {
+  background: var(--surface);
+  color: var(--text-faint);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.meet-input-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.1rem 0.4rem 0.2rem;
+}
+
+.meet-input-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.meet-input-bar__chip--error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.meet-input-bar__chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.meet-input-bar__chip-meta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.meet-input-bar__chip-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.meet-input-bar__chip-remove:hover {
+  background: var(--border-strong);
+  color: var(--text);
+}
+
+.meet-input__error {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+@media (max-width: 600px) {
+  .meet-input {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meet-input-bar,
+  .meet-input-bar__icon-btn,
+  .meet-input-bar__round {
+    transition: none;
+  }
+}

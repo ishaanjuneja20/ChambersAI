@@ -1,0 +1,129 @@
+.lawyer-profile {
+  position: relative;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem 3rem;
+}
+
+.lawyer-profile > *:not(.decorations) {
+  position: relative;
+  z-index: 1;
+}
+
+.lawyer-profile__header {
+  display: flex;
+  gap: 1.75rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.lawyer-profile__portrait {
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.lawyer-profile__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lawyer-profile__photo {
+  filter: grayscale(1) contrast(1.08);
+  transition: filter 0.3s ease;
+}
+
+.lawyer-profile__portrait:hover .lawyer-profile__photo,
+.lawyer-profile__portrait:active .lawyer-profile__photo {
+  filter: grayscale(0) contrast(1.02);
+}
+
+.lawyer-profile__identity {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lawyer-profile__identity h1 {
+  margin: 0;
+  color: var(--text);
+}
+
+.lawyer-profile__type {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.lawyer-profile__cta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn--lg {
+  padding: 0.75rem 1.6rem;
+  font-size: 1rem;
+}
+
+.lawyer-profile__persona-label {
+  display: inline-flex;
+  margin: 1.5rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  line-height: 1.4;
+}
+
+.lawyer-profile__section {
+  margin-top: 1.75rem;
+}
+
+.lawyer-profile__section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.lawyer-profile__section p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chip-list li {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chip-list li:hover {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 10px var(--glow-soft);
+}

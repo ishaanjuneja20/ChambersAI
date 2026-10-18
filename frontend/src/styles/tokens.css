@@ -1,0 +1,31 @@
+/* Single source of truth for color. Deep black base with a blue-violet gradient as the one
+   strong accent — used sparingly (buttons, highlighted words, active states, focus rings),
+   never as a large tint. */
+:root {
+  --bg: #0a0a0c;
+  --bg-nav: #101012;
+  --surface: #0f0f11;
+  --surface-raised: #171719;
+  --surface-banner: #202020;
+
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text: #f2f2f5;
+  --text-muted: #9a9aa6;
+  --text-faint: #6a6a75;
+
+  --accent: #194bfd;
+  --accent-violet: #5c32fc;
+  --accent-magenta: #ad13fb;
+
+  --grad-primary: linear-gradient(90deg, #383ffc, #5c32fc);
+  --grad-primary-hover: linear-gradient(90deg, #4850ff, #6c40ff);
+
+  --glow-blue: rgba(56, 63, 252, 0.45);
+  --glow-soft: rgba(92, 50, 252, 0.18);
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}

@@ -1,0 +1,94 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getLawyer } from "../lib/lawyersApi";
+import type { Lawyer } from "../lib/demoLawyers";
+import PlaceholderPortrait from "../components/PlaceholderPortrait";
+import { useImageFallback } from "../hooks/useImageFallback";
+import PagePlaceholder from "../components/PagePlaceholder";
+import Decorations from "../components/Decorations";
+import Reveal from "../components/Reveal";
+import "./LawyerProfile.css";
+
+export default function LawyerProfile() {
+  const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const [lawyer, setLawyer] = useState<Lawyer | null | undefined>(undefined);
+  const { failed, onError } = useImageFallback();
+
+  useEffect(() => {
+    let cancelled = false;
+    getLawyer(id).then((result) => {
+      if (!cancelled) setLawyer(result ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (lawyer === undefined) {
+    return <PagePlaceholder title="Loading…" note="" />;
+  }
+  if (lawyer === null) {
+    return <PagePlaceholder title="Lawyer not found" note="This profile doesn't exist." />;
+  }
+
+  return (
+    <div className="lawyer-profile">
+      <Decorations />
+      <div className="lawyer-profile__header">
+        <div className="lawyer-profile__portrait">
+          {failed ? (
+            <PlaceholderPortrait seed={lawyer.id} />
+          ) : (
+            <img className="lawyer-profile__photo" src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt="" onError={onError} />
+          )}
+        </div>
+
+        <div className="lawyer-profile__identity">
+          <h1>{lawyer.name}</h1>
+          <p className="lawyer-profile__type">{lawyer.practice} advocate persona</p>
+          <p>{lawyer.tagline}</p>
+        </div>
+
+        <div className="lawyer-profile__cta">
+          <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate(`/consultation/meet/${lawyer.id}`)}>
+            Meet
+          </button>
+          <button type="button" className="btn btn--outline btn--lg" onClick={() => navigate(`/consultation/chat/${lawyer.id}`)}>
+            Chat
+          </button>
+        </div>
+      </div>
+
+      <p className="lawyer-profile__persona-label">AI advocate persona. Not a real person or a licensed advocate.</p>
+
+      <Reveal as="div" className="lawyer-profile__section">
+        <h2>About</h2>
+        <p>{lawyer.description}</p>
+      </Reveal>
+
+      <Reveal as="div" className="lawyer-profile__section">
+        <h2>Experience</h2>
+        <p>{lawyer.experience}</p>
+      </Reveal>
+
+      <Reveal as="div" className="lawyer-profile__section">
+        <h2>Specializations</h2>
+        <ul className="chip-list">
+          {lawyer.specializations.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+      </Reveal>
+
+      <Reveal as="div" className="lawyer-profile__section">
+        <h2>Languages</h2>
+        <ul className="chip-list">
+          {lawyer.languages.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+      </Reveal>
+    </div>
+  );
+}
