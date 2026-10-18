@@ -1,0 +1,592 @@
+[
+ {
+  "id": "f01",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can the death penalty be given only in the rarest of rare cases, and how should the court weigh aggravating and mitigating circumstances?",
+  "gold_cases": [
+   "1983_1_145_371"
+  ]
+ },
+ {
+  "id": "f02",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "What rules must the police follow when they arrest someone, like telling a relative and getting a medical check-up?",
+  "gold_cases": [
+   "S_1996_10_284_320"
+  ]
+ },
+ {
+  "id": "f03",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can the police arrest a husband automatically in a dowry harassment case where the punishment is up to seven years?",
+  "gold_cases": [
+   "2014_8_128_143"
+  ]
+ },
+ {
+  "id": "f04",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Is it a crime to post something offensive online under section 66A of the IT Act, or does it violate free speech?",
+  "gold_cases": [
+   "2015_5_963_1074"
+  ]
+ },
+ {
+  "id": "f05",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Is a consensual relationship between two adults of the same sex a crime?",
+  "gold_cases": [
+   "2018_7_379_746"
+  ]
+ },
+ {
+  "id": "f06",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can a doctor be prosecuted for a criminal offence if a patient dies because of negligence in treatment?",
+  "gold_cases": [
+   "S_2005_2_307_341"
+  ]
+ },
+ {
+  "id": "f07",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Is a divorced Muslim woman entitled to maintenance from her husband after the iddat period?",
+  "gold_cases": [
+   "1985_3_844_868"
+  ]
+ },
+ {
+  "id": "f08",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Is instant triple talaq valid?",
+  "gold_cases": [
+   "2017_9_797_1158"
+  ]
+ },
+ {
+  "id": "f09",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Do daughters have the same rights as sons in joint Hindu family property?",
+  "gold_cases": [
+   "2020_10_135_237"
+  ]
+ },
+ {
+  "id": "f10",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can a development authority be made to pay compensation in a consumer case for harassing a plot allottee?",
+  "gold_cases": [
+   "S_1993_3_615_637"
+  ]
+ },
+ {
+  "id": "f11",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can I get a refund with interest if the builder is years late in handing over my flat?",
+  "gold_cases": [
+   "2021_2_1_58"
+  ]
+ },
+ {
+  "id": "f12",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Does a doctor need my informed consent before treating me or doing a procedure?",
+  "gold_cases": [
+   "2008_1_719_780"
+  ]
+ },
+ {
+  "id": "f13",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can I become the owner of a property through a power of attorney and an agreement to sell?",
+  "gold_cases": [
+   "2011_11_848_869"
+  ]
+ },
+ {
+  "id": "f14",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "find_case",
+  "question": "What can the court do to release and rehabilitate bonded labourers?",
+  "gold_cases": [
+   "1984_2_67_175"
+  ]
+ },
+ {
+  "id": "f15",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "find_case",
+  "question": "What guidelines apply to prevent sexual harassment of women at the workplace?",
+  "gold_cases": [
+   "S_1997_3_404_418"
+  ]
+ },
+ {
+  "id": "f16",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can Parliament change any part of the Constitution, or is there a basic structure it cannot alter?",
+  "gold_cases": [
+   "S_1973_1_1_1002"
+  ]
+ },
+ {
+  "id": "f17",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Is the right to privacy a fundamental right under the Constitution?",
+  "gold_cases": [
+   "2017_10_569_999"
+  ]
+ },
+ {
+  "id": "f18",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "find_case",
+  "question": "Can pavement dwellers be evicted without notice, and does the right to life include the right to livelihood?",
+  "gold_cases": [
+   "S_1985_2_51_99"
+  ]
+ },
+ {
+  "id": "f19",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "find_case",
+  "question": "The government impounded a passport without giving a hearing. Does the procedure have to be fair under Article 21?",
+  "gold_cases": [
+   "1978_2_621_776"
+  ]
+ },
+ {
+  "id": "p01",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "point",
+  "question": "In a maintenance case, what must both husband and wife disclose about their income and assets?",
+  "gold_cases": [
+   "2020_13_1093_1174"
+  ],
+  "gold_chunks": [
+   "sc-2020_13_1093_1174#8",
+   "sc-2020_13_1093_1174#9"
+  ]
+ },
+ {
+  "id": "p02",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "point",
+  "question": "If the punishment is up to seven years, does the police have to arrest, or can they send a notice to appear instead?",
+  "gold_cases": [
+   "2014_8_128_143"
+  ],
+  "gold_chunks": [
+   "sc-2014_8_128_143#1",
+   "sc-2014_8_128_143#3",
+   "sc-2014_8_128_143#10"
+  ]
+ },
+ {
+  "id": "p03",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "point",
+  "question": "Who should be on the complaints committee for sexual harassment at work, and should an outside NGO be involved?",
+  "gold_cases": [
+   "S_1997_3_404_418"
+  ],
+  "gold_chunks": [
+   "sc-S_1997_3_404_418#20",
+   "sc-S_1997_3_404_418#21"
+  ]
+ },
+ {
+  "id": "p04",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "point",
+  "question": "Can reservations in government jobs go beyond 50 percent, and are there any exceptions?",
+  "gold_cases": [
+   "S_1992_2_454_1007"
+  ],
+  "gold_chunks": [
+   "sc-S_1992_2_454_1007#17",
+   "sc-S_1992_2_454_1007#38"
+  ]
+ },
+ {
+  "id": "p05",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "point",
+  "question": "When the police arrest me, do they have to prepare a memo that someone attests?",
+  "gold_cases": [
+   "S_1996_10_284_320"
+  ],
+  "gold_chunks": [
+   "sc-S_1996_10_284_320#10",
+   "sc-S_1996_10_284_320#11"
+  ]
+ },
+ {
+  "id": "p06",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "point",
+  "question": "How often must a person in police custody be examined by a doctor?",
+  "gold_cases": [
+   "S_1996_10_284_320"
+  ],
+  "gold_chunks": [
+   "sc-S_1996_10_284_320#12",
+   "sc-S_1996_10_284_320#59"
+  ]
+ },
+ {
+  "id": "p07",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "point",
+  "question": "Is a power of attorney by itself a transfer of ownership of immovable property?",
+  "gold_cases": [
+   "2011_11_848_869"
+  ],
+  "gold_chunks": [
+   "sc-2011_11_848_869#6",
+   "sc-2011_11_848_869#12"
+  ]
+ },
+ {
+  "id": "p08",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "point",
+  "question": "Someone is disputing my title to land and I am not in possession. Which suit should I file?",
+  "gold_cases": [
+   "2008_5_331_356"
+  ],
+  "gold_chunks": [
+   "sc-2008_5_331_356#1",
+   "sc-2008_5_331_356#4"
+  ]
+ },
+ {
+  "id": "p09",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "point",
+  "question": "Is a daughter a coparcener in a Hindu joint family and can she demand partition?",
+  "gold_cases": [
+   "2020_10_135_237"
+  ],
+  "gold_chunks": [
+   "sc-2020_10_135_237#0",
+   "sc-2020_10_135_237#3"
+  ]
+ },
+ {
+  "id": "p10",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "point",
+  "question": "Can officials be made personally liable to pay compensation for harassing a consumer?",
+  "gold_cases": [
+   "S_1993_3_615_637"
+  ],
+  "gold_chunks": [
+   "sc-S_1993_3_615_637#1",
+   "sc-S_1993_3_615_637#3"
+  ]
+ },
+ {
+  "id": "p11",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "point",
+  "question": "Can a flat buyer ask for a refund along with delay compensation if possession is late?",
+  "gold_cases": [
+   "2021_2_1_58"
+  ],
+  "gold_chunks": [
+   "sc-2021_2_1_58#1"
+  ]
+ },
+ {
+  "id": "p12",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "point",
+  "question": "Why did the Supreme Court say life should be taken by law only in the rarest of rare cases?",
+  "gold_cases": [
+   "1983_1_145_371"
+  ],
+  "gold_chunks": [
+   "sc-1983_1_145_371#23",
+   "sc-1983_1_145_371#248"
+  ]
+ },
+ {
+  "id": "h01",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "find_case",
+  "question": "क्या एक साथ तीन तलाक देना वैध है?",
+  "gold_cases": [
+   "2017_9_797_1158"
+  ]
+ },
+ {
+  "id": "h02",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "find_case",
+  "question": "गिरफ्तारी के समय पुलिस को कौन से नियम मानने पड़ते हैं?",
+  "gold_cases": [
+   "S_1996_10_284_320"
+  ]
+ },
+ {
+  "id": "h03",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "find_case",
+  "question": "क्या बेटी को पैतृक संपत्ति में बेटे के बराबर हिस्सा मिलता है?",
+  "gold_cases": [
+   "2020_10_135_237"
+  ]
+ },
+ {
+  "id": "h04",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "point",
+  "question": "अगर कोई मेरी ज़मीन के मालिकाना हक़ पर सवाल उठाए और कब्ज़ा मेरे पास न हो, तो कौन सा मुकदमा करना चाहिए?",
+  "gold_cases": [
+   "2008_5_331_356"
+  ],
+  "gold_chunks": [
+   "sc-2008_5_331_356#1",
+   "sc-2008_5_331_356#4"
+  ]
+ },
+ {
+  "id": "t01",
+  "lawyer": "",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the best recipe for chicken biryani?",
+  "gold_cases": []
+ },
+ {
+  "id": "t02",
+  "lawyer": "",
+  "lang": "en",
+  "type": "trap",
+  "question": "Who won the cricket world cup in 2011?",
+  "gold_cases": []
+ },
+ {
+  "id": "t03",
+  "lawyer": "",
+  "lang": "en",
+  "type": "trap",
+  "question": "How can I lose weight in two weeks?",
+  "gold_cases": []
+ },
+ {
+  "id": "t04",
+  "lawyer": "",
+  "lang": "en",
+  "type": "trap",
+  "question": "Which smartphone should I buy under 20000 rupees?",
+  "gold_cases": []
+ },
+ {
+  "id": "t05",
+  "lawyer": "",
+  "lang": "hi",
+  "type": "trap",
+  "question": "आज बिटकॉइन की कीमत कितनी है?",
+  "gold_cases": []
+ },
+ {
+  "id": "t06",
+  "lawyer": "",
+  "lang": "hi",
+  "type": "trap",
+  "question": "पनीर बटर मसाला कैसे बनाते हैं?",
+  "gold_cases": []
+ },
+ {
+  "id": "t07",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the stamp duty on a sale deed in Maharashtra right now?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current state-level figure"
+ },
+ {
+  "id": "t08",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "How much court fee do I have to pay to file a consumer complaint for a 5 lakh claim?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current fee schedule, not in judgments"
+ },
+ {
+  "id": "t09",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "Will I win my divorce case if I file next month?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "prediction"
+ },
+ {
+  "id": "t10",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What does Section 999 of the Indian Penal Code say?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "non-existent section"
+ },
+ {
+  "id": "t11",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "Summarise the Supreme Court's 2019 judgment in Ramesh Kumar v. State of Goa on cryptocurrency taxation.",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "invented case"
+ },
+ {
+  "id": "t12",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the minimum daily wage in Karnataka this month?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current figure"
+ },
+ {
+  "id": "t13",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the punishment for murder under Pakistani law?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "foreign law"
+ },
+ {
+  "id": "t14",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "How do I get a divorce in the United States if my spouse lives in India?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "foreign law"
+ },
+ {
+  "id": "t15",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "Which is the best lawyer for bail applications in Mumbai?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "recommendation, not law"
+ },
+ {
+  "id": "t16",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What did the Supreme Court decide yesterday on bail?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "news / recent event"
+ },
+ {
+  "id": "t17",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "Which Article of the Constitution abolished the death penalty in India?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "false premise"
+ },
+ {
+  "id": "t18",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "trap",
+  "question": "अगर मैं अगले महीने तलाक की अर्जी दूँ तो क्या मैं केस जीत जाऊँगी?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "prediction"
+ },
+ {
+  "id": "t19",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "trap",
+  "question": "महाराष्ट्र में बिक्री विलेख पर अभी स्टांप शुल्क कितना है?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "current state-level figure"
+ },
+ {
+  "id": "t20",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "trap",
+  "question": "भारतीय दंड संहिता की धारा 999 क्या कहती है?",
+  "gold_cases": [],
+  "trap_kind": "legal_sounding",
+  "reason": "non-existent section"
+ }
+]
