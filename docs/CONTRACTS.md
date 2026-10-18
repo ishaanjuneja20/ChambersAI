@@ -22,17 +22,35 @@ Acts: one chunk per section. Judgments: one chunk per paragraph (case name/year/
 ```
 Sorted by score descending. Domain match boosts score; it does not filter.
 
-## POST /ask
-Request: `{"lawyer": "criminal", "question": "...", "lang": "en|hi"}`
-Response: `{"answer": "...", "citations": [Chunk.citation...], "refused": false}`
-`answer` carries numbered markers `[1]`, `[2, 3]` in order of first use; `citations[i-1]` is the full citation for marker `i`
-(statute section, or case name + report + court + year + "from para N"). Show the list under the answer. For text-to-speech,
-strip the markers with `re.sub(r"\s*\[\d+(?:,\s*\d+)*\]", "", answer)` so the voice does not read numbers aloud.
+## POST /ask  (FROZEN, 2026-10-18)
+Request: `{"lawyer": "criminal", "question": "...", "lang": "en|hi"}`  (`lang` optional: detected from the question)
+Response, exactly these three keys (a fourth key `debug` appears only when the server runs with `CHAMBERS_DEBUG=1`; never rely on it):
+```json
+{"answer": "Murder is punished with death or life imprisonment [1]. The court held ... [2]. This is general information, not a substitute for a licensed advocate.",
+ "citations": ["BNS s.103 (formerly IPC s.302)", "A v. B, [2001] 1 S.C.R. 9 (Supreme Court of India, 2001), from para 3"],
+ "refused": false}
+```
+Rules the frontend and voice code can rely on (locked by `tests/test_contract.py`):
+- `answer` carries numbered markers `[1]`, `[2, 3]` in order of first use, starting at 1 with no gaps; `citations[i-1]` is the full
+  citation for marker `i` (statute section, or case name + report + court + year + "from para N"). Show the list under the answer.
+  Internal ids never appear in `answer`.
+- `refused: true` means no reliable source: `citations` is `[]` and `answer` is exactly
+  `"I don't have a reliable source for this."` (English) or `"इस विषय पर मेरे पास कोई विश्वसनीय स्रोत नहीं है।"` (Hindi). Show it as is.
+- `refused: false` always has at least one citation, and every marker in `answer` has an entry in `citations`.
+- The answer is in the language of the question (`lang`). Hindi answers end sentences with the danda `।`.
+- Typical time: 2 to 4 s on the lite Gemini models (3 Gemini calls: two query rewrites in parallel, then the answer).
+- Errors: unknown `lawyer` -> HTTP 404; Gemini unavailable -> HTTP 503 with a short message (show a retry message).
+For text-to-speech, strip the markers with `re.sub(r"\s*\[\d+(?:,\s*\d+)*\]", "", answer)` so the voice does not read numbers aloud.
+A mistaken premise in the question (for example "which Article abolished the death penalty") is corrected from the sources when a source
+states the opposite; if no source does, the answer is a refusal. A refusal is never wrong, only unhelpful: the app prefers it to guessing.
+
+Not part of the contract (may change without notice): which sources are retrieved, similarity thresholds, the Gemini models, the wording of the
+disclaimer sentence, answer length, the content of `debug`.
 
 ## GET /lawyers
 List of entries from `lawyers.json`.
 
-## POST /ask/stream (voice)
+## POST /ask/stream (voice)  (FROZEN, 2026-10-18)
 Request: same as `/ask`, plus `"voice": true` (default; asks for a short answer, about 90 words, that sounds right spoken).
 Response: `text/event-stream`. Each `data:` line is one JSON event:
 - `{"type":"sentence","text":"... [1].","speak":"... .","new_citations":[{"n":1,"text":"HMA s.13"}]}`
