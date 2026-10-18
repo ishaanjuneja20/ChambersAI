@@ -35,8 +35,24 @@ _index = None          # lazily loaded Index
 _embedder = None       # callable: list[str] -> np.ndarray (n, d), L2-normalised
 
 
+# Hindi typed in English letters ("mera divorce ho gaya hai"). Only words that are not English words, so ordinary
+# English questions are never mistaken for it.
+_HINGLISH = frozenset("""hai hain tha thi the hoga hogi hota hoti ho gaya gayi gaye raha rahi rahe kya kyun kyon kaise kab kahan
+kitna kitni kitne kaun kuch koi mera meri mere mujhe mujhse mujhko tumhara aapka aapki hamara uska uski unka nahi nahin
+aur lekin agar toh bhi hi mein ko ke ki ka se maang sakta sakti sakte chahiye karna karni karne kar karo kare karein
+wala wali wale liye saath pe par jab tab abhi phir bahut zyada kam""".split()) - {"the", "ho", "se", "par", "hi", "pe", "kam", "ka", "tha"}
+_WORD = re.compile(r"[a-z]+")
+
+
+def _is_hinglish(text: str) -> bool:
+    words = _WORD.findall(text.lower())
+    hits = sum(w in _HINGLISH for w in words)
+    return hits >= 2 and hits / max(1, len(words)) >= 0.25
+
+
 def detect_lang(text: str) -> str:
-    return "hi" if _DEVANAGARI.search(text) else "en"
+    """"hi" for Devanagari or for Hindi typed in English letters (the answer then comes back in Hindi); else "en"."""
+    return "hi" if _DEVANAGARI.search(text) or _is_hinglish(text) else "en"
 
 
 def refusal_threshold(lang: str) -> float:

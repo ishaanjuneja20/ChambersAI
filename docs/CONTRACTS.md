@@ -26,7 +26,7 @@ Sorted by score descending. Domain match boosts score; it does not filter.
 Request: `{"lawyer": "criminal", "question": "...", "lang": "en|hi"}`  (`lang` optional: detected from the question)
 Response, exactly these three keys (a fourth key `debug` appears only when the server runs with `CHAMBERS_DEBUG=1`; never rely on it):
 ```json
-{"answer": "Murder is punished with death or life imprisonment [1]. The court held ... [2]. This is general information, not a substitute for a licensed advocate.",
+{"answer": "Murder is punished with death or life imprisonment [1]. The court held ... [2].",
  "citations": ["BNS s.103 (formerly IPC s.302)", "A v. B, [2001] 1 S.C.R. 9 (Supreme Court of India, 2001), from para 3"],
  "refused": false}
 ```
