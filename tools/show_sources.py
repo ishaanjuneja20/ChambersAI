@@ -39,7 +39,7 @@ for qid, lw_id, q, lang in todo:
     lw = lawyers.get(lw_id) or {"id": "", "domain": "", "name": "TBD", "personality": "TBD"}   # traps have no lawyer
     os.environ["CHAMBERS_DEBUG"] = "1"
     hits, info = _prepare(q, lw, lang, True)
-    th = refusal_threshold(lang)
+    th = refusal_threshold(info["search_lang"])
     L = [f"{qid} | lawyer={lw_id} lang={lang}", q, "", f"statute rewrite: {info['rewrite']}",
          f"statute threshold {th} | judgment threshold {J.JUDGMENT_REFUSAL_THRESHOLD}",
          "", "TOP STATUTE CHUNKS (raw; the whole statute list is dropped unless the first is >= threshold):"]

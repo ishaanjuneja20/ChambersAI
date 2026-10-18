@@ -224,6 +224,30 @@ def test_soft_statutes_only_when_judgments_cleared_and_statute_just_under_thresh
         P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN = saved
 
 
+def test_hinglish_is_translated_for_search_and_uses_english_thresholds():
+    from backend.rag import pipeline as P
+    seen = {}
+    jh = {"chunk": {"id": "sc-1#1", "kind": "judgment_para", "citation": "A v. B", "text": "t"}, "score": 1.0,
+          "similarity": 0.9, "similarity_query": 0.7, "card_similarity": 0.7}
+    sh = {"chunk": {"id": "hma-25", "kind": "act_section", "citation": "HMA s.25", "text": "x"}, "score": 0.62, "similarity": 0.62}
+    saved = (P.retrieve, P.rewrite_query, P.translate_to_english, P.J.judgments_available, P.J.retrieve_judgments)
+    P.translate_to_english = lambda q, **k: "my wife wants 50 lakh alimony"
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    P.J.retrieve_judgments = lambda q, *a, **k: seen.setdefault("j", q) and [jh]
+    P.retrieve = lambda q, *a, **k: seen.setdefault("s", q) and [sh]
+    try:
+        hits, info = P._prepare("meri wife 50L alimony maang rahi hai", LAWYER, "hi", True)
+        assert seen == {"j": "my wife wants 50 lakh alimony", "s": "my wife wants 50 lakh alimony"}
+        assert info["lang"] == "hi" and info["search_lang"] == "en" and info["threshold"] == 0.64
+        seen.clear()                                                   # Devanagari is not translated
+        P.translate_to_english = lambda q, **k: 1 / 0
+        info = P._prepare("तलाक के बाद गुजारा भत्ता", LAWYER, "hi", True)[1]
+        assert info["search_lang"] == "hi" and info["threshold"] == 0.60 and seen["s"].startswith("तलाक")
+    finally:
+        P.retrieve, P.rewrite_query, P.translate_to_english, P.J.judgments_available, P.J.retrieve_judgments = saved
+
+
 def test_prompt_has_the_no_assumed_facts_rule():
     system, _ = G.build_prompt("q", HITS, "en", LAWYER)
     assert "Do not assume facts the user has not stated" in system and "NO_SOURCE" in system

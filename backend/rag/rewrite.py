@@ -53,3 +53,23 @@ def rewrite_query(question: str, post=_post, target: str = "statutes") -> str:
         return question
     line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""
     return line[:300] or question
+
+
+TRANSLATE_PROMPT = (
+    "Translate this question, written in Hindi using English letters (Hinglish), into plain English. Keep every fact and "
+    "number exactly as stated (for example '50L' becomes '50 lakh'). Do NOT answer it, add to it or explain it. "
+    "Output only the translation.\n\nQuestion: ")
+
+
+def translate_to_english(question: str, post=_post) -> str:
+    """Faithful English translation of a Hinglish question, used only for retrieval (the answer is still written to the
+    original question). Unlike rewrite_query it adds no legal words, so it cannot make an off-topic question look legal.
+    On any failure the question is returned unchanged."""
+    body = {"contents": [{"role": "user", "parts": [{"text": TRANSLATE_PROMPT + question}]}],
+            "generationConfig": {"temperature": 0, "maxOutputTokens": 300}}
+    try:
+        text = call_gemini(body, post, model=os.environ.get("GEMINI_REWRITE_MODEL") or None)
+    except GenerationError:
+        return question
+    line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""
+    return line[:500] or question
