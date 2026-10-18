@@ -2,3 +2,7 @@ __pycache__/
 .venv/
 .env
 *.pyc
+
+.chambers_env
+.tunnel.log
+*.log

@@ -45,3 +45,4 @@ Chunks live on the data folder (`corpus/chunks/acts/`), not in git. Re-run `pyth
 - Next for the team: frontend to /ask, voice (see Parked list above), hosting, rate limit, CORS.
 - Merge order for the open PRs: #2 to #7, then the final-pass PR.
 - Update (2026-10-18, evening): the 2019 Muslim Women Marriage Act is in (3,550 statute chunks); triple talaq (f08, h01) now answers from s.3 and s.2. The 1986 Act is held back (no official copy). Data is Mac-only: corpus/chunks/acts/MuslimWomenMarriageAct_2019.jsonl and the embeddings.
+- Hosting (branch hosting/local): `bash deploy/start_local.sh` starts the API and the tunnel; `bash deploy/smoke.sh <url>` checks it. See docs/HOSTING.md.

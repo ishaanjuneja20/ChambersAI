@@ -39,7 +39,7 @@ Rules the frontend and voice code can rely on (locked by `tests/test_contract.py
 - `refused: false` always has at least one citation, and every marker in `answer` has an entry in `citations`.
 - The answer is in the language of the question (`lang`). Hindi answers end sentences with the danda `।`.
 - Typical time: 2 to 4 s on the lite Gemini models (3 Gemini calls: two query rewrites in parallel, then the answer).
-- Errors: unknown `lawyer` -> HTTP 404; Gemini unavailable -> HTTP 503 with a short message (show a retry message).
+- Errors: unknown `lawyer` -> HTTP 404; empty `question` -> 422; `question` over 600 characters -> 413; more than 10 questions a minute from one visitor -> 429 with `Retry-After` (show "please wait a moment"); Gemini unavailable -> HTTP 503 with a short message (show a retry message). The limits are env-tunable (docs/HOSTING.md) and are checked before any Gemini call.
 For text-to-speech, strip the markers with `re.sub(r"\s*\[\d+(?:,\s*\d+)*\]", "", answer)` so the voice does not read numbers aloud.
 The app prefers a refusal to a guess: when the sources do not state what the court held or what the statute provides on the point asked,
 it refuses. A question with a false premise (for example "which Article abolished the death penalty") is normally refused too; it is not corrected.
