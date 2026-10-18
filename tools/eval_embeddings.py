@@ -121,7 +121,7 @@ class GeminiEmbedder:
                               "outputDimensionality": 768, "content": {"parts": [{"text": t[:8000]}]}} for t in texts]}
         for attempt in range(6):
             try:
-                req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json"})
+                req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json", "x-goog-api-key": key})
                 with urllib.request.urlopen(req, timeout=120) as r:
                     out = json.load(r)
                 v = np.array([e["values"] for e in out["embeddings"]], dtype="float32")
@@ -184,34 +184,35 @@ REWRITE_PROMPT = (
     "Output only the query.\n\nQuestion: ")
 
 
-def rewrite_queries(questions, root, model):
+def rewrite_queries(questions, root, model, tag="", delay=4.0):
     import urllib.request
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         sys.exit("Set GEMINI_API_KEY to use --rewrite")
-    path = root / "corpus" / "eval" / f"rewrites_{model}.json"
+    path = root / "corpus" / "eval" / f"rewrites_{model}{tag}.json"
     cache = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    from backend.rag.rewrite import REWRITE_PROMPT as RP
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     for q in questions:
         if q["id"] in cache:
             continue
-        body = {"contents": [{"parts": [{"text": REWRITE_PROMPT + q["question"]}]}],
-                "generationConfig": {"temperature": 0}}
+        body = {"contents": [{"parts": [{"text": RP + q["question"]}]}],
+                "generationConfig": {"temperature": 0, "maxOutputTokens": 400}}
         for attempt in range(6):
             try:
-                req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json"})
+                req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json", "x-goog-api-key": key})
                 with urllib.request.urlopen(req, timeout=60) as r:
                     out = json.load(r)
-                cache[q["id"]] = out["candidates"][0]["content"]["parts"][0]["text"].strip()
+                cache[q["id"]] = out["candidates"][0]["content"]["parts"][0]["text"].strip().splitlines()[0].strip(" \"'`")[:300]
                 break
             except Exception as e:
-                wait = 8 * (attempt + 1)
+                wait = 15 * (attempt + 1)
                 print(f"  rewrite error for {q['id']} ({e}); retry in {wait}s", flush=True)
                 time.sleep(wait)
         else:
             sys.exit("rewrite kept failing; check GEMINI_API_KEY and --rewrite-model")
         path.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
-        time.sleep(0.5)
+        time.sleep(delay)
     return [cache[q["id"]] for q in questions]
 
 
@@ -260,6 +261,8 @@ def evaluate(sims, chunks, questions):
 
     # refusal threshold: top-1 section score for answerable vs trap questions
     top1 = S.max(axis=1)
+    res["top1"] = [{"id": q["id"], "lang": q["lang"], "type": q["type"], "s": round(float(top1[i]), 4)}
+                   for i, q in enumerate(questions)]
     for lang in ("en", "hi"):
         a = np.array([top1[i] for i, q in enumerate(questions) if q["lang"] == lang and q["type"] == "answerable"])
         t = np.array([top1[i] for i, q in enumerate(questions) if q["lang"] == lang and q["type"] == "trap"])
@@ -280,9 +283,14 @@ def main():
     ap.add_argument("--device", default=None, help="cpu, mps or cuda (default: automatic). Use cpu if the GPU runs out of memory")
     ap.add_argument("--batch-size", type=int, default=16, help="lower it (e.g. 4) if memory runs out")
     ap.add_argument("--rewrite", action="store_true", help="rewrite each question into an English legal search query with Gemini first")
-    ap.add_argument("--rewrite-model", default="gemini-2.5-flash")
+    ap.add_argument("--rewrite-model", default="gemini-flash-lite-latest")
+    ap.add_argument("--rewrite-delay", type=float, default=4.0, help="seconds between Gemini calls (free tiers allow only a few per minute)")
+    ap.add_argument("--rewrite-mode", choices=["max", "only"], default="max",
+                    help="max: score each section by the better of original and rewritten query (what the app does); only: rewritten query alone")
+    ap.add_argument("--tag", default="", help="suffix for result files, e.g. @lay, so a different question set does not overwrite results")
     a = ap.parse_args()
     root = Path(a.root).resolve()
+    sys.path.insert(0, str(root))        # lets us import the app's backend.rag.rewrite prompt
     qpath = Path(a.questions) if a.questions else (root / "tests" / "eval" / "questions.json")
     questions = json.loads(qpath.read_text(encoding="utf-8"))
     chunks = load_chunks(root)
@@ -301,12 +309,14 @@ def main():
             sys.exit(f"unknown model {name}")
         D = emb.doc_matrix()
         qtexts = [q["question"] for q in questions]
-        label = name
+        label = name + a.tag
+        S = emb.sims(emb.query(qtexts), D)
         if a.rewrite:
-            qtexts = rewrite_queries(questions, root, a.rewrite_model)
-            label = f"{name}+rewrite"
-        Q = emb.query(qtexts)
-        res = evaluate(emb.sims(Q, D), chunks, questions)
+            rw = rewrite_queries(questions, root, a.rewrite_model, a.tag, a.rewrite_delay)
+            S2 = emb.sims(emb.query(rw), D)
+            S = np.maximum(S, S2) if a.rewrite_mode == "max" else S2
+            label = f"{name}+rewrite-{a.rewrite_mode}{a.tag}"
+        res = evaluate(S, chunks, questions)
         res["model"] = label
         res["seconds"] = round(time.time() - t0)
         (out_dir / f"{label}.json").write_text(json.dumps(res, indent=1, ensure_ascii=False))
@@ -317,7 +327,11 @@ def main():
     # summary table across every model that has a result file
     rows = []
     for p in sorted(out_dir.glob("*.json")):
+        if p.name.startswith("rewrites_"):
+            continue
         r = json.loads(p.read_text())
+        if "boost" not in r:
+            continue
         b0 = r["boost"]["0.0"]
         rows.append(f"| {r['model']} | {b0['en']['hit@1']} | {b0['en']['hit@5']} | {b0['hi']['hit@1']} | {b0['hi']['hit@5']} | "
                     f"{r['refusal']['en']['traps_refused']} / {r['refusal']['en']['answerable_kept']} | "
