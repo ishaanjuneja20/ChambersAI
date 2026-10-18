@@ -224,6 +224,12 @@ def test_soft_statutes_only_when_judgments_cleared_and_statute_just_under_thresh
         P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN = saved
 
 
-def test_prompt_has_the_no_assumed_facts_and_false_premise_rules():
+def test_prompt_has_the_no_assumed_facts_rule():
     system, _ = G.build_prompt("q", HITS, "en", LAWYER)
-    assert "Do not assume facts the user has not stated" in system and "mistaken assumption" in system and "NO_SOURCE" in system
+    assert "Do not assume facts the user has not stated" in system and "NO_SOURCE" in system
+    assert "mistaken assumption" not in system                      # tried and removed: see DECISIONS.md (false premises)
+    os.environ["CHAMBERS_STRICT_RULES"] = "0"
+    try:
+        assert "Do not assume facts" not in G.build_prompt("q", HITS, "en", LAWYER)[0]
+    finally:
+        os.environ.pop("CHAMBERS_STRICT_RULES", None)

@@ -45,11 +45,19 @@ def main():
     ap.add_argument("tag", nargs="?")
     ap.add_argument("--ids", nargs="*")
     ap.add_argument("--compare", nargs=2)
+    ap.add_argument("--tally", nargs="+", help="show answered/refused per question across several saved runs")
     ap.add_argument("--pause", type=float, default=13.0)
     ap.add_argument("--resume", action="store_true", help="keep answers already saved under this tag, run only the rest")
     a = ap.parse_args()
     if a.compare:
         return compare(*a.compare)
+    if a.tally:
+        runs = [load(t) for t in a.tally]
+        print("id    " + " ".join(f"{t[-8:]:>8s}" for t in a.tally))
+        for i in runs[0]:
+            row = [state(r.get(i)) for r in runs]
+            print(f"{i:5s} " + " ".join(f"{x:>8s}" for x in row) + ("   <- differs" if len(set(row)) > 1 else ""))
+        return
     os.environ["CHAMBERS_DEBUG"] = "1"
     from backend.rag.generate import GenerationError
     from backend.rag.pipeline import answer, warmup
