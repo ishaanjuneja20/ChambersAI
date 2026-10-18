@@ -7,12 +7,16 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from backend.rag import judgments as J
 from backend.rag.generate import GenerationError, NO_SOURCE, generate, generate_stream
-from backend.rag.retrieve import detect_lang, refusal_threshold, retrieve
-from backend.rag.rewrite import rewrite_query
+from backend.rag.retrieve import _DEVANAGARI, detect_lang, refusal_threshold, retrieve
+from backend.rag.rewrite import rewrite_query, translate_to_english
 from backend.rag.verify import verify_citations
 
 REFUSAL = {"en": "I don't have a reliable source for this.",
            "hi": "इस विषय पर मेरे पास कोई विश्वसनीय स्रोत नहीं है।"}
+
+
+STATUTE_MARGIN = float(os.environ.get("CHAMBERS_STATUTE_MARGIN", "0.05"))   # 0 turns the soft statute hits off
+SOFT_STATUTES = 3
 
 
 def warmup() -> None:
@@ -41,6 +45,14 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
     """Rewrite + retrieve. Returns (hits, debug_info); hits is empty when nothing clears its threshold."""
     rewrite_on = os.environ.get("CHAMBERS_REWRITE", "1") != "0"
     t0 = time.time()
+    answer_question = question
+    if lang == "hi" and not _DEVANAGARI.search(question) and os.environ.get("CHAMBERS_TRANSLATE", "1") != "0":
+        # Hindi typed in English letters embeds ~0.1 lower against the English statutes and judgments than the same
+        # question in English. Search with a faithful English translation and the English thresholds; the answer is
+        # still written to the original question, in Hindi.
+        question, lang_search = translate_to_english(question), "en"
+    else:
+        lang_search = lang
     rewritten = jr = None
     if rewrite_on:                                        # the two rewrites are independent: run them together
         with ThreadPoolExecutor(2) as ex:
@@ -49,12 +61,20 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
             rewritten, jr = f1.result(), (f2.result() if f2 else None)
     t1 = time.time()
     hits = retrieve(question, lawyer["domain"], rewritten=rewritten)
-    th = refusal_threshold(lang)
-    hits = hits if hits and hits[0]["similarity"] >= th else []     # statutes only count when reliable
+    th = refusal_threshold(lang_search)
     jhits = _judgment_hits(question, lawyer["domain"], jr)
+    if hits and hits[0]["similarity"] >= th:
+        pass                                                         # statutes are reliable
+    elif jhits and hits and hits[0]["similarity"] >= th - STATUTE_MARGIN:
+        # The judgments already cleared their own threshold (so rule 4 holds) and the best statute is only just
+        # under its own: send the closest statutes as supporting sources; the model still answers NO_SOURCE
+        # if they do not fit.
+        hits = [h for h in hits if h["similarity"] >= th - STATUTE_MARGIN][:SOFT_STATUTES]
+    else:
+        hits = []                                                    # statutes only count when reliable
     info = None
     if debug:
-        info = {"lang": lang, "threshold": th, "rewrite": rewritten,
+        info = {"lang": lang, "search_lang": lang_search, "threshold": th, "rewrite": rewritten,
                 "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]],
                 "seconds": {"rewrite": round(t1 - t0, 1), "retrieve": round(time.time() - t1, 1)},
                 "judgments": [(h["chunk"]["citation"], round(h["similarity_query"], 3)) for h in jhits]}

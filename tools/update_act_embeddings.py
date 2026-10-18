@@ -28,6 +28,9 @@ def main():
     d = root / "corpus" / "embeddings" / a.model
     chunks = load_chunks(root)
     ids = [c["id"] for c in chunks]
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        raise SystemExit(f"{len(dup)} duplicate chunk ids (e.g. {dup[:3]}): a backup *.jsonl is probably in corpus/chunks/acts/; move it out first")
     old_ids = json.loads((d / "ids.json").read_text())
     old = np.load(d / "docs.npy")
     assert len(old_ids) == len(old), "stored ids and vectors disagree; do not update, re-embed everything"
