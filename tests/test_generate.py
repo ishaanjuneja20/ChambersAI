@@ -197,3 +197,33 @@ def test_quota_on_first_model_moves_to_next_model_without_waiting():
     finally:
         os.environ.pop("GEMINI_MODEL", None)
     assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL]
+
+
+def test_soft_statutes_only_when_judgments_cleared_and_statute_just_under_threshold():
+    from backend.rag import pipeline as P
+    sh = lambda i, s: {"chunk": {"id": f"hma-{i}", "kind": "act_section", "citation": f"HMA s.{i}", "text": "x"}, "score": s, "similarity": s}
+    jh = {"chunk": {"id": "sc-2001_1_1_9#12", "kind": "judgment_para", "citation": "A v. B", "text": "The Court held"},
+          "score": 1.0, "similarity": 0.9, "similarity_query": 0.7, "card_similarity": 0.7}
+    saved = (P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN)
+    P.rewrite_query = lambda q, **k: q
+    P.J.judgments_available = lambda *a, **k: True
+    try:
+        P.J.retrieve_judgments = lambda *a, **k: [jh]
+        P.retrieve = lambda *a, **k: [sh(1, 0.62), sh(2, 0.60), sh(3, 0.59), sh(4, 0.595), sh(5, 0.50)]
+        hits, _ = P._prepare("q", LAWYER, "en", False)
+        assert [h["chunk"]["citation"] for h in hits] == ["HMA s.1", "HMA s.2", "HMA s.3", "A v. B"]   # 3 closest within 0.05 of 0.64
+        P.retrieve = lambda *a, **k: [sh(1, 0.55)]                                                 # too far under
+        assert [h["chunk"]["id"] for h in P._prepare("q", LAWYER, "en", False)[0]] == ["sc-2001_1_1_9#12"]
+        P.retrieve = lambda *a, **k: [sh(1, 0.62)]
+        P.STATUTE_MARGIN = 0.0                                                                      # switched off
+        assert [h["chunk"]["id"] for h in P._prepare("q", LAWYER, "en", False)[0]] == ["sc-2001_1_1_9#12"]
+        P.STATUTE_MARGIN = 0.05
+        P.J.retrieve_judgments = lambda *a, **k: []                                                 # no judgment cleared: refuse
+        assert P._prepare("q", LAWYER, "en", False)[0] == []
+    finally:
+        P.retrieve, P.rewrite_query, P.J.judgments_available, P.J.retrieve_judgments, P.STATUTE_MARGIN = saved
+
+
+def test_prompt_has_the_no_assumed_facts_and_false_premise_rules():
+    system, _ = G.build_prompt("q", HITS, "en", LAWYER)
+    assert "Do not assume facts the user has not stated" in system and "mistaken assumption" in system and "NO_SOURCE" in system

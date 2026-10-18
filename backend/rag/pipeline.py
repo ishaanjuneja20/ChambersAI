@@ -15,6 +15,10 @@ REFUSAL = {"en": "I don't have a reliable source for this.",
            "hi": "इस विषय पर मेरे पास कोई विश्वसनीय स्रोत नहीं है।"}
 
 
+STATUTE_MARGIN = float(os.environ.get("CHAMBERS_STATUTE_MARGIN", "0.05"))   # 0 turns the soft statute hits off
+SOFT_STATUTES = 3
+
+
 def warmup() -> None:
     """Load bge-m3 and both indexes now (server start) so the first question doesn't pay for it."""
     from backend.rag import retrieve as R
@@ -50,8 +54,16 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
     t1 = time.time()
     hits = retrieve(question, lawyer["domain"], rewritten=rewritten)
     th = refusal_threshold(lang)
-    hits = hits if hits and hits[0]["similarity"] >= th else []     # statutes only count when reliable
     jhits = _judgment_hits(question, lawyer["domain"], jr)
+    if hits and hits[0]["similarity"] >= th:
+        pass                                                         # statutes are reliable
+    elif jhits and hits and hits[0]["similarity"] >= th - STATUTE_MARGIN:
+        # The judgments already cleared their own threshold (so rule 4 holds) and the best statute is only just
+        # under its own: send the closest statutes as supporting sources; the model still answers NO_SOURCE
+        # if they do not fit.
+        hits = [h for h in hits if h["similarity"] >= th - STATUTE_MARGIN][:SOFT_STATUTES]
+    else:
+        hits = []                                                    # statutes only count when reliable
     info = None
     if debug:
         info = {"lang": lang, "threshold": th, "rewrite": rewritten,
