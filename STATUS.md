@@ -39,7 +39,7 @@ Chunks live on the data folder (`corpus/chunks/acts/`), not in git. Re-run `pyth
 
 ## Where we stopped (2026-10-18): RAG frozen
 - Second review round scored (2 full AI reviewers + 1 partial; reviewed set in tests/eval/judgment_questions.reviewed.json): 28 of 35 real questions have a case both reviewers accept; most "partly" verdicts come from the 600-character excerpts the reviewers saw.
-- Full run on the final code (tools/run_answers.py): real questions answered 29 of 35 (baseline), traps refused 18-19 of 20. Remaining refusals: f03, p08, h01 and sometimes f08/h04/p10 (retrieval misses, see DECISIONS.md).
+- Two full runs (tools/run_answers.py, before and after the last changes): real questions answered 29 of 35 in both, traps refused 18-19 of 20. Remaining refusals: f03, p08, h01 and sometimes f08/h04/p10 (retrieval misses, see DECISIONS.md).
 - `answer()`, `/ask` and `/ask/stream` output is FROZEN (docs/CONTRACTS.md, tests/test_contract.py). Backend/frontend/voice can build on it.
 - Open, optional: add the two Muslim Women Acts to the family statutes (needs the official PDFs); a second look at the false-premise traps; lawyer review when a lawyer is available; Hindi judgment retrieval (h04 gets no judgments).
 - Next for the team: frontend to /ask, voice (see Parked list above), hosting, rate limit, CORS.
