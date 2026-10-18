@@ -14,10 +14,11 @@ Defined in `lawyers.json` (`GET /lawyers` returns it as is). Decided 2026-10-18.
 ## Rules (decided by the team)
 - **Every lawyer is labelled "AI Lawyer"** (`title` in `lawyers.json`): on the card, next to the name in the consultation, and on the avatar. We do not use
   the word "Advocate" (a protected title of enrolled lawyers), and the answers no longer end with a disclaimer sentence, so the label is the disclosure.
-- **Faces are photoreal** but must be generated or licensed for this use, must not resemble any real person (real advocates, judges, public figures),
-  and we keep a record of where each came from. One consistent style across all six.
+- **Faces are stylised** (illustrated or 3D-cartoon, one consistent style across all six). Photoreal faces were tried with the loudness-driven mouth
+  (`tools/lipsync_test.html`) and looked bad, so they are dropped. Faces must be generated or licensed for this use, must not resemble any real person
+  (real advocates, judges, public figures), and we keep a record of where each came from.
 - **Nothing regional**: no region, community, religion or background in a personality, bio or tagline.
 - **Personality changes tone only.** The strict answering rules (sources only, no greeting, plain words, about 90 words when spoken) always win,
   and the legal content comes only from the retrieved sources. No catchphrases (they would repeat in every answer).
 - **Still to fill in:** `voice_id` (pick the Fish Audio voices matching the column above) and `avatar` (the six images).
-- Photoreal faces and the planned mouth-from-loudness lip-sync can look uncanny together: test one lawyer early (see `docs/VOICE_FRONTEND.md`).
+- Mouth: the stylised avatar needs a separate mouth layer (or a few mouth shapes) that opens with the audio loudness (see `docs/VOICE_FRONTEND.md`). Ask for the mouth as its own layer when generating the images.
