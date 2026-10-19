@@ -89,7 +89,7 @@ const draco = new DRACOLoader().setDecoderPath("https://unpkg.com/three@0.160.0/
 const ktx2 = new KTX2Loader().setTranscoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/basis/").detectSupport(renderer);
 loader.setDRACOLoader(draco); loader.setKTX2Loader(ktx2); loader.setMeshoptDecoder(MeshoptDecoder);
 
-let model = null, morphMeshes = [], headNode = null, headY = 1.6, center = new THREE.Vector3(), size = 1;
+let frameH = 1, model = null, morphMeshes = [], headNode = null, headY = 1.6, center = new THREE.Vector3(), size = 1;
 const have = new Set();
 
 function loadUrl(url, sizeBytes, revoke) {
@@ -113,7 +113,8 @@ function loadUrl(url, sizeBytes, revoke) {
     const box = new THREE.Box3().setFromObject(model); box.getCenter(center); size = box.getSize(new THREE.Vector3()).y || 1;
     if (headNode) { const v = new THREE.Vector3(); headNode.getWorldPosition(v); headY = v.y; } else headY = box.max.y - size * 0.1;
     // if the model is only a head (wider than tall, or a face mesh), frame all of it
-    const sz = box.getSize(new THREE.Vector3()); if (!headNode) { headY = center.y; size = Math.max(sz.y, sz.x) * 1.6; }
+    const sz = box.getSize(new THREE.Vector3()); if (!headNode) headY = center.y;
+    frameH = headNode ? size * 0.3 : Math.max(sz.y, sz.x) * 1.3;
     const names = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_O", "viseme_U", "viseme_E", "viseme_I", "mouthFunnel", "mouthPucker", "eyeBlinkLeft", "eyeBlinkRight"];
     const found = names.filter((n) => have.has(n));
     $("info").textContent = (sizeBytes ? (sizeBytes / 1048576).toFixed(1) + " MB, " : "") + Math.round(tris / 1000) + "k triangles, loaded in " + ((performance.now() - t0) / 1000).toFixed(1) + " s. Mouth shapes found: " + (found.length ? found.join(", ") : "none") + " (" + have.size + " morph targets in total).";
@@ -176,7 +177,7 @@ function loop(now) {
     setMorph("eyeBlinkLeft", bv); setMorph("eyeBlinkRight", bv); setMorph("eyesClosed", bv);
     if (headNode) { const tt = now / 1000; headNode.rotation.y = Math.sin(tt * 0.6) * 0.06; headNode.rotation.x = Math.sin(tt * 0.9) * 0.03 + level * 0.04; }
   }
-  const cy = headY + (parseInt($("camy").value, 10) / 100) * size * 0.3 - size * 0.02, cz = (parseInt($("camz").value, 10) / 100) * size * 0.9;
+  const cy = headY + (parseInt($("camy").value, 10) / 100) * frameH * 0.6, cz = (parseInt($("camz").value, 10) / 70) * (frameH / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
   camera.position.set(center.x, cy, center.z + cz); camera.lookAt(center.x, cy, center.z);
   renderer.render(scene, camera);
 }
