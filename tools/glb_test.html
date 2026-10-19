@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLB avatar test</title>
+<style>
+  :root { --bg:#f6f5f2; --fg:#1d1d1b; --muted:#6b6a65; --card:#fff; --line:#dcdad3; --accent:#2f5d50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161715; --fg:#ecebe6; --muted:#9d9b93; --card:#21221f; --line:#383a35; --accent:#7fc4ae; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; } p.sub { margin:0 0 14px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,320px); gap:16px; align-items:start; }
+  .grid > div { min-width:0; }
+  .col-stage { position:sticky; top:8px; z-index:2; }
+  @media (max-width:820px) { .grid { grid-template-columns:minmax(0,1fr); } .col-stage { background:var(--bg); padding-bottom:6px; } #view { height:46vh !important; } }
+  #view { width:100%; height:72vh; min-height:280px; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; position:relative; }
+  #view canvas { display:block; width:100%; height:100%; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+  label { display:block; margin:10px 0 2px; font-size:13px; color:var(--muted); }
+  input[type=range] { width:100%; height:28px; } input[type=file] { width:100%; font-size:13px; }
+  button { font:inherit; padding:10px 14px; min-height:40px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .meter { height:10px; background:var(--line); border-radius:5px; overflow:hidden; margin-top:8px; }
+  .meter i { display:block; height:100%; width:0; background:var(--accent); }
+  #status { margin:8px 0 0; font-size:13px; color:var(--muted); min-height:20px; }
+  audio { width:100%; margin-top:6px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "_": "data:text/javascript,"
+} }
+</script>
+</head>
+<body>
+<main>
+  <h1>GLB avatar test</h1>
+  <p class="sub">Load a .glb avatar (ARKit or viseme mouth shapes) and a voice. Draco, meshopt and KTX2 compression are supported. Runs in your browser; nothing is uploaded.</p>
+  <div class="grid">
+    <div class="col-stage"><div id="view"><p id="empty" style="position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)">No character loaded yet.<br>Pick a .glb file, or press &ldquo;Load a sample face&rdquo;.</p></div><p id="status">1. Choose a .glb model on the right.</p></div>
+    <div>
+      <div class="card"><h2>1. Model (.glb)</h2><input type="file" id="vrmFile" accept=".glb,.gltf"><button id="sample" style="margin-top:8px">No model? Load a sample face</button>
+<p id="info" style="font-size:13px;color:var(--muted);margin:8px 0 0"></p></div>
+      <div class="card"><h2>2. Voice</h2>
+        <input type="file" id="audFile" accept="audio/*"><audio id="aud" controls></audio>
+        <button id="mic" style="margin-top:8px">Use the microphone instead</button>
+        <div class="meter"><i id="bar"></i></div></div>
+      <div class="card"><h2>3. Tune</h2>
+        <label>Manual mouth opening (no sound playing)</label><input type="range" id="manual" min="0" max="100" value="0">
+        <label>Sensitivity to loudness</label><input type="range" id="gain" min="1" max="20" value="8">
+        <label>Camera height</label><input type="range" id="camy" min="-50" max="50" value="0">
+        <label>Camera distance</label><input type="range" id="camz" min="30" max="150" value="70">
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const $ = (id) => document.getElementById(id);
+const status = (t) => { $("status").textContent = t; };
+const view = $("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(26, 1, 0.01, 50);
+const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(1, 1.5, 2); scene.add(key);
+
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+
+const loader = new GLTFLoader();
+const draco = new DRACOLoader().setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/");
+const ktx2 = new KTX2Loader().setTranscoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/basis/").detectSupport(renderer);
+loader.setDRACOLoader(draco); loader.setKTX2Loader(ktx2); loader.setMeshoptDecoder(MeshoptDecoder);
+
+let frameH = 1, model = null, morphMeshes = [], headNode = null, headY = 1.6, center = new THREE.Vector3(), size = 1;
+const have = new Set();
+
+function loadUrl(url, sizeBytes, revoke) {
+  const t0 = performance.now();
+  status("Loading the model...");
+  loader.load(url, (gltf) => {
+    if (revoke) URL.revokeObjectURL(url);
+    if (model) scene.remove(model);
+    model = gltf.scene; scene.add(model);
+    const em = $("empty"); if (em) em.style.display = "none";
+    morphMeshes = []; have.clear(); headNode = null;
+    let tris = 0;
+    model.traverse((o) => {
+      if (o.isMesh) {
+        o.frustumCulled = false;
+        const g = o.geometry; tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+        if (o.morphTargetDictionary && o.morphTargetInfluences) { morphMeshes.push(o); Object.keys(o.morphTargetDictionary).forEach((k) => have.add(k)); }
+      }
+      if (!headNode && /^(head|mixamorighead|neck_?head)$/i.test(o.name)) headNode = o;
+    });
+    const box = new THREE.Box3().setFromObject(model); box.getCenter(center); size = box.getSize(new THREE.Vector3()).y || 1;
+    // frame the face: use the bounding box of the meshes that have mouth/eye morph targets
+    const fb = new THREE.Box3(); morphMeshes.forEach((m) => fb.expandByObject(m));
+    const faceH = fb.isEmpty() ? 0 : fb.max.y - fb.min.y, sz = box.getSize(new THREE.Vector3());
+    if (faceH > 0 && faceH / size < 0.8) { const fc = fb.getCenter(new THREE.Vector3()); headY = fc.y; center.x = fc.x; center.z = fc.z; frameH = faceH * 1.9; }
+    else if (headNode) { const v = new THREE.Vector3(); headNode.getWorldPosition(v); headY = v.y; frameH = size * 0.3; }
+    else { headY = center.y; frameH = Math.max(sz.y, sz.x) * 1.3; }
+    const names = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_O", "viseme_U", "viseme_E", "viseme_I", "mouthFunnel", "mouthPucker", "eyeBlinkLeft", "eyeBlinkRight"];
+    const found = names.filter((n) => have.has(n));
+    $("info").textContent = (sizeBytes ? (sizeBytes / 1048576).toFixed(1) + " MB, " : "") + Math.round(tris / 1000) + "k triangles, loaded in " + ((performance.now() - t0) / 1000).toFixed(1) + " s. Mouth shapes found: " + (found.length ? found.join(", ") : "none") + " (" + have.size + " morph targets in total).";
+    status(found.length ? "Model loaded. Now play a voice, use the microphone, or drag the manual slider." : "Model loaded, but I found no known mouth shapes. The mouth will not move.");
+  }, undefined, (err) => { status("Could not load the model: " + ((err && err.message) || err) + ". Open the browser console (F12) for details."); });
+}
+$("vrmFile").onchange = (e) => { const f = e.target.files[0]; if (f) loadUrl(URL.createObjectURL(f), f.size, true); };
+$("sample").onclick = () => loadUrl("https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/models/gltf/facecap.glb", 0, false);
+window.addEventListener("error", (e) => status("Page error: " + e.message));
+
+// ---- audio
+let audioCtx = null, analyser = null, tdata = null, fdata = null, srcNode = null, playing = false, usingMic = false, micStream = null;
+function ensureCtx() {
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; tdata = new Float32Array(analyser.fftSize); fdata = new Uint8Array(analyser.frequencyBinCount); }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+$("audFile").onchange = (e) => { const f = e.target.files[0]; if (f) { $("aud").src = URL.createObjectURL(f); status("Press play on the voice."); } };
+$("aud").addEventListener("play", () => {
+  try { ensureCtx(); if (!srcNode) { srcNode = audioCtx.createMediaElementSource($("aud")); srcNode.connect(analyser); analyser.connect(audioCtx.destination); } playing = true; usingMic = false; }
+  catch (err) { status("Audio could not start: " + err.message); }
+});
+$("aud").addEventListener("pause", () => { playing = false; });
+$("aud").addEventListener("ended", () => { playing = false; });
+$("mic").onclick = () => {
+  if (usingMic) { usingMic = false; micStream && micStream.getTracks().forEach((t) => t.stop()); $("mic").textContent = "Use the microphone instead"; return; }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => { ensureCtx(); micStream = s; audioCtx.createMediaStreamSource(s).connect(analyser); usingMic = true; $("mic").textContent = "Stop the microphone"; })
+    .catch((err) => status("The microphone is not available here (" + err.name + "). Use a voice file instead."));
+};
+function analyse() {
+  if (!analyser || !(playing || usingMic)) return null;
+  analyser.getFloatTimeDomainData(tdata);
+  let s = 0; for (let i = 0; i < tdata.length; i++) s += tdata[i] * tdata[i];
+  const level = Math.min(1, Math.sqrt(s / tdata.length) * parseFloat($("gain").value) * 1.4);
+  analyser.getByteFrequencyData(fdata);
+  const binHz = audioCtx.sampleRate / analyser.fftSize; let num = 0, den = 0;
+  for (let i = 2; i < fdata.length; i++) { const hz = i * binHz; if (hz > 4000) break; num += hz * fdata[i]; den += fdata[i]; }
+  return { level, centroid: den > 0 ? Math.min(1, Math.max(0, (num / den - 300) / 2200)) : 0.3 };
+}
+
+function setMorph(name, v) { for (const m of morphMeshes) { const i = m.morphTargetDictionary[name]; if (i !== undefined) m.morphTargetInfluences[i] += (v - m.morphTargetInfluences[i]) * 0.6; } }
+
+const VIS = ["viseme_U", "viseme_O", "viseme_aa", "viseme_E", "viseme_I"]; // low to high centroid
+let level = 0, centroid = 0.3, blinkT = 2, blink = 0, last = performance.now();
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const a = analyse();
+  const target = a ? a.level : parseInt($("manual").value, 10) / 100;
+  if (a) centroid += (a.centroid - centroid) * 0.2;
+  level += (target - level) * (target > level ? 0.6 : 0.25);
+  $("bar").style.width = Math.round(level * 100) + "%";
+  if (model) {
+    const pos = centroid * (VIS.length - 1), lo = Math.floor(pos), hi = Math.min(VIS.length - 1, lo + 1), f = pos - lo;
+    for (const v of VIS) setMorph(v, 0);
+    if (have.has("viseme_aa")) { setMorph(VIS[lo], level * (1 - f) * 0.9); setMorph(VIS[hi], Math.max(0, level * f * 0.9)); if (!a) setMorph("viseme_aa", level); }
+    setMorph("jawOpen", level * 0.55); setMorph("mouthOpen", have.has("jawOpen") ? 0 : level * 0.7);
+    setMorph("mouthFunnel", have.has("viseme_aa") ? 0 : level * Math.max(0, 0.5 - centroid) * 0.6);
+    blinkT -= dt; if (blinkT < 0) { blink = 1; blinkT = 2 + Math.random() * 3; }
+    blink = Math.max(0, blink - dt * 8); const bv = blink > 0.5 ? 1 : blink * 2;
+    setMorph("eyeBlinkLeft", bv); setMorph("eyeBlinkRight", bv); setMorph("eyesClosed", bv);
+    if (headNode) { const tt = now / 1000; headNode.rotation.y = Math.sin(tt * 0.6) * 0.06; headNode.rotation.x = Math.sin(tt * 0.9) * 0.03 + level * 0.04; }
+  }
+  const cy = headY + (parseInt($("camy").value, 10) / 100) * frameH * 0.6, cz = (parseInt($("camz").value, 10) / 70) * (frameH / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
+  camera.position.set(center.x, cy, center.z + cz); camera.lookAt(center.x, cy, center.z);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
