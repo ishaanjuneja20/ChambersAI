@@ -42,9 +42,10 @@
   <h1>GLB avatar test</h1>
   <p class="sub">Load a .glb avatar (ARKit or viseme mouth shapes) and a voice. Draco, meshopt and KTX2 compression are supported. Runs in your browser; nothing is uploaded.</p>
   <div class="grid">
-    <div class="col-stage"><div id="view"></div><p id="status">1. Choose a .glb model on the right.</p></div>
+    <div class="col-stage"><div id="view"><p id="empty" style="position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)">No character loaded yet.<br>Pick a .glb file, or press &ldquo;Load a sample face&rdquo;.</p></div><p id="status">1. Choose a .glb model on the right.</p></div>
     <div>
-      <div class="card"><h2>1. Model (.glb)</h2><input type="file" id="vrmFile" accept=".glb,.gltf"><p id="info" style="font-size:13px;color:var(--muted);margin:8px 0 0"></p></div>
+      <div class="card"><h2>1. Model (.glb)</h2><input type="file" id="vrmFile" accept=".glb,.gltf"><button id="sample" style="margin-top:8px">No model? Load a sample face</button>
+<p id="info" style="font-size:13px;color:var(--muted);margin:8px 0 0"></p></div>
       <div class="card"><h2>2. Voice</h2>
         <input type="file" id="audFile" accept="audio/*"><audio id="aud" controls></audio>
         <button id="mic" style="margin-top:8px">Use the microphone instead</button>
@@ -91,14 +92,14 @@ loader.setDRACOLoader(draco); loader.setKTX2Loader(ktx2); loader.setMeshoptDecod
 let model = null, morphMeshes = [], headNode = null, headY = 1.6, center = new THREE.Vector3(), size = 1;
 const have = new Set();
 
-$("vrmFile").onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  const url = URL.createObjectURL(f), t0 = performance.now();
+function loadUrl(url, sizeBytes, revoke) {
+  const t0 = performance.now();
   status("Loading the model...");
   loader.load(url, (gltf) => {
-    URL.revokeObjectURL(url);
+    if (revoke) URL.revokeObjectURL(url);
     if (model) scene.remove(model);
     model = gltf.scene; scene.add(model);
+    const em = $("empty"); if (em) em.style.display = "none";
     morphMeshes = []; have.clear(); headNode = null;
     let tris = 0;
     model.traverse((o) => {
@@ -111,12 +112,17 @@ $("vrmFile").onchange = (e) => {
     });
     const box = new THREE.Box3().setFromObject(model); box.getCenter(center); size = box.getSize(new THREE.Vector3()).y || 1;
     if (headNode) { const v = new THREE.Vector3(); headNode.getWorldPosition(v); headY = v.y; } else headY = box.max.y - size * 0.1;
+    // if the model is only a head (wider than tall, or a face mesh), frame all of it
+    const sz = box.getSize(new THREE.Vector3()); if (!headNode) { headY = center.y; size = Math.max(sz.y, sz.x) * 1.6; }
     const names = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_O", "viseme_U", "viseme_E", "viseme_I", "mouthFunnel", "mouthPucker", "eyeBlinkLeft", "eyeBlinkRight"];
     const found = names.filter((n) => have.has(n));
-    $("info").textContent = ((f.size / 1048576).toFixed(1)) + " MB, " + Math.round(tris / 1000) + "k triangles, loaded in " + ((performance.now() - t0) / 1000).toFixed(1) + " s. Mouth shapes found: " + (found.length ? found.join(", ") : "none") + " (" + have.size + " morph targets in total).";
-    status(found.length ? "Model loaded. Now play a voice, use the microphone, or drag the manual slider." : "Model loaded, but I found no known mouth shapes. The mouth will not move. Tell me the morph target names and I will map them.");
-  }, undefined, (err) => { status("Could not load the model: " + (err.message || err)); });
-};
+    $("info").textContent = (sizeBytes ? (sizeBytes / 1048576).toFixed(1) + " MB, " : "") + Math.round(tris / 1000) + "k triangles, loaded in " + ((performance.now() - t0) / 1000).toFixed(1) + " s. Mouth shapes found: " + (found.length ? found.join(", ") : "none") + " (" + have.size + " morph targets in total).";
+    status(found.length ? "Model loaded. Now play a voice, use the microphone, or drag the manual slider." : "Model loaded, but I found no known mouth shapes. The mouth will not move.");
+  }, undefined, (err) => { status("Could not load the model: " + ((err && err.message) || err) + ". Open the browser console (F12) for details."); });
+}
+$("vrmFile").onchange = (e) => { const f = e.target.files[0]; if (f) loadUrl(URL.createObjectURL(f), f.size, true); };
+$("sample").onclick = () => loadUrl("https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/models/gltf/facecap.glb", 0, false);
+window.addEventListener("error", (e) => status("Page error: " + e.message));
 
 // ---- audio
 let audioCtx = null, analyser = null, tdata = null, fdata = null, srcNode = null, playing = false, usingMic = false, micStream = null;
