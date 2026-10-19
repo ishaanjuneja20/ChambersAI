@@ -111,10 +111,12 @@ function loadUrl(url, sizeBytes, revoke) {
       if (!headNode && /^(head|mixamorighead|neck_?head)$/i.test(o.name)) headNode = o;
     });
     const box = new THREE.Box3().setFromObject(model); box.getCenter(center); size = box.getSize(new THREE.Vector3()).y || 1;
-    if (headNode) { const v = new THREE.Vector3(); headNode.getWorldPosition(v); headY = v.y; } else headY = box.max.y - size * 0.1;
-    // if the model is only a head (wider than tall, or a face mesh), frame all of it
-    const sz = box.getSize(new THREE.Vector3()); if (!headNode) headY = center.y;
-    frameH = headNode ? size * 0.3 : Math.max(sz.y, sz.x) * 1.3;
+    // frame the face: use the bounding box of the meshes that have mouth/eye morph targets
+    const fb = new THREE.Box3(); morphMeshes.forEach((m) => fb.expandByObject(m));
+    const faceH = fb.isEmpty() ? 0 : fb.max.y - fb.min.y, sz = box.getSize(new THREE.Vector3());
+    if (faceH > 0 && faceH / size < 0.8) { const fc = fb.getCenter(new THREE.Vector3()); headY = fc.y; center.x = fc.x; center.z = fc.z; frameH = faceH * 1.9; }
+    else if (headNode) { const v = new THREE.Vector3(); headNode.getWorldPosition(v); headY = v.y; frameH = size * 0.3; }
+    else { headY = center.y; frameH = Math.max(sz.y, sz.x) * 1.3; }
     const names = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_O", "viseme_U", "viseme_E", "viseme_I", "mouthFunnel", "mouthPucker", "eyeBlinkLeft", "eyeBlinkRight"];
     const found = names.filter((n) => have.has(n));
     $("info").textContent = (sizeBytes ? (sizeBytes / 1048576).toFixed(1) + " MB, " : "") + Math.round(tris / 1000) + "k triangles, loaded in " + ((performance.now() - t0) / 1000).toFixed(1) + " s. Mouth shapes found: " + (found.length ? found.join(", ") : "none") + " (" + have.size + " morph targets in total).";
