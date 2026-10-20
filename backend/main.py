@@ -1,28 +1,54 @@
-
 import json
 import logging
-from typing import Literal
+import os
+from pathlib import Path
+from typing import Literal, Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
-from audio_handler import stream_tts_sentence
-from lawyers import LAWYERS
-from stt_service import transcribe_audio_with_metadata
-
+from backend.lawyers import LAWYERS as VOICE_LAWYERS
+from backend.rag.generate import GenerationError
+from backend.rag.pipeline import answer, answer_stream, warmup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="ChambersAI Voice Backend")
+# The voice modules need FISH_API_KEY / GROQ_API_KEY in backend/.env and raise at import without them.
+# Load them softly so /ask and /ask/stream still run without voice keys; the voice endpoints return 503.
+try:
+    from backend.audio_handler import stream_tts_sentence
+    from backend.stt_service import transcribe_audio_with_metadata
+    VOICE_ERROR = None
+except RuntimeError as e:
+    stream_tts_sentence = transcribe_audio_with_metadata = None
+    VOICE_ERROR = str(e)
+    logger.warning("Voice endpoints disabled: %s", VOICE_ERROR)
+
+app = FastAPI(title="ChambersAI")
+LAWYERS = json.loads((Path(__file__).parent.parent / "lawyers.json").read_text())
 
 MAX_AUDIO_BYTES = 15 * 1024 * 1024
 
 LawyerID = Literal["criminal", "family", "property"]
 
 
+class AskRequest(BaseModel):
+    lawyer: str
+    question: str
+    lang: Optional[str] = None      # "en" | "hi"; detected from the question when omitted
+    voice: bool = True              # /ask/stream only: ask for a short answer that sounds right when spoken
+
+
+@app.on_event("startup")
+def _warm():
+    if os.environ.get("CHAMBERS_WARMUP", "1") != "0":
+        warmup()
+
+
 # --------------------------------------------------
-# 1. ROOT
+# 1. ROOT / HEALTH
 # --------------------------------------------------
 
 @app.get("/")
@@ -33,9 +59,19 @@ async def root():
     }
 
 
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+
 # --------------------------------------------------
-# 2. AVAILABLE LAWYERS
+# 2. LAWYERS
 # --------------------------------------------------
+
+@app.get("/lawyers")
+def lawyers():
+    return LAWYERS
+
 
 @app.get("/api/lawyers")
 async def list_lawyers():
@@ -45,12 +81,12 @@ async def list_lawyers():
             "name": config["name"],
             "persona": config["persona"],
         }
-        for lawyer_id, config in LAWYERS.items()
+        for lawyer_id, config in VOICE_LAWYERS.items()
     ]
 
 
 def get_lawyer_config(lawyer_id: str) -> dict:
-    lawyer = LAWYERS.get(lawyer_id)
+    lawyer = VOICE_LAWYERS.get(lawyer_id)
 
     if not lawyer:
         raise HTTPException(
@@ -62,8 +98,46 @@ def get_lawyer_config(lawyer_id: str) -> dict:
 
 
 # --------------------------------------------------
-# 3. READ AND VALIDATE AUDIO
+# 3. RAG: ASK
 # --------------------------------------------------
+
+@app.post("/ask")
+def ask(req: AskRequest):
+    lawyer = next((l for l in LAWYERS if l["id"] == req.lawyer), None)
+    if lawyer is None:
+        raise HTTPException(404, "unknown lawyer")
+    try:
+        return answer(req.question, lawyer, req.lang)
+    except GenerationError as e:
+        raise HTTPException(503, str(e))
+
+
+@app.post("/ask/stream")
+def ask_stream(req: AskRequest):
+    """Server-sent events, one JSON object per `data:` line: sentence / done / refused / error (see docs/CONTRACTS.md)."""
+    lawyer = next((l for l in LAWYERS if l["id"] == req.lawyer), None)
+    if lawyer is None:
+        raise HTTPException(404, "unknown lawyer")
+
+    def events():
+        for ev in answer_stream(req.question, lawyer, req.lang, voice=req.voice):
+            yield "data: " + json.dumps(ev, ensure_ascii=False) + "\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# --------------------------------------------------
+# 4. READ AND VALIDATE AUDIO
+# --------------------------------------------------
+
+def require_voice():
+    if VOICE_ERROR:
+        raise HTTPException(
+            status_code=503,
+            detail="Voice is not configured on this server.",
+        )
+
 
 async def read_audio_upload(audio_file: UploadFile) -> bytes:
     try:
@@ -87,13 +161,15 @@ async def read_audio_upload(audio_file: UploadFile) -> bytes:
 
 
 # --------------------------------------------------
-# 4. SHARED WHISPER TRANSCRIPTION
+# 5. SHARED WHISPER TRANSCRIPTION
 # --------------------------------------------------
 
 async def transcribe_uploaded_file(
     audio_file: UploadFile,
     language: str | None = None,
 ) -> dict:
+    require_voice()
+
     filename = audio_file.filename or "recording.webm"
     audio_bytes = await read_audio_upload(audio_file)
 
@@ -119,7 +195,7 @@ async def transcribe_uploaded_file(
 
 
 # --------------------------------------------------
-# 5. TEST STT
+# 6. TEST STT
 # --------------------------------------------------
 
 @app.post("/api/test-stt")
@@ -136,7 +212,7 @@ async def test_stt(
 
 
 # --------------------------------------------------
-# 6. FRONTEND STT ENDPOINT
+# 7. FRONTEND STT ENDPOINT
 # --------------------------------------------------
 
 @app.post("/api/transcribe")
@@ -152,7 +228,7 @@ async def transcribe(
 
 
 # --------------------------------------------------
-# 7. FISH AUDIO STREAMING
+# 8. FISH AUDIO STREAMING
 # --------------------------------------------------
 
 async def audio_sse_generator(text: str, voice_id: str):
@@ -175,6 +251,8 @@ async def audio_sse_generator(text: str, voice_id: str):
 
 
 def sse_response(text: str, voice_id: str):
+    require_voice()
+
     return StreamingResponse(
         audio_sse_generator(text, voice_id),
         media_type="text/event-stream",
@@ -186,7 +264,7 @@ def sse_response(text: str, voice_id: str):
 
 
 # --------------------------------------------------
-# 8. TEST TTS
+# 9. TEST TTS
 # --------------------------------------------------
 
 @app.post("/api/test-tts")
@@ -217,7 +295,7 @@ async def test_tts(
 
 
 # --------------------------------------------------
-# 9. TEST STT + TTS LOOPBACK
+# 10. TEST STT + TTS LOOPBACK
 # Speech -> Text -> Spoken text
 # --------------------------------------------------
 

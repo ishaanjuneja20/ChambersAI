@@ -1,0 +1,1024 @@
+[
+ {
+  "id": "c1-en",
+  "pair": "c1",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What is the punishment for murder?",
+  "gold": [
+   "BNS_2023:103"
+  ]
+ },
+ {
+  "id": "c1-hi",
+  "pair": "c1",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "हत्या के लिए क्या सज़ा है?",
+  "gold": [
+   "BNS_2023:103"
+  ]
+ },
+ {
+  "id": "c2-en",
+  "pair": "c2",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "My husband and his family harass me for dowry. Which law punishes cruelty by a husband or his relatives?",
+  "gold": [
+   "BNS_2023:85",
+   "BNS_2023:86"
+  ]
+ },
+ {
+  "id": "c2-hi",
+  "pair": "c2",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मेरे पति और ससुराल वाले दहेज के लिए मुझे प्रताड़ित करते हैं। पति या उसके रिश्तेदारों की क्रूरता पर कौन सा कानून सज़ा देता है?",
+  "gold": [
+   "BNS_2023:85",
+   "BNS_2023:86"
+  ]
+ },
+ {
+  "id": "c3-en",
+  "pair": "c3",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What is the punishment for theft?",
+  "gold": [
+   "BNS_2023:303"
+  ]
+ },
+ {
+  "id": "c3-hi",
+  "pair": "c3",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "चोरी की सज़ा क्या है?",
+  "gold": [
+   "BNS_2023:303"
+  ]
+ },
+ {
+  "id": "c4-en",
+  "pair": "c4",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Someone took money from me by lying and cheating me. What offence is this?",
+  "gold": [
+   "BNS_2023:318"
+  ]
+ },
+ {
+  "id": "c4-hi",
+  "pair": "c4",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "किसी ने झूठ बोलकर मुझसे पैसे ठग लिए। यह कौन सा अपराध है?",
+  "gold": [
+   "BNS_2023:318"
+  ]
+ },
+ {
+  "id": "c5-en",
+  "pair": "c5",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How do I get an FIR registered for a cognizable offence?",
+  "gold": [
+   "BNSS_2023:173"
+  ]
+ },
+ {
+  "id": "c5-hi",
+  "pair": "c5",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "संज्ञेय अपराध की एफआईआर कैसे दर्ज कराई जाती है?",
+  "gold": [
+   "BNSS_2023:173"
+  ]
+ },
+ {
+  "id": "c6-en",
+  "pair": "c6",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can I get bail if I am arrested for a non-bailable offence?",
+  "gold": [
+   "BNSS_2023:480"
+  ]
+ },
+ {
+  "id": "c6-hi",
+  "pair": "c6",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "गैर-जमानती अपराध में गिरफ्तार होने पर क्या मुझे जमानत मिल सकती है?",
+  "gold": [
+   "BNSS_2023:480"
+  ]
+ },
+ {
+  "id": "c7-en",
+  "pair": "c7",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "I think the police may arrest me. Can I apply for bail in advance?",
+  "gold": [
+   "BNSS_2023:482"
+  ]
+ },
+ {
+  "id": "c7-hi",
+  "pair": "c7",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मुझे डर है कि पुलिस मुझे गिरफ्तार कर सकती है। क्या मैं पहले से जमानत के लिए आवेदन कर सकता हूँ?",
+  "gold": [
+   "BNSS_2023:482"
+  ]
+ },
+ {
+  "id": "c8-en",
+  "pair": "c8",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What is the punishment for causing someone's death by negligence?",
+  "gold": [
+   "BNS_2023:106"
+  ]
+ },
+ {
+  "id": "c8-hi",
+  "pair": "c8",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "लापरवाही से किसी की मृत्यु होने पर क्या सज़ा है?",
+  "gold": [
+   "BNS_2023:106"
+  ]
+ },
+ {
+  "id": "f1-en",
+  "pair": "f1",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "On what grounds can a Hindu spouse get a divorce?",
+  "gold": [
+   "HinduMarriageAct_1955:13"
+  ]
+ },
+ {
+  "id": "f1-hi",
+  "pair": "f1",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "हिंदू विवाह में तलाक़ किन आधारों पर मिल सकता है?",
+  "gold": [
+   "HinduMarriageAct_1955:13"
+  ]
+ },
+ {
+  "id": "f2-en",
+  "pair": "f2",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How does divorce by mutual consent work?",
+  "gold": [
+   "HinduMarriageAct_1955:13B"
+  ]
+ },
+ {
+  "id": "f2-hi",
+  "pair": "f2",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "आपसी सहमति से तलाक़ कैसे होता है?",
+  "gold": [
+   "HinduMarriageAct_1955:13B"
+  ]
+ },
+ {
+  "id": "f3-en",
+  "pair": "f3",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Is a Hindu wife entitled to maintenance from her husband?",
+  "gold": [
+   "HinduAdoptionsMaintenanceAct_1956:18"
+  ]
+ },
+ {
+  "id": "f3-hi",
+  "pair": "f3",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या हिंदू पत्नी अपने पति से भरण-पोषण पाने की हक़दार है?",
+  "gold": [
+   "HinduAdoptionsMaintenanceAct_1956:18"
+  ]
+ },
+ {
+  "id": "f4-en",
+  "pair": "f4",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Who inherits the property of a Hindu man who dies without a will?",
+  "gold": [
+   "HinduSuccessionAct_1956:8"
+  ]
+ },
+ {
+  "id": "f4-hi",
+  "pair": "f4",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "बिना वसीयत के मरने वाले हिंदू पुरुष की संपत्ति किसे मिलती है?",
+  "gold": [
+   "HinduSuccessionAct_1956:8"
+  ]
+ },
+ {
+  "id": "f5-en",
+  "pair": "f5",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Do daughters have the same rights as sons in ancestral property?",
+  "gold": [
+   "HinduSuccessionAct_1956:6"
+  ]
+ },
+ {
+  "id": "f5-hi",
+  "pair": "f5",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या पैतृक संपत्ति में बेटियों को बेटों के बराबर अधिकार है?",
+  "gold": [
+   "HinduSuccessionAct_1956:6"
+  ]
+ },
+ {
+  "id": "f6-en",
+  "pair": "f6",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How can a woman apply to a magistrate for protection from domestic violence?",
+  "gold": [
+   "DomesticViolenceAct_2005:12",
+   "DomesticViolenceAct_2005:18"
+  ]
+ },
+ {
+  "id": "f6-hi",
+  "pair": "f6",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "घरेलू हिंसा से सुरक्षा के लिए महिला मजिस्ट्रेट के पास कैसे आवेदन कर सकती है?",
+  "gold": [
+   "DomesticViolenceAct_2005:12",
+   "DomesticViolenceAct_2005:18"
+  ]
+ },
+ {
+  "id": "f7-en",
+  "pair": "f7",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What happens to the property of a Hindu woman who dies without a will?",
+  "gold": [
+   "HinduSuccessionAct_1956:15"
+  ]
+ },
+ {
+  "id": "f7-hi",
+  "pair": "f7",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "बिना वसीयत के मरने वाली हिंदू महिला की संपत्ति किसे मिलती है?",
+  "gold": [
+   "HinduSuccessionAct_1956:15"
+  ]
+ },
+ {
+  "id": "k1-en",
+  "pair": "k1",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Where and how do I file a consumer complaint?",
+  "gold": [
+   "ConsumerProtectionAct_2019:34",
+   "ConsumerProtectionAct_2019:35"
+  ]
+ },
+ {
+  "id": "k1-hi",
+  "pair": "k1",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "उपभोक्ता शिकायत कहाँ और कैसे दर्ज की जाती है?",
+  "gold": [
+   "ConsumerProtectionAct_2019:34",
+   "ConsumerProtectionAct_2019:35"
+  ]
+ },
+ {
+  "id": "k2-en",
+  "pair": "k2",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What agreements count as valid contracts?",
+  "gold": [
+   "IndianContractAct_1872:10"
+  ]
+ },
+ {
+  "id": "k2-hi",
+  "pair": "k2",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "कौन से करार वैध अनुबंध माने जाते हैं?",
+  "gold": [
+   "IndianContractAct_1872:10"
+  ]
+ },
+ {
+  "id": "k3-en",
+  "pair": "k3",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "answerable",
+  "question": "If the other side breaks our contract, what compensation can I claim?",
+  "gold": [
+   "IndianContractAct_1872:73"
+  ]
+ },
+ {
+  "id": "k3-hi",
+  "pair": "k3",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "यदि दूसरा पक्ष हमारा अनुबंध तोड़ दे तो मैं कितना मुआवज़ा माँग सकता हूँ?",
+  "gold": [
+   "IndianContractAct_1872:73"
+  ]
+ },
+ {
+  "id": "k4-en",
+  "pair": "k4",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "answerable",
+  "question": "The goods I bought were not fit for the purpose I told the seller about. What are my rights?",
+  "gold": [
+   "SaleOfGoodsAct_1930:16"
+  ]
+ },
+ {
+  "id": "k4-hi",
+  "pair": "k4",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "मैंने जो सामान ख़रीदा वह उस काम के लायक़ नहीं था जो मैंने विक्रेता को बताया था। मेरे क्या अधिकार हैं?",
+  "gold": [
+   "SaleOfGoodsAct_1930:16"
+  ]
+ },
+ {
+  "id": "p1-en",
+  "pair": "p1",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What counts as a sale of immovable property?",
+  "gold": [
+   "TransferOfPropertyAct_1882:54"
+  ]
+ },
+ {
+  "id": "p1-hi",
+  "pair": "p1",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "अचल संपत्ति की बिक्री किसे कहते हैं?",
+  "gold": [
+   "TransferOfPropertyAct_1882:54"
+  ]
+ },
+ {
+  "id": "p2-en",
+  "pair": "p2",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What is a lease of immovable property?",
+  "gold": [
+   "TransferOfPropertyAct_1882:105"
+  ]
+ },
+ {
+  "id": "p2-hi",
+  "pair": "p2",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "अचल संपत्ति का पट्टा क्या होता है?",
+  "gold": [
+   "TransferOfPropertyAct_1882:105"
+  ]
+ },
+ {
+  "id": "p3-en",
+  "pair": "p3",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Which property documents must be registered?",
+  "gold": [
+   "RegistrationAct_1908:17"
+  ]
+ },
+ {
+  "id": "p3-hi",
+  "pair": "p3",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "किन संपत्ति दस्तावेज़ों का पंजीकरण अनिवार्य है?",
+  "gold": [
+   "RegistrationAct_1908:17"
+  ]
+ },
+ {
+  "id": "p4-en",
+  "pair": "p4",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What happens if I file a case after the time limit has passed?",
+  "gold": [
+   "LimitationAct_1963:3"
+  ]
+ },
+ {
+  "id": "p4-hi",
+  "pair": "p4",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "समय-सीमा बीत जाने के बाद मुक़दमा दायर करने पर क्या होता है?",
+  "gold": [
+   "LimitationAct_1963:3"
+  ]
+ },
+ {
+  "id": "p5-en",
+  "pair": "p5",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "My builder delayed possession of the flat. Can I get my money back with compensation?",
+  "gold": [
+   "RERA_2016:18"
+  ]
+ },
+ {
+  "id": "p5-hi",
+  "pair": "p5",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "बिल्डर ने फ्लैट का कब्ज़ा देने में देरी की। क्या मुझे मुआवज़े के साथ पैसे वापस मिल सकते हैं?",
+  "gold": [
+   "RERA_2016:18"
+  ]
+ },
+ {
+  "id": "p6-en",
+  "pair": "p6",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can I force the seller to complete the sale as per our agreement?",
+  "gold": [
+   "SpecificReliefAct_1963:10"
+  ]
+ },
+ {
+  "id": "p6-hi",
+  "pair": "p6",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या मैं विक्रेता को क़रार के अनुसार बिक्री पूरी करने के लिए बाध्य कर सकता हूँ?",
+  "gold": [
+   "SpecificReliefAct_1963:10"
+  ]
+ },
+ {
+  "id": "l1-en",
+  "pair": "l1",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can an employer pay a woman less than a man for the same work?",
+  "gold": [
+   "CodeOnWages_2019:3"
+  ]
+ },
+ {
+  "id": "l1-hi",
+  "pair": "l1",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या नियोक्ता एक ही काम के लिए महिला को पुरुष से कम वेतन दे सकता है?",
+  "gold": [
+   "CodeOnWages_2019:3"
+  ]
+ },
+ {
+  "id": "l2-en",
+  "pair": "l2",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What must an employer do before retrenching workers?",
+  "gold": [
+   "IndustrialRelationsCode_2020:70"
+  ]
+ },
+ {
+  "id": "l2-hi",
+  "pair": "l2",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "कर्मचारियों की छँटनी से पहले नियोक्ता को क्या करना होता है?",
+  "gold": [
+   "IndustrialRelationsCode_2020:70"
+  ]
+ },
+ {
+  "id": "l3-en",
+  "pair": "l3",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can workers go on strike without giving notice?",
+  "gold": [
+   "IndustrialRelationsCode_2020:62"
+  ]
+ },
+ {
+  "id": "l3-hi",
+  "pair": "l3",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या कर्मचारी बिना नोटिस दिए हड़ताल पर जा सकते हैं?",
+  "gold": [
+   "IndustrialRelationsCode_2020:62"
+  ]
+ },
+ {
+  "id": "l4-en",
+  "pair": "l4",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Does my company need a committee for sexual harassment complaints?",
+  "gold": [
+   "POSHAct_2013:4"
+  ]
+ },
+ {
+  "id": "l4-hi",
+  "pair": "l4",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या मेरी कंपनी में यौन उत्पीड़न की शिकायतों के लिए समिति होना ज़रूरी है?",
+  "gold": [
+   "POSHAct_2013:4"
+  ]
+ },
+ {
+  "id": "l5-en",
+  "pair": "l5",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "After how many years of service am I entitled to gratuity?",
+  "gold": [
+   "CodeOnSocialSecurity_2020:53"
+  ]
+ },
+ {
+  "id": "l5-hi",
+  "pair": "l5",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "कितने साल की नौकरी के बाद ग्रेच्युटी मिलती है?",
+  "gold": [
+   "CodeOnSocialSecurity_2020:53"
+  ]
+ },
+ {
+  "id": "l6-en",
+  "pair": "l6",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How is the minimum wage fixed?",
+  "gold": [
+   "CodeOnWages_2019:6"
+  ]
+ },
+ {
+  "id": "l6-hi",
+  "pair": "l6",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "न्यूनतम मज़दूरी कैसे तय की जाती है?",
+  "gold": [
+   "CodeOnWages_2019:6"
+  ]
+ },
+ {
+  "id": "n1-en",
+  "pair": "n1",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "What does the right to life and personal liberty protect?",
+  "gold": [
+   "Constitution_of_India:21"
+  ]
+ },
+ {
+  "id": "n1-hi",
+  "pair": "n1",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "जीवन और व्यक्तिगत स्वतंत्रता का अधिकार क्या सुरक्षित करता है?",
+  "gold": [
+   "Constitution_of_India:21"
+  ]
+ },
+ {
+  "id": "n2-en",
+  "pair": "n2",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Is everyone equal before the law in India?",
+  "gold": [
+   "Constitution_of_India:14"
+  ]
+ },
+ {
+  "id": "n2-hi",
+  "pair": "n2",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या भारत में सभी लोग कानून के सामने बराबर हैं?",
+  "gold": [
+   "Constitution_of_India:14"
+  ]
+ },
+ {
+  "id": "n3-en",
+  "pair": "n3",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Do I have freedom of speech and expression?",
+  "gold": [
+   "Constitution_of_India:19"
+  ]
+ },
+ {
+  "id": "n3-hi",
+  "pair": "n3",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या मुझे बोलने और अभिव्यक्ति की स्वतंत्रता है?",
+  "gold": [
+   "Constitution_of_India:19"
+  ]
+ },
+ {
+  "id": "n4-en",
+  "pair": "n4",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can I go straight to the Supreme Court if my fundamental right is violated?",
+  "gold": [
+   "Constitution_of_India:32"
+  ]
+ },
+ {
+  "id": "n4-hi",
+  "pair": "n4",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या मौलिक अधिकार का उल्लंघन होने पर मैं सीधे सर्वोच्च न्यायालय जा सकता हूँ?",
+  "gold": [
+   "Constitution_of_India:32"
+  ]
+ },
+ {
+  "id": "n5-en",
+  "pair": "n5",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "Can the High Court issue writs to protect my rights?",
+  "gold": [
+   "Constitution_of_India:226"
+  ]
+ },
+ {
+  "id": "n5-hi",
+  "pair": "n5",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "क्या उच्च न्यायालय मेरे अधिकारों की रक्षा के लिए रिट जारी कर सकता है?",
+  "gold": [
+   "Constitution_of_India:226"
+  ]
+ },
+ {
+  "id": "n6-en",
+  "pair": "n6",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How long does a government office have to reply to my RTI request?",
+  "gold": [
+   "RTIAct_2005:7"
+  ]
+ },
+ {
+  "id": "n6-hi",
+  "pair": "n6",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "सरकारी कार्यालय को मेरे आरटीआई आवेदन का जवाब देने के लिए कितना समय मिलता है?",
+  "gold": [
+   "RTIAct_2005:7"
+  ]
+ },
+ {
+  "id": "n7-en",
+  "pair": "n7",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "answerable",
+  "question": "How do I submit an RTI request?",
+  "gold": [
+   "RTIAct_2005:6"
+  ]
+ },
+ {
+  "id": "n7-hi",
+  "pair": "n7",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "answerable",
+  "question": "आरटीआई आवेदन कैसे दिया जाता है?",
+  "gold": [
+   "RTIAct_2005:6"
+  ]
+ },
+ {
+  "id": "t1-en",
+  "pair": "t1",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the GST rate on restaurant bills?",
+  "gold": []
+ },
+ {
+  "id": "t1-hi",
+  "pair": "t1",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "trap",
+  "question": "रेस्टोरेंट के बिल पर जीएसटी की दर क्या है?",
+  "gold": []
+ },
+ {
+  "id": "t2-en",
+  "pair": "t2",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "trap",
+  "question": "How is income tax calculated on a salary?",
+  "gold": []
+ },
+ {
+  "id": "t2-hi",
+  "pair": "t2",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "trap",
+  "question": "वेतन पर आयकर की गणना कैसे होती है?",
+  "gold": []
+ },
+ {
+  "id": "t3-en",
+  "pair": "t3",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "trap",
+  "question": "My cheque bounced. Which section applies and what can I do?",
+  "gold": []
+ },
+ {
+  "id": "t3-hi",
+  "pair": "t3",
+  "lawyer": "consumer",
+  "lang": "hi",
+  "type": "trap",
+  "question": "मेरा चेक बाउंस हो गया। कौन सी धारा लागू होती है और मैं क्या कर सकता हूँ?",
+  "gold": []
+ },
+ {
+  "id": "t4-en",
+  "pair": "t4",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "What is the fine for drunk driving under the Motor Vehicles Act?",
+  "gold": []
+ },
+ {
+  "id": "t4-hi",
+  "pair": "t4",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "trap",
+  "question": "मोटर वाहन अधिनियम के तहत नशे में गाड़ी चलाने पर कितना जुर्माना है?",
+  "gold": []
+ },
+ {
+  "id": "t5-en",
+  "pair": "t5",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "trap",
+  "question": "What are a company director's duties under the Companies Act?",
+  "gold": []
+ },
+ {
+  "id": "t5-hi",
+  "pair": "t5",
+  "lawyer": "labour",
+  "lang": "hi",
+  "type": "trap",
+  "question": "कंपनी अधिनियम के तहत निदेशक के क्या कर्तव्य हैं?",
+  "gold": []
+ },
+ {
+  "id": "t6-en",
+  "pair": "t6",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "How long is the iddat period for a Muslim woman after divorce?",
+  "gold": []
+ },
+ {
+  "id": "t6-hi",
+  "pair": "t6",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "trap",
+  "question": "तलाक़ के बाद मुस्लिम महिला की इद्दत की अवधि कितनी होती है?",
+  "gold": []
+ },
+ {
+  "id": "t7-en",
+  "pair": "t7",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "trap",
+  "question": "How do I apply for a patent in India?",
+  "gold": []
+ },
+ {
+  "id": "t7-hi",
+  "pair": "t7",
+  "lawyer": "property",
+  "lang": "hi",
+  "type": "trap",
+  "question": "भारत में पेटेंट के लिए आवेदन कैसे करें?",
+  "gold": []
+ },
+ {
+  "id": "t8-en",
+  "pair": "t8",
+  "lawyer": "family",
+  "lang": "en",
+  "type": "trap",
+  "question": "How many witnesses must attest a will for it to be valid?",
+  "gold": []
+ },
+ {
+  "id": "t8-hi",
+  "pair": "t8",
+  "lawyer": "family",
+  "lang": "hi",
+  "type": "trap",
+  "question": "वसीयत वैध होने के लिए कितने गवाहों का हस्ताक्षर ज़रूरी है?",
+  "gold": []
+ },
+ {
+  "id": "t9-en",
+  "pair": "t9",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "trap",
+  "question": "Who won the 2024 Lok Sabha election?",
+  "gold": []
+ },
+ {
+  "id": "t9-hi",
+  "pair": "t9",
+  "lawyer": "constitutional",
+  "lang": "hi",
+  "type": "trap",
+  "question": "2024 का लोकसभा चुनाव कौन जीता?",
+  "gold": []
+ },
+ {
+  "id": "t10-en",
+  "pair": "t10",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "trap",
+  "question": "Write me a poem about justice.",
+  "gold": []
+ },
+ {
+  "id": "t10-hi",
+  "pair": "t10",
+  "lawyer": "criminal",
+  "lang": "hi",
+  "type": "trap",
+  "question": "न्याय पर एक कविता लिखिए।",
+  "gold": []
+ }
+]

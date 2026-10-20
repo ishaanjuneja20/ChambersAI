@@ -1,11 +1,14 @@
-import type { LawyerEntry } from "../lib/contract";
-import { useAudioLevel } from "../lib/useAudioLevel";
+import type { Lawyer } from "../lib/demoLawyers";
+import type { ConsultStatus } from "../lib/consultTypes";
+import { useAudioLevel } from "../hooks/useAudioLevel";
+import { useImageFallback } from "../hooks/useImageFallback";
+import PlaceholderPortrait from "./PlaceholderPortrait";
+import "./Avatar.css";
 
-export type ConsultStatus = "idle" | "listening" | "processing" | "speaking";
-
+// Stable interface for swapping in a real lip-sync renderer later (e.g. a .glb-based SDK) —
+// callers only ever provide a lawyer, an audio source/level, and a status.
 interface AvatarProps {
-  lawyer: Pick<LawyerEntry, "name" | "avatar">;
-  // Stable interface: an audio source to drive lipsync from, or a precomputed level (0..1).
+  lawyer: Pick<Lawyer, "id" | "name" | "avatarUrl">;
   audioSource?: HTMLMediaElement | MediaStream | null;
   audioLevel?: number;
   status?: ConsultStatus;
@@ -15,14 +18,19 @@ interface AvatarProps {
 export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle", size = "large" }: AvatarProps) {
   const liveLevel = useAudioLevel(audioSource ?? null);
   const level = audioLevel ?? liveLevel;
-  const mouthOpen = 4 + level * 18;
+  const mouthOpenRy = 4 + level * 16;
+  const { failed, onError } = useImageFallback();
 
   return (
-    <div className={`avatar avatar--${size} avatar--${status}`}>
+    <div className={`avatar avatar--${size}`}>
       <div className="avatar__portrait">
-        <img src={lawyer.avatar || "/avatars/placeholder.svg"} alt={`${lawyer.name}, AI lawyer avatar`} />
+        {failed ? (
+          <PlaceholderPortrait seed={lawyer.id} />
+        ) : (
+          <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt={`${lawyer.name}, AI advocate persona`} onError={onError} />
+        )}
         <svg className="avatar__mouth-overlay" viewBox="0 0 200 200" aria-hidden="true">
-          <ellipse cx="100" cy="112" rx="16" ry={mouthOpen} fill="#2E1A47" opacity={status === "speaking" ? 0.85 : 0} />
+          <ellipse cx="100" cy="128" rx="18" ry={mouthOpenRy} style={{ fill: "var(--bg)" }} opacity={status === "speaking" ? 0.8 : 0} />
         </svg>
         {status === "listening" && <span className="avatar__ring avatar__ring--listening" />}
         {status === "speaking" && <span className="avatar__ring avatar__ring--speaking" />}
