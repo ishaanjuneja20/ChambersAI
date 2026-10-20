@@ -60,3 +60,17 @@ Response: `text/event-stream`. Each `data:` line is one JSON event:
 - `{"type":"error","message":"..."}` Gemini failed; show a retry message.
 Nothing is sent until a sentence with a valid citation exists, so a refusal never arrives after speech has started.
 Browser example and the mouth-from-loudness lip sync: `docs/VOICE_FRONTEND.md`.
+
+## POST /api/speak (lip-sync speech)  (2026-10-20)
+Request: `{"text": "...", "lawyer_id": "constitutional", "lang": "en" | "hi" | null}`. One sentence or clause, exactly as it should be spoken (max 1000 chars). `lang` goes to Fish Audio for text normalisation and alignment.
+Response:
+```json
+{"audio_base64": "<mp3>", "format": "mp3",
+ "timing": {"source": "fish-timestamps" | "none",
+            "segments": [{"text": "My", "start": 0.0, "end": 0.32}, ...]}}
+```
+- Audio and timing come from one Fish Audio call (`/v1/tts/stream/with-timestamp`, same model and voice as `/api/test-tts`), so the times refer to this exact MP3. Seconds from the start of the audio.
+- Granularity observed: one segment per word for Latin script; for Devanagari one segment per syllable with the vowel signs dropped (`पुलिस` -> `प`, `ल`, `स`); segments can be zero-length; the first segment is pinned to 0.0 even when the audio starts with silence. No phoneme timing.
+- `source: "none"` means Fish sent no alignment; the frontend then places phones on the audio alone.
+- 400 empty/too long text or unknown lawyer, 422 bad `lang`, 502 Fish failed, 503 voice keys missing.
+The frontend (`frontend/src/lib/speech/fishSpeech.ts`) splits answers into sentences, calls this per sentence and turns text + segments + decoded audio into a viseme timeline (`frontend/src/lib/lipsync/`).

@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -5,6 +6,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -18,18 +20,28 @@ logger = logging.getLogger(__name__)
 # The voice modules need FISH_API_KEY / GROQ_API_KEY in backend/.env and raise at import without them.
 # Load them softly so /ask and /ask/stream still run without voice keys; the voice endpoints return 503.
 try:
-    from backend.audio_handler import stream_tts_sentence
+    from backend.audio_handler import stream_tts_sentence, tts_with_timestamps
     from backend.stt_service import transcribe_audio_with_metadata
     VOICE_ERROR = None
 except RuntimeError as e:
-    stream_tts_sentence = transcribe_audio_with_metadata = None
+    stream_tts_sentence = tts_with_timestamps = transcribe_audio_with_metadata = None
     VOICE_ERROR = str(e)
     logger.warning("Voice endpoints disabled: %s", VOICE_ERROR)
 
 app = FastAPI(title="ChambersAI")
 LAWYERS = json.loads((Path(__file__).parent.parent / "lawyers.json").read_text())
 
+# The browser app calls /api/speak directly; list its origins (comma-separated) in CHAMBERS_CORS_ORIGINS.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in os.environ.get(
+        "CHAMBERS_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
 MAX_AUDIO_BYTES = 15 * 1024 * 1024
+MAX_SPEAK_CHARS = 1000
 
 LawyerID = Literal["criminal", "family", "property"]
 
@@ -39,6 +51,12 @@ class AskRequest(BaseModel):
     question: str
     lang: Optional[str] = None      # "en" | "hi"; detected from the question when omitted
     voice: bool = True              # /ask/stream only: ask for a short answer that sounds right when spoken
+
+
+class SpeakRequest(BaseModel):
+    text: str                       # one sentence (or a few), exactly as it should be spoken
+    lawyer_id: str
+    lang: Optional[Literal["en", "hi"]] = None   # passed to Fish for normalisation and alignment
 
 
 @app.on_event("startup")
@@ -295,7 +313,51 @@ async def test_tts(
 
 
 # --------------------------------------------------
-# 10. TEST STT + TTS LOOPBACK
+# 10. SPEECH + WORD TIMESTAMPS (LIP-SYNC)
+# --------------------------------------------------
+
+@app.post("/api/speak")
+async def speak(req: SpeakRequest):
+    """MP3 for the text plus Fish Audio's word timestamps for that exact audio (see docs/CONTRACTS.md)."""
+    require_voice()
+
+    text = req.text.strip()
+
+    if not text:
+        raise HTTPException(
+            status_code=400,
+            detail="Text cannot be empty.",
+        )
+
+    if len(text) > MAX_SPEAK_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Text exceeds the {MAX_SPEAK_CHARS}-character limit.",
+        )
+
+    lawyer = get_lawyer_config(req.lawyer_id)
+    result = await tts_with_timestamps(text, lawyer["voice_id"], req.lang)
+
+    if not result["audio"]:
+        raise HTTPException(
+            status_code=502,
+            detail="Speech generation returned no audio.",
+        )
+
+    segments = result["segments"]
+
+    return {
+        "audio_base64": base64.b64encode(result["audio"]).decode("ascii"),
+        "format": "mp3",
+        "timing": {
+            "source": "fish-timestamps" if segments else "none",
+            "segments": segments,
+        },
+    }
+
+
+# --------------------------------------------------
+# 11. TEST STT + TTS LOOPBACK
 # Speech -> Text -> Spoken text
 # --------------------------------------------------
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import Avatar from "../components/Avatar";
+import { getLawyerModel } from "../components/avatar3d/lawyerModels";
 import SourcesPanel from "../components/SourcesPanel";
 import HandoffBanner from "../components/HandoffBanner";
 import MeetInputBar from "../components/MeetInputBar";
@@ -33,8 +34,11 @@ export default function Meet() {
 
   const captionsRef = useRef<HTMLDivElement>(null);
   const voiceButtonRef = useRef<VoiceButtonHandle>(null);
-  const { speak, stop: stopSpeaking, supported: speechSupported } = useSpeak();
-  const audioLevel = useSyntheticSpeechLevel(status === "speaking");
+  const { speak, stop: stopSpeaking, supported: speechSupported, lipSync } = useSpeak();
+  // 3D lawyers are driven by `lipSync` inside their render loop; the per-frame synthetic level (React
+  // state) is only needed by the 2D portraits.
+  const has3D = !!lawyer && !!getLawyerModel(lawyer.id);
+  const audioLevel = useSyntheticSpeechLevel(status === "speaking" && !has3D);
 
   useEffect(() => {
     captionsRef.current?.scrollTo({ top: captionsRef.current.scrollHeight, behavior: "smooth" });
@@ -68,6 +72,7 @@ export default function Meet() {
           addLawyerTurn(answer, answerCitations, answeringLawyer);
           setStatus("idle");
         },
+        { lawyerId: answeringLawyer.id },
       );
     }, 500);
   }
@@ -97,7 +102,7 @@ export default function Meet() {
 
         {handoff && <HandoffBanner fromName={handoff.from} toName={handoff.to} />}
 
-        <Avatar lawyer={lawyer} status={status} audioLevel={audioLevel} size="large" />
+        <Avatar lawyer={lawyer} status={status} audioLevel={audioLevel} size="large" lipSync={lipSync} />
 
         <div className="meet__captions" ref={captionsRef} aria-live="polite">
           {transcript.map((turn) => (

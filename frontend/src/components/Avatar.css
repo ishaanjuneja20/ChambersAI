@@ -13,6 +13,18 @@
   height: 220px;
 }
 
+.avatar--stage {
+  display: block;
+  width: 100%;
+}
+
+.avatar__stage-loading {
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+  border-radius: 1rem;
+  background: #1a0f08;
+}
+
 .avatar__portrait {
   position: relative;
   width: 100%;
