@@ -13,9 +13,9 @@
 }
 
 .rotating-badge__ring text {
-  fill: var(--text-faint);
+  fill: var(--gold);
   font-size: 7.5px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 

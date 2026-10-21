@@ -4,6 +4,7 @@ import type { Lawyer } from "../lib/demoLawyers";
 import PlaceholderPortrait from "./PlaceholderPortrait";
 import { useImageFallback } from "../hooks/useImageFallback";
 import { useSpotlight } from "../hooks/useSpotlight";
+import { prefetchLawyerModel } from "./avatar3d/modelPrefetch";
 import "./LawyerCard.css";
 
 export default function LawyerCard({ lawyer, matched }: { lawyer: Lawyer; matched?: boolean }) {
@@ -18,6 +19,8 @@ export default function LawyerCard({ lawyer, matched }: { lawyer: Lawyer; matche
       type="button"
       className={`lawyer-card spotlight-card${matched ? " lawyer-card--matched" : ""}`}
       onClick={() => navigate(`/lawyers/${lawyer.id}`)}
+      onPointerEnter={() => prefetchLawyerModel(lawyer.id)} // warm the 3D model for the Meet screen
+      onFocus={() => prefetchLawyerModel(lawyer.id)}
     >
       <motion.div
         className="lawyer-card__portrait-wrap"

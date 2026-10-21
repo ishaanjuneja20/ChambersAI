@@ -1,0 +1,59 @@
+/* Attached-file chips above a composer. */
+.meet-input-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.meet-input-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: min(100%, 360px);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.5rem;
+  font-size: var(--fs-caption);
+  color: var(--text);
+}
+
+.meet-input-bar__chip--error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.meet-input-bar__chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 6ch; /* the name keeps some room beside the (unshrinkable) status text */
+  max-width: 140px;
+}
+
+.meet-input-bar__chip-meta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.meet-input-bar__chip-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.meet-input-bar__chip-remove:hover {
+  background: var(--border-strong);
+  color: var(--text);
+}

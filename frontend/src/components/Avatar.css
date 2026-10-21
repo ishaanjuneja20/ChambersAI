@@ -13,13 +13,25 @@
   height: 220px;
 }
 
+.avatar--stage {
+  display: block;
+  width: 100%;
+}
+
+.avatar__stage-loading {
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+  border-radius: var(--radius-lg);
+  background: #000; /* the same black as the logo loader above it: no colour change while the 3D component downloads */
+}
+
 .avatar__portrait {
   position: relative;
   width: 100%;
   height: 100%;
   border-radius: 50%;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-gold);
   background: var(--surface);
 }
 
@@ -52,7 +64,7 @@
 }
 
 .avatar__ring--speaking {
-  border-color: var(--success);
+  border-color: var(--gold);
   animation: avatar-pulse 0.7s ease-in-out infinite;
 }
 

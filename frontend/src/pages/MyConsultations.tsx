@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { deleteAllSessions, deleteSession, listSessions, type ConsultationSession } from "../lib/sessionsStore";
 import Reveal from "../components/Reveal";
 import Decorations from "../components/Decorations";
@@ -50,7 +50,15 @@ export default function MyConsultations() {
       />
 
       {filtered.length === 0 ? (
-        <p className="empty-note">{sessions.length === 0 ? 'No consultations yet. Start one from "New Consultation".' : "No matches."}</p>
+        <p className="empty-note">
+          {sessions.length === 0 ? (
+            <>
+              No consultations yet. Pick a lawyer from <Link to="/home">Home</Link> to start one.
+            </>
+          ) : (
+            "No matches."
+          )}
+        </p>
       ) : (
         <ul className="session-list">
           {filtered.map((s, i) => (

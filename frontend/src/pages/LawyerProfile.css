@@ -1,129 +1,832 @@
-.lawyer-profile {
+/* Advocate profile. Two columns when the page frame is >= 880px (a sticky action card on the right, class .lp__frame--wide, set
+   from LawyerProfile.tsx with the same threshold); a single column with a fixed bottom action bar below that. Sizes inside the frame
+   respond to the frame's own width (container queries), not the viewport, because the sidebar takes a variable amount of it. */
+.lp {
   position: relative;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1.75rem 1.5rem 3rem;
+  padding: var(--space-5) var(--space-5) calc(var(--space-8) + 3rem); /* room for the floating assistant button under the last row */
 }
 
-.lawyer-profile > *:not(.decorations) {
+/* Height of the fixed bottom bar; MatchAssistant.css reads it to lift the assistant button above the bar. */
+body.has-action-bar {
+  --action-bar-h: 76px;
+}
+
+.lp > *:not(.decorations) {
   position: relative;
   z-index: 1;
 }
 
-.lawyer-profile__header {
+.lp__frame {
+  container: lp / inline-size;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.lp__frame:not(.lp__frame--wide) {
+  padding-bottom: calc(var(--action-bar-h, 76px) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+}
+
+/* ---- top row: back button ---- */
+.lp__top {
   display: flex;
-  gap: 1.75rem;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
-.lawyer-profile__portrait {
-  width: 200px;
-  height: 200px;
-  flex-shrink: 0;
-  border-radius: 1.1rem;
-  overflow: hidden;
+.lp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.45rem 0.9rem 0.45rem 0.6rem;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.25s, background-color 0.2s;
 }
 
-.lawyer-profile__portrait img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.lp-back:hover {
+  color: var(--text);
+  border-color: var(--border-gold);
+}
+
+/* ---- layout ---- */
+.lp__layout {
   display: block;
 }
 
-.lawyer-profile__photo {
-  filter: grayscale(1) contrast(1.08);
-  transition: filter 0.3s ease;
+.lp__frame--wide .lp__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-7);
+  align-items: start;
 }
 
-.lawyer-profile__portrait:hover .lawyer-profile__photo,
-.lawyer-profile__portrait:active .lawyer-profile__photo {
-  filter: grayscale(0) contrast(1.02);
-}
-
-.lawyer-profile__identity {
-  flex: 1;
-  min-width: 220px;
+.lp__main {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-7);
 }
 
-.lawyer-profile__identity h1 {
-  margin: 0;
-  color: var(--text);
+.lp__aside {
+  position: sticky;
+  top: var(--space-5);
 }
 
-.lawyer-profile__type {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
+/* ---- hero ---- */
+.lp-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
 }
 
-.lawyer-profile__cta {
+@container lp (min-width: 620px) {
+  .lp-hero {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+}
+
+/* Gallery frame: a gold hairline around a mat and a soft glow. The photo itself is never filtered or tinted. */
+.lp-portrait {
+  width: min(100%, 320px);
+}
+
+.lp-portrait__frame {
+  aspect-ratio: 4 / 5;
+  padding: var(--space-2);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--border-gold);
+  background: var(--grad-surface), var(--surface);
+  box-shadow: var(--highlight-inset), var(--shadow-lg), 0 0 56px var(--gold-wash);
+}
+
+.lp-portrait__frame > div,
+.lp-portrait__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: calc(var(--radius-xl) - var(--space-2));
+}
+
+.lp-portrait__img {
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+.lp-identity {
+  min-width: 0;
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.lp-eyebrow {
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.lp-identity h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+}
+
+.lp-tagline {
+  margin: 0;
+  max-width: 34rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.4rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.lp-quickfacts {
+  display: flex;
   flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  width: 100%;
 }
 
+.lp-quickfacts div {
+  min-width: 0;
+}
+
+.lp-quickfacts dt {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lp-quickfacts dd {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+/* ---- action buttons ---- */
 .btn--lg {
-  padding: 0.75rem 1.6rem;
-  font-size: 1rem;
+  padding: 0.85rem 2.1rem;
+  font-size: var(--fs-body);
 }
 
-.lawyer-profile__persona-label {
+.lp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--grad-surface), var(--glass-bg-strong);
+  border-color: var(--border-gold);
+  box-shadow: var(--highlight-inset), var(--shadow-md), 0 0 40px var(--gold-wash);
+}
+
+/* A card that holds buttons shouldn't float on hover. */
+.lp-actions:hover,
+.lp-actions:focus-within {
+  transform: none;
+  border-color: var(--border-gold-strong);
+}
+
+.lp-actions .btn,
+.lp-bar .btn {
   display: inline-flex;
-  margin: 1.5rem 0 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--warning);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 0.6rem;
-  padding: 0.5rem 0.8rem;
-  line-height: 1.4;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
 }
 
-.lawyer-profile__section {
-  margin-top: 1.75rem;
+.lp-actions .btn--lg {
+  padding-inline: 0.75rem;
+  font-size: 0.95rem; /* "Start a chat consultation" has to fit the 320px card on one line */
+  width: 100%;
 }
 
-.lawyer-profile__section h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1.05rem;
+.lp-actions__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.lp-actions__who strong {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.15;
+}
+
+.lp-actions__who span {
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+}
+
+.lp-icon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.lp-actions .lp-icon-actions {
+  justify-content: center;
+}
+
+.lp-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.2s, color 0.2s;
+}
+
+.lp-icon-btn:hover {
+  border-color: var(--border-gold);
+  background: var(--gold-wash);
+}
+
+.lp-icon-btn[aria-pressed="true"] {
+  border-color: var(--border-gold-strong);
+  color: var(--gold-soft);
+}
+
+/* Fixed bottom bar (narrow frames). Sits in <body> (portal); left/width are set inline to the main column. */
+.lp-bar {
+  position: fixed;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-gold);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.lp-bar__main,
+.lp-bar__chat {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 0.75rem;
+}
+
+/* Phones: the two long labels don't fit side by side, so the buttons stack (full width, one line each). */
+@media (max-width: 560px) {
+  body.has-action-bar {
+    --action-bar-h: 112px;
+  }
+
+  .lp-bar {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .lp-bar .btn {
+    flex: none;
+    padding-block: 0.6rem;
+  }
+}
+
+/* ---- headings ---- */
+.lp-h2 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
   color: var(--text);
 }
 
-.lawyer-profile__section p {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.55;
+.lp-label {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--gold);
 }
 
 .chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .chip-list li {
-  background: var(--surface-raised);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
 
 .chip-list li:hover {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 10px var(--glow-soft);
+  border-color: var(--border-gold-strong);
+  box-shadow: 0 0 14px var(--gold-wash);
+}
+
+/* ---- "Try asking" ---- */
+.lp-try__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@container lp (min-width: 620px) {
+  .lp-try__list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.lp-question {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  text-align: left;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface);
+  box-shadow: var(--highlight-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color 0.25s ease, transform 0.3s var(--ease-out), box-shadow 0.3s ease, background-color 0.2s;
+}
+
+.lp-question span {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-question__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--gold);
+}
+
+.lp-question__go {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--text-faint);
+  transition: transform 0.25s var(--ease-out), color 0.2s;
+}
+
+.lp-question:hover {
+  border-color: var(--border-gold);
+  box-shadow: var(--highlight-inset), var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.lp-question:hover .lp-question__go {
+  color: var(--gold-soft);
+  transform: translateX(3px);
+}
+
+/* ---- tabs ---- */
+.lp-tabs__list {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-5);
+}
+
+.lp-tabs__list::-webkit-scrollbar {
+  display: none;
+}
+
+.lp-tabs__tab {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0.8rem 1.1rem;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color 0.2s;
+}
+
+.lp-tabs__tab::after {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--grad-gold);
+  transform: scaleX(0);
+  transition: transform 0.3s var(--ease-out);
+}
+
+.lp-tabs__tab:hover {
+  color: var(--text);
+}
+
+.lp-tabs__tab--active {
+  color: var(--gold-soft);
+}
+
+.lp-tabs__tab--active::after {
+  transform: scaleX(1);
+}
+
+.lp-tabs__panel {
+  border-radius: var(--radius-md);
+}
+
+.lp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.lp-prose {
+  margin: 0;
+  max-width: 44rem;
+  color: var(--text-muted);
+  line-height: var(--lh-body);
+}
+
+.lp-facts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@container lp (min-width: 620px) {
+  .lp-facts-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lp-fact--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.lp-fact {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface);
+  box-shadow: var(--highlight-inset);
+}
+
+.lp-fact p {
+  margin: 0;
+  color: var(--text);
+  line-height: var(--lh-body);
+}
+
+.lp-help {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@container lp (min-width: 620px) {
+  .lp-help {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.lp-help__col {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface);
+  box-shadow: var(--highlight-inset);
+}
+
+.lp-help__col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lp-help__col li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.lp-help__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-faint);
+}
+
+.lp-help__icon--yes {
+  color: var(--gold);
+}
+
+.lp-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lp-history__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.25s, background-color 0.2s;
+}
+
+.lp-history__link:hover {
+  border-color: var(--border-gold);
+  background: var(--gold-wash);
+}
+
+.lp-history__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.lp-history__date {
+  flex-shrink: 0;
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+}
+
+/* ---- other advocates ---- */
+.lp-others {
+  margin-top: var(--space-8);
+}
+
+.lp-others__list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(148px, 1fr);
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.lp-others__list li {
+  scroll-snap-align: start;
+}
+
+.lp-other {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  height: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface);
+  box-shadow: var(--highlight-inset);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.25s, transform 0.3s var(--ease-out), box-shadow 0.3s;
+}
+
+.lp-other:hover {
+  border-color: var(--border-gold);
+  transform: translateY(-3px);
+  box-shadow: var(--highlight-inset), var(--shadow-md);
+}
+
+.lp-other__img {
+  aspect-ratio: 1;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-gold);
+}
+
+.lp-other__img > div,
+.lp-other__photo {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.lp-other__photo {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.lp-other__name {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.lp-other__practice {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+/* ---- focus (keyboard) ---- */
+.lp-back:focus-visible,
+.lp-icon-btn:focus-visible,
+.lp-tabs__tab:focus-visible,
+.lp-tabs__panel:focus-visible,
+.lp-question:focus-visible,
+.lp-history__link:focus-visible,
+.lp-other:focus-visible,
+.lp-bar .btn:focus-visible,
+.lp-actions .btn:focus-visible {
+  outline: 2px solid var(--gold-soft);
+  outline-offset: 3px;
+}
+
+/* The tab strip scrolls horizontally, so an outside outline would be clipped: draw the ring inside the tab. */
+.lp-tabs__tab:focus-visible {
+  outline-offset: -3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- not found ---- */
+.lp-missing {
+  max-width: 34rem;
+  margin: var(--space-8) auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.lp-missing h1 {
+  margin: 0;
+  font-size: var(--fs-h1);
+}
+
+.lp-missing p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.lp-missing .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+}
+
+/* ---- loading skeleton ---- */
+.lp-skel {
+  border-radius: var(--radius-md);
+  background: linear-gradient(100deg, var(--surface-raised) 30%, var(--surface-overlay) 50%, var(--surface-raised) 70%);
+  background-size: 250% 100%;
+  animation: lp-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes lp-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.lp-skel--pill {
+  width: 6rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+}
+
+.lp-skel--portrait {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-xl);
+}
+
+.lp-skel--title {
+  width: min(22rem, 90%);
+  height: 3rem;
+}
+
+.lp-skel--line {
+  width: min(30rem, 100%);
+  height: 1rem;
+}
+
+.lp-skel--short {
+  width: 9rem;
+}
+
+.lp-skel--button {
+  width: min(16rem, 100%);
+  height: 3rem;
+  border-radius: var(--radius-pill);
+}
+
+.lp-skel--block {
+  height: 14rem;
+  margin-top: var(--space-7);
+  border-radius: var(--radius-lg);
+}
+
+.lp-skel-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.lp-skel--chip {
+  width: 5.5rem;
+  height: 1.9rem;
+  border-radius: var(--radius-pill);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-skel {
+    animation: none;
+  }
+}
+
+/* ---- very small screens ---- */
+@media (max-width: 480px) {
+  .lp {
+    padding-inline: var(--space-4);
+  }
+
+  .lp-tagline {
+    font-size: 1.25rem;
+  }
+
+  .lp-tabs__tab {
+    padding-inline: 0.7rem;
+  }
+
+  .lp-history__link {
+    flex-wrap: wrap;
+  }
+
+  .lp-history__title {
+    flex-basis: calc(100% - 2rem);
+  }
 }

@@ -1,0 +1,581 @@
+/* Floating "Find my lawyer" assistant. Sits above the mobile menu backdrop (z 30) and drawer (z 40)
+   so the menu always wins. */
+.match-assistant__fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  transition: bottom 0.25s var(--ease-out);
+  z-index: 25;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--highlight-button), 0 0 0 1px var(--border-gold), 0 6px 24px var(--glow-blue);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.match-assistant__fab:focus-visible {
+  border-radius: 50%;
+  outline: 2px solid var(--text-on-accent);
+  outline-offset: 3px;
+  box-shadow: 0 6px 24px var(--glow-blue), 0 0 0 6px var(--glow-soft);
+}
+
+/* Pages with a fixed bottom action bar (the advocate profile on narrow screens) set body.has-action-bar: the button and its
+   panel sit above the bar instead of under it. */
+body.has-action-bar .match-assistant__fab {
+  bottom: calc(var(--action-bar-h, 76px) + 0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.has-action-bar .match-assistant__panel {
+  bottom: calc(var(--action-bar-h, 76px) + 0.75rem + 56px + 0.75rem + env(safe-area-inset-bottom, 0px));
+  max-height: min(75vh, calc(100dvh - var(--action-bar-h, 76px) - 8.5rem));
+}
+
+/* Slow glow ring while idle. */
+.match-assistant__fab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: match-assistant-pulse 3.2s ease-out infinite;
+}
+
+.match-assistant__fab--open::before {
+  animation: none;
+}
+
+@keyframes match-assistant-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow-blue);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 16px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-assistant__fab::before {
+    animation: none;
+  }
+}
+
+.match-assistant__fab-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* ---- panel ---- */
+.match-assistant__panel {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(1.25rem + 56px + 0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 26;
+  width: min(380px, calc(100vw - 2.5rem));
+  max-height: min(75vh, calc(100dvh - 7.5rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--highlight-inset), var(--shadow-lg), 0 0 48px var(--glow-soft);
+  transform-origin: bottom right;
+  overflow: hidden;
+}
+
+.match-assistant__panel:focus {
+  outline: none;
+}
+
+.match-assistant__panel--drag .match-assistant__drop {
+  opacity: 1;
+}
+
+.match-assistant__drop {
+  position: absolute;
+  inset: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--accent-violet);
+  border-radius: 1rem;
+  background: var(--glass-bg-strong);
+  color: var(--text);
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.match-assistant__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: var(--space-4) var(--space-4) var(--space-3) var(--space-5);
+  background: var(--grad-gold-line) bottom / 100% 1px no-repeat;
+}
+
+.match-assistant__title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: var(--lh-tight);
+  color: var(--text);
+}
+
+.match-assistant__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.match-assistant__close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.match-assistant__close:hover {
+  color: var(--gold-soft);
+  border-color: var(--border-gold);
+}
+
+.match-assistant__close:focus-visible {
+  border-radius: 50%;
+}
+
+.match-assistant__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow-y: auto;
+}
+
+.match-assistant__input {
+  width: 100%;
+  min-height: 5.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.match-assistant__input::placeholder {
+  color: var(--text-faint);
+}
+
+.match-assistant__input:focus-visible {
+  border-color: var(--accent-violet);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--glow-soft);
+}
+
+.match-assistant__input:disabled {
+  opacity: 0.6;
+}
+
+/* Two equal bars side by side: Attach files (left) and Speak (right). Listening turns the Speak bar into the voice visualizer: it grows
+   to fill the row (the attach bar's share shrinks to nothing, ~250 ms) while the row's height stays exactly the same. */
+.match-assistant__tools {
+  --bar-h: 40px;
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  transition: gap 0.25s ease;
+}
+
+.match-assistant__tools--voice {
+  gap: 0;
+}
+
+.match-assistant__tool {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  transition: flex-grow 0.25s ease, opacity 0.2s ease, visibility 0s;
+}
+
+.match-assistant__tools--voice .match-assistant__tool--attach {
+  flex-grow: 0;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+  transition: flex-grow 0.25s ease, opacity 0.15s ease, visibility 0s 0.25s;
+}
+
+/* Both bars: the "Attach files" style, identical in every state. */
+.match-assistant__bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  height: 100%;
+  min-height: var(--bar-h);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.match-assistant__bar:disabled,
+.match-assistant__bar[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.match-assistant__mic {
+  border-radius: var(--radius-pill);
+  --wave-text-left: calc(var(--bar-h) + 0.2rem);
+  --wave-text-right: calc(var(--bar-h) + 0.2rem);
+}
+
+.match-assistant__mic-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: opacity 0.2s ease;
+}
+
+/* Listening / processing: the label gives way to the waves; the mic icon sits at the far right in its active state. */
+.match-assistant__mic--voice .match-assistant__mic-btn {
+  background: transparent;
+  border-color: var(--accent-border);
+  box-shadow: none;
+  transform: none;
+}
+
+.match-assistant__mic--voice .match-assistant__mic-label {
+  opacity: 0;
+}
+
+.match-assistant__mic-live {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: calc(var(--bar-h) - 10px);
+  height: calc(var(--bar-h) - 10px);
+  margin-top: calc((var(--bar-h) - 10px) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--highlight-button), 0 0 14px var(--glow-blue);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.match-assistant__mic--voice .match-assistant__mic-live {
+  opacity: 1;
+}
+
+.match-assistant__mic--listening .match-assistant__mic-live {
+  animation: mic-pulse 1.3s ease-in-out infinite;
+}
+
+/* Cancel (X): on the left inside the bar, only while listening. */
+.match-assistant__mic-cancel {
+  position: absolute;
+  z-index: 2;
+  left: 5px;
+  top: 50%;
+  width: calc(var(--bar-h) - 10px);
+  height: calc(var(--bar-h) - 10px);
+  margin-top: calc((var(--bar-h) - 10px) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0s 0.25s, border-color 0.2s;
+}
+
+.match-assistant__mic--listening .match-assistant__mic-cancel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.25s ease, border-color 0.2s;
+}
+
+.match-assistant__mic-cancel:hover {
+  border-color: var(--border-gold);
+}
+
+@media (max-width: 699px) {
+  .match-assistant__tools {
+    --bar-h: 44px; /* touch height */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-assistant__tools,
+  .match-assistant__tool,
+  .match-assistant__mic-label,
+  .match-assistant__mic-live,
+  .match-assistant__mic-cancel {
+    transition: none;
+  }
+
+  .match-assistant__mic--listening .match-assistant__mic-live {
+    animation: none;
+  }
+}
+
+.match-assistant__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.match-assistant__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--grad-surface), var(--surface-raised);
+  font-size: var(--fs-caption);
+  color: var(--text);
+}
+
+.match-assistant__chip-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-assistant__chip-size {
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.match-assistant__chip-remove {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.match-assistant__chip-remove:hover:not(:disabled) {
+  background: var(--glow-soft);
+  color: var(--text);
+}
+
+.match-assistant__chip-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.match-assistant__limits {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+
+.match-assistant__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.match-assistant__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.match-assistant__dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: match-assistant-dot 1s ease-in-out infinite;
+}
+
+.match-assistant__dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.match-assistant__dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes match-assistant-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-assistant__dots span {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+.match-assistant__note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+/* ---- result ---- */
+.match-assistant__result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.match-assistant__badge {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-gold);
+  background: var(--gold-wash);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--gold-soft);
+}
+
+.match-assistant__lawyer {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.match-assistant__portrait {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-gold-strong);
+  box-shadow: 0 0 24px var(--gold-glow);
+  background: var(--surface-raised);
+}
+
+.match-assistant__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.match-assistant__lawyer-name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  color: var(--text);
+}
+
+.match-assistant__lawyer-practice {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.match-assistant__reason {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.match-assistant__result-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.match-assistant__result-actions .btn {
+  flex: 1;
+}
+
+.match-assistant__links {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.match-assistant__links .link-button {
+  color: var(--text-muted);
+}
+
+.match-assistant__links .link-button:hover {
+  color: var(--text);
+}
+
+@media (max-width: 839px) {
+  /* Keep clear of the sticky mobile top bar. */
+  .match-assistant__panel {
+    max-height: min(75vh, calc(100dvh - 9rem));
+  }
+}

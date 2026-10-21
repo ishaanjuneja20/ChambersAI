@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { deleteAllSessions } from "../lib/sessionsStore";
 import Reveal from "../components/Reveal";
 import Decorations from "../components/Decorations";
+import { getCursorPreference, isCursorPreferenceRemembered, setCursorPreference, type CursorPreference } from "../lib/cursorPreference";
 import "./Profile.css";
 import "./Home.css";
 
@@ -11,7 +12,14 @@ type Lang = "en" | "hi";
 export default function Profile() {
   const { user, authConfigured, signOut } = useAuth();
   const [lang, setLang] = useState<Lang>("en");
+  const [cursorPref, setCursorPref] = useState<CursorPreference>(getCursorPreference);
+  const [cursorRemembered] = useState(isCursorPreferenceRemembered);
   const [deleted, setDeleted] = useState(false);
+
+  const chooseCursor = (pref: CursorPreference) => {
+    setCursorPref(pref);
+    setCursorPreference(pref);
+  };
 
   const handleDeleteAccountData = () => {
     deleteAllSessions();
@@ -56,8 +64,31 @@ export default function Profile() {
       </Reveal>
 
       <Reveal as="section" className="profile-section card">
-        <h2>Voice settings</h2>
-        <p>Each lawyer's voice is set by their persona on the backend; there's nothing to configure here yet.</p>
+        <h2>Cursor</h2>
+        <div className="language-toggle" role="radiogroup" aria-label="Cursor style">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={cursorPref === "custom"}
+            className={`language-toggle__option${cursorPref === "custom" ? " language-toggle__option--active" : ""}`}
+            onClick={() => chooseCursor("custom")}
+          >
+            ChambersAI cursor
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={cursorPref === "system"}
+            className={`language-toggle__option${cursorPref === "system" ? " language-toggle__option--active" : ""}`}
+            onClick={() => chooseCursor("system")}
+          >
+            System cursor
+          </button>
+        </div>
+        <p>
+          Use the ChambersAI mark as your cursor, or switch back to your system's default.
+          {!cursorRemembered && " Your browser is blocking storage, so this choice won't be remembered."}
+        </p>
       </Reveal>
 
       <Reveal as="section" className="profile-section card">

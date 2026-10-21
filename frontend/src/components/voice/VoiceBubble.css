@@ -22,9 +22,15 @@
 
 .voice-bubble--above {
   position: absolute;
-  bottom: calc(100% + 12px);
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+  transition: bottom 0.25s var(--ease-out);
+}
+
+/* Idle: the button sits in its slot. Listening / processing: the bubble floats above the slot. */
+.voice-bubble--above.voice-bubble--expanded {
+  bottom: calc(100% + 12px);
 }
 
 /* ---- idle mic button ---- */
@@ -163,6 +169,19 @@
   outline-offset: 2px;
 }
 
+.voice-bubble-anchor--above .voice-bubble__transcript {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px + var(--bubble-size, 200px) + 8px);
+  transform: translateX(-50%);
+  margin: 0;
+  width: max-content;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong);
+  color: var(--text);
+}
+
 .voice-bubble__transcript {
   margin: 0.5rem 0 0;
   font-size: 0.82rem;
@@ -175,4 +194,49 @@
   font-size: 0.8rem;
   color: var(--danger);
   margin: 0.3rem 0 0;
+}
+
+/* The mic: one round button, always at the far right. Listening shows as a pulsing ring (the waves are drawn by the bar). */
+.voice-bubble--mic {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  background: var(--grad-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--highlight-button), 0 6px 22px var(--glow-blue);
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.voice-bubble--mic:hover {
+  background: var(--grad-primary-hover);
+  box-shadow: var(--highlight-button-hover), 0 8px 28px var(--glow-blue);
+}
+
+.voice-bubble--mic[aria-disabled="true"] {
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.voice-bubble--mic.voice-bubble--active {
+  box-shadow: var(--highlight-button), 0 0 0 4px var(--glow-soft), 0 0 28px var(--glow-blue);
+  animation: mic-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
 }
