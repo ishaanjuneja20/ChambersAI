@@ -1,0 +1,109 @@
+/* "Logo blink" loader. Pure black, only the logo, four hard blinks. */
+.logo-loader {
+  --blink-cycle: 1400ms; /* 7 steps x 100 ms of blinking, then the logo holds on */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.logo-loader--screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* Inside the live page's video box: fills it exactly (same rounded corners), opaque black, sized by the box (container units), not the viewport. */
+.logo-loader--box {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: var(--radius-lg);
+  container-type: size;
+}
+
+.logo-loader--box .logo-loader__logo {
+  width: min(34cqw, 150cqh); /* ~34% of the box, never taller than the box can hold */
+}
+
+.logo-loader__logo {
+  display: block;
+  width: clamp(260px, 30vw, 520px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  /* hard cuts: every keyframe jumps (step-end), nothing fades between ON and OFF */
+  animation: logo-blink var(--blink-cycle) step-end 1 both;
+}
+
+.logo-loader--loop .logo-loader__logo {
+  animation-iteration-count: infinite;
+}
+
+/* ON, OFF, ON, OFF, ON, OFF, ON: 100 ms each (100 / 1400 = 7.14%), then on until the end of the cycle */
+@keyframes logo-blink {
+  0% {
+    opacity: 1;
+  }
+  7.14% {
+    opacity: 0;
+  }
+  14.28% {
+    opacity: 1;
+  }
+  21.42% {
+    opacity: 0;
+  }
+  28.57% {
+    opacity: 1;
+  }
+  35.71% {
+    opacity: 0;
+  }
+  42.85%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The overlay leaves with a short fade (the blinks themselves never fade). The startup splash does it by itself after ~800 ms, so the
+   whole thing is gone at about 1 s; a looping loader does it when its parent says so. */
+.logo-loader--once {
+  animation: logo-loader-out 200ms ease 800ms both;
+}
+
+.logo-loader--leaving {
+  animation: logo-loader-out 200ms ease both;
+  pointer-events: none;
+}
+
+@keyframes logo-loader-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 699px) {
+  .logo-loader--screen .logo-loader__logo {
+    width: min(64vw, 340px);
+  }
+}
+
+/* Reduced motion: the logo stays on, no blinking; the startup splash holds ~600 ms, then fades. */
+@media (prefers-reduced-motion: reduce) {
+  .logo-loader__logo,
+  .logo-loader--loop .logo-loader__logo {
+    animation: none;
+  }
+
+  .logo-loader--once {
+    animation-delay: 600ms;
+  }
+
+  /* the app's global reduced-motion rule squashes every animation to ~0 ms; the fade-off (a plain dissolve, no movement) keeps its 200 ms */
+  .logo-loader.logo-loader--once,
+  .logo-loader.logo-loader--leaving {
+    animation-duration: 200ms !important;
+  }
+}

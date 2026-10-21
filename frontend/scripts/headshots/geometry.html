@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8"><title>avatar geometry check</title>
+<!-- Driven by scripts/verify-avatar-geometry.mjs: compares a compressed .opt.glb with its .hd.glb source, vertex by vertex. -->
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+const renderer = new THREE.WebGLRenderer();
+const ktx2 = new KTX2Loader().setTranscoderPath("/public/basis/").detectSupport(renderer);
+const loader = new GLTFLoader().setKTX2Loader(ktx2).setMeshoptDecoder(MeshoptDecoder);
+function rng(seed){ let s=seed>>>0; return ()=> (s = (s*1664525+1013904223)>>>0)/4294967296; }
+function positions(mesh, out){ const v=new THREE.Vector3(); const n=mesh.geometry.attributes.position.count; const a=new Float32Array(n*3); for(let i=0;i<n;i++){ mesh.getVertexPosition(i,v); mesh.localToWorld(v); a[i*3]=v.x;a[i*3+1]=v.y;a[i*3+2]=v.z;} return a; }
+function setPose(root, pose){ for (const [name,q] of Object.entries(pose)) root.getObjectByName(name)?.quaternion.set(...q); root.updateMatrixWorld(true); root.traverse(o=>o.isSkinnedMesh&&o.skeleton.update()); }
+window.compare = async (srcUrl, optUrl) => {
+  const [A,B] = await Promise.all([loader.loadAsync(srcUrl), loader.loadAsync(optUrl)]);
+  const a=A.scene, b=B.scene; a.updateMatrixWorld(true); b.updateMatrixWorld(true);
+  const out = [];
+  const poses = { rest:{}, arms:{ LeftArm:[0,0,0.5,0.866], RightArm:[0,0,-0.5,0.866], Head:[0.1,0.2,0.05,0.97] } };
+  const meshesA = {}; a.traverse(o=>{ if(o.isMesh) meshesA[o.name]=o; });
+  b.traverse(o=>{
+    if(!o.isMesh) return; const ma = meshesA[o.name]; if(!ma) { out.push({mesh:o.name, error:"missing in source"}); return; }
+    setPose(a,{}); setPose(b,{});
+    const ra = positions(ma), rb = positions(o);
+    // match by rest position
+    const cell=0.0005, key=(x,y,z)=>Math.round(x/cell)+","+Math.round(y/cell)+","+Math.round(z/cell);
+    const grid=new Map(); const na=ra.length/3;
+    for(let i=0;i<na;i++){ const k=key(ra[i*3],ra[i*3+1],ra[i*3+2]); (grid.get(k)??grid.set(k,[]).get(k)).push(i); }
+    const nb=rb.length/3; const match=new Int32Array(nb).fill(-1); let restMax=0;
+    for(let j=0;j<nb;j++){ const cx=Math.round(rb[j*3]/cell),cy=Math.round(rb[j*3+1]/cell),cz=Math.round(rb[j*3+2]/cell); let best=-1,bd=1e9,bp=1e9;
+      for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){ const L=grid.get((cx+dx)+","+(cy+dy)+","+(cz+dz)); if(!L) continue; for(const i of L){ const d0=Math.hypot(ra[i*3]-rb[j*3],ra[i*3+1]-rb[j*3+1],ra[i*3+2]-rb[j*3+2]); const uA=ma.geometry.attributes.uv,uB=o.geometry.attributes.uv; const duv=Math.hypot(uA.getX(i)-uB.getX(j),uA.getY(i)-uB.getY(j)); const nA=ma.geometry.attributes.normal,nB=o.geometry.attributes.normal; const dn=1-(nA.getX(i)*nB.getX(j)+nA.getY(i)*nB.getY(j)+nA.getZ(i)*nB.getZ(j)); const d=d0+10*duv+0.01*dn; if(d<bd){bd=d;best=i;bp=d0;} } }
+      match[j]=best; restMax=Math.max(restMax,bp); }
+    const unmatched=[...match].filter(x=>x<0).length;
+    const nm = ma.morphTargetInfluences?.length ?? 0;
+    const states=[]; 
+    const r=rng(7); states.push({name:"all-random", w:Array.from({length:nm},()=>r())});
+    states.push({name:"all-0.7", w:new Array(nm).fill(0.7)});
+    for(let m=0;m<nm;m++){ const w=new Array(nm).fill(0); w[m]=1; states.push({name:"single:"+m, w}); }
+    let worst=0, worstState="", sumMax=0; let n=0; const errs=[];
+    for(const [pname,pose] of Object.entries(poses)){
+      for(const st of (nm? states : [{name:"none", w:[]}])){
+        setPose(a,pose); setPose(b,pose);
+        for(let k=0;k<nm;k++){ ma.morphTargetInfluences[k]=st.w[k]; o.morphTargetInfluences[k]=st.w[k]; }
+        const pa=positions(ma), pb=positions(o); let mx=0, sq=0;
+        for(let j=0;j<nb;j++){ const i=match[j]; if(i<0) continue; const d=Math.hypot(pa[i*3]-pb[j*3],pa[i*3+1]-pb[j*3+1],pa[i*3+2]-pb[j*3+2]); if(d>mx) mx=d; sq+=d*d; }
+        errs.push(mx); if(mx>worst){worst=mx;worstState=pname+"/"+st.name;} n++;
+      }
+    }
+    // normals at rest + all-0.7 morph (attribute space, matched vertices)
+    const normAng=(ga,gb,morphed)=>{ const na_=ga.attributes.normal, nb_=gb.attributes.normal; let mx=0,sum=0,c=0;
+      for(let j=0;j<nb;j++){ const i=match[j]; if(i<0) continue; const va=new THREE.Vector3(na_.getX(i),na_.getY(i),na_.getZ(i)), vb=new THREE.Vector3(nb_.getX(j),nb_.getY(j),nb_.getZ(j));
+        if(morphed&&ga.morphAttributes.normal){ for(let k=0;k<ga.morphAttributes.normal.length;k++){ const ma_=ga.morphAttributes.normal[k], mb_=gb.morphAttributes.normal[k]; va.x+=0.7*ma_.getX(i);va.y+=0.7*ma_.getY(i);va.z+=0.7*ma_.getZ(i); vb.x+=0.7*mb_.getX(j);vb.y+=0.7*mb_.getY(j);vb.z+=0.7*mb_.getZ(j);} }
+        va.normalize(); vb.normalize(); const ang=Math.acos(Math.min(1,Math.max(-1,va.dot(vb))))*180/Math.PI; mx=Math.max(mx,ang); sum+=ang; c++; }
+      return {max:+mx.toFixed(3), mean:+(sum/c).toFixed(4)}; };
+    out.push({ mesh:o.name, verts:nb, unmatched, restMatchMaxUm:+(restMax*1e6).toFixed(1), morphs:nm, statesTested:n, worstPosErrUm:+(worst*1e6).toFixed(1), worstState, normalRestDeg:normAng(ma.geometry,o.geometry,false), normalMorphedDeg: nm? normAng(ma.geometry,o.geometry,true):null });
+  });
+  return out;
+};
+window.ready = true;
+</script>

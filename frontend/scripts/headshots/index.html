@@ -1,0 +1,162 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>headshots</title>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "/node_modules/three/build/three.module.js",
+      "three/addons/": "/node_modules/three/examples/jsm/"
+    }
+  }
+</script>
+<script type="module">
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
+  import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+  import { enhanceSkin } from "/src/components/avatar3d/skinDetail.js";
+
+  const SIZE = 800;
+  const FOV = 22; // same as the consultation screen
+  const VIEW_HEIGHT = 0.35; // world height visible at the face plane, metres; same for every model
+  const EYE_FROM_TOP = 0.4; // eyes sit 40% down from the top of the frame
+  const ENV_INTENSITY = 0.72;
+  const KEY_INTENSITY = 1.15;
+  const FILL_INTENSITY = 0.58;
+  const BACKDROP_TOP = "#f7f3ec"; // soft beige / off-white studio backdrop with a very subtle vertical gradient
+  const BACKDROP_BOTTOM = "#efe6d8";
+
+  const canvas = document.createElement("canvas");
+  document.body.appendChild(canvas);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(SIZE, SIZE, false);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // No tone mapping (and exposure 1) so the model's own colours aren't desaturated or shifted.
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1;
+
+  const scene = new THREE.Scene();
+  const bg = document.createElement("canvas");
+  bg.width = 2;
+  bg.height = 256;
+  const bgCtx = bg.getContext("2d");
+  const gradient = bgCtx.createLinearGradient(0, 0, 0, bg.height);
+  gradient.addColorStop(0, BACKDROP_TOP);
+  gradient.addColorStop(1, BACKDROP_BOTTOM);
+  bgCtx.fillStyle = gradient;
+  bgCtx.fillRect(0, 0, bg.width, bg.height);
+  const bgTexture = new THREE.CanvasTexture(bg);
+  bgTexture.colorSpace = THREE.SRGBColorSpace;
+  scene.background = bgTexture;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // soft neutral ambient; the backdrop is NOT used as environment
+  scene.environmentIntensity = ENV_INTENSITY;
+
+  // Neutral white light only, low intensity: soft frontal key and a fill, no tint, no rim.
+  const key = new THREE.DirectionalLight(0xffffff, KEY_INTENSITY);
+  key.position.set(0.5, 1.2, 3);
+  const fill = new THREE.DirectionalLight(0xffffff, FILL_INTENSITY);
+  fill.position.set(-1.5, 0.8, 2.5);
+  scene.add(key, fill);
+
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 20);
+  // Compressed models (.opt.glb: KTX2 textures + meshopt) are only used when HEADSHOT_COMPRESSED=1 (a check, not the default: the
+  // headshots are normally rendered from the uncompressed .hd.glb). The transcoder is the one the app serves from /basis/.
+  const ktx2 = new KTX2Loader().setTranscoderPath("/public/basis/").detectSupport(renderer);
+  const loader = new GLTFLoader().setKTX2Loader(ktx2).setMeshoptDecoder(MeshoptDecoder);
+
+  // Rotate bone so the direction to its child points along dir (world space). Bones are only rotated, never scaled.
+  function aimBone(bone, child, dir) {
+    bone.updateWorldMatrix(true, true);
+    const from = bone.getWorldPosition(new THREE.Vector3());
+    const current = child.getWorldPosition(new THREE.Vector3()).sub(from).normalize();
+    const turn = new THREE.Quaternion().setFromUnitVectors(current, dir.clone().normalize());
+    const world = turn.multiply(bone.getWorldQuaternion(new THREE.Quaternion()));
+    const parentWorld = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    bone.quaternion.copy(parentWorld.invert().multiply(world));
+    bone.updateWorldMatrix(false, true);
+  }
+
+  // T-pose -> arms hanging at the sides, forearms bent very slightly forward (+X is the avatar's left, +Z faces the camera).
+  function lowerArms(root) {
+    root.updateWorldMatrix(true, true);
+    for (const [side, sign] of [["Left", 1], ["Right", -1]]) {
+      const arm = root.getObjectByName(`${side}Arm`);
+      const fore = root.getObjectByName(`${side}ForeArm`);
+      const hand = root.getObjectByName(`${side}Hand`);
+      if (!arm || !fore || !hand) throw new Error(`model is missing ${side} arm bones`);
+      aimBone(arm, fore, new THREE.Vector3(sign * 0.1, -1, -0.03));
+      aimBone(fore, hand, new THREE.Vector3(sign * 0.05, -1, 0.15));
+    }
+  }
+
+  // Diagnostic only: compare the rendered cheek colour with the model's own skin texture at the same spot (linear values).
+  const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  // refAvatar: the uncompressed twin of a compressed model. KTX2 textures can't be drawn to a canvas, so the reference colour is read
+  // from the twin's JPEG at the same UV (the UVs are identical; only the textures' encoding differs).
+  function sampleSkin(avatar, refAvatar) {
+    const ctx = document.createElement("canvas").getContext("2d");
+    ctx.canvas.width = ctx.canvas.height = SIZE;
+    ctx.drawImage(canvas, 0, 0);
+    const ray = new THREE.Raycaster();
+    const out = [];
+    for (const px of [300, 500]) {
+      const py = 430;
+      ray.setFromCamera(new THREE.Vector2((px / SIZE) * 2 - 1, 1 - (py / SIZE) * 2), camera);
+      const hit = ray.intersectObject(avatar, true).find((h) => h.object.material?.map && h.uv);
+      if (!hit) continue;
+      const img = (refAvatar ? refAvatar.getObjectByName(hit.object.name) : hit.object).material.map.image;
+      const tc = document.createElement("canvas").getContext("2d");
+      tc.canvas.width = img.width;
+      tc.canvas.height = img.height;
+      tc.drawImage(img, 0, 0);
+      // Area-average the texture around the hit (a window of ~1% of the UV range, in linear light) instead of reading one texel,
+      // so the reading doesn't depend on the texture's resolution or on single-texel grain.
+      const half = Math.max(2, Math.round(img.width * 0.005));
+      const cx = Math.min(img.width - half - 1, Math.max(half, Math.floor(hit.uv.x * img.width)));
+      const cy = Math.min(img.height - half - 1, Math.max(half, Math.floor(hit.uv.y * img.height)));
+      const block = tc.getImageData(cx - half, cy - half, 2 * half + 1, 2 * half + 1).data;
+      const tex = [0, 1, 2].map((k) => { let t = 0; for (let n = k; n < block.length; n += 4) t += toLinear(block[n] / 255); return 255 * (t / (block.length / 4) <= 0.0031308 ? (t / (block.length / 4)) * 12.92 : 1.055 * (t / (block.length / 4)) ** (1 / 2.4) - 0.055); });
+      const ren = ctx.getImageData(px - 3, py - 3, 6, 6).data;
+      const mean = [0, 1, 2].map((k) => { let t = 0; for (let n = k; n < ren.length; n += 4) t += ren[n]; return t / (ren.length / 4); });
+      out.push({ mesh: hit.object.name, texture: [...tex].slice(0, 3), render: mean.map(Math.round), ratio: [0, 1, 2].map((k) => +(toLinear(mean[k] / 255) / toLinear(tex[k] / 255)).toFixed(3)) });
+    }
+    return out;
+  }
+
+  window.renderHeadshot = async (url, skinOptions, refUrl) => {
+    const gltf = await loader.loadAsync(url);
+    const refAvatar = refUrl ? (await loader.loadAsync(refUrl)).scene : null;
+    const avatar = gltf.scene;
+    avatar.traverse((obj) => {
+      if (!obj.isMesh) return;
+      obj.frustumCulled = false;
+      if (obj.morphTargetInfluences) obj.morphTargetInfluences.fill(0); // neutral face, mouth closed
+    });
+    // Fine skin detail (normal + roughness + faint sheen only; the albedo is never touched).
+    const skinSummary = enhanceSkin(avatar, { ...skinOptions, renderer });
+    scene.add(avatar);
+    avatar.updateMatrixWorld(true);
+    lowerArms(avatar);
+    avatar.updateMatrixWorld(true);
+
+    const leftEye = avatar.getObjectByName("LeftEye");
+    const rightEye = avatar.getObjectByName("RightEye");
+    if (!leftEye || !rightEye) throw new Error("model has no LeftEye/RightEye bones");
+    const eyes = new THREE.Vector3().addVectors(leftEye.getWorldPosition(new THREE.Vector3()), rightEye.getWorldPosition(new THREE.Vector3())).multiplyScalar(0.5);
+
+    const centerY = eyes.y - (0.5 - EYE_FROM_TOP) * VIEW_HEIGHT; // eyes sit above the frame centre
+    const distance = VIEW_HEIGHT / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    camera.position.set(eyes.x, centerY, eyes.z + distance);
+    camera.lookAt(eyes.x, centerY, eyes.z);
+
+    renderer.render(scene, camera);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    const skin = sampleSkin(avatar, refAvatar);
+    scene.remove(avatar);
+    return { dataUrl, skin, skinSummary };
+  };
+  window.headshotsReady = true;
+</script>

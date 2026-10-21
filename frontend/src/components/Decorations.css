@@ -1,0 +1,66 @@
+.decorations {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.decorations__arch {
+  position: absolute;
+  top: -1.5rem;
+  right: -4rem;
+  width: min(440px, 46vw);
+  fill: none;
+  stroke: var(--gold-deep);
+  stroke-width: 1;
+  opacity: 0.32;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+
+/* Fluted column lines fading out toward the middle of the page. */
+.decorations__columns {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 9rem;
+  background: repeating-linear-gradient(to right, var(--border) 0 1px, transparent 1px 14px);
+  -webkit-mask-image: linear-gradient(to right, #000, transparent);
+  mask-image: linear-gradient(to right, #000, transparent);
+  opacity: 0.55;
+}
+
+.decorations__corner {
+  display: none; /* only shown where a page opts in (the auth brand panel) */
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.decorations__corner--tl {
+  top: 1rem;
+  left: 1rem;
+}
+
+.decorations__corner--br {
+  right: 1rem;
+  bottom: 1rem;
+  transform: rotate(180deg);
+}
+
+@media (max-width: 640px) {
+  .decorations__arch,
+  .decorations__columns {
+    display: none;
+  }
+}
+
+.auth-shell__brand .decorations__corner {
+  display: block;
+}

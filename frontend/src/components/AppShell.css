@@ -1,0 +1,302 @@
+.shell {
+  min-height: 100%;
+  display: flex;
+}
+
+/* ---- Sidebar look (shared by the desktop rail and the mobile slide-over) ---- */
+.sidebar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--glass-bg-strong), var(--glass-bg));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-3);
+  gap: var(--space-5);
+}
+
+/* The rail stays put while the page scrolls. */
+.shell__desktop-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+
+.shell__desktop-sidebar .sidebar {
+  width: 248px;
+  transition: width 0.3s var(--ease-out);
+}
+
+.shell__desktop-sidebar .sidebar--collapsed {
+  width: 76px;
+}
+
+.sidebar__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2) var(--space-4);
+  min-height: 44px;
+  overflow: hidden;
+}
+
+/* gold hairline under the logo area */
+.sidebar__top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--grad-gold-line);
+  opacity: 0.7;
+}
+
+.sidebar__logo {
+  height: 24px;
+  min-width: 0;
+  flex-shrink: 1;
+  filter: drop-shadow(0 0 12px var(--gold-wash));
+}
+
+.sidebar--collapsed .sidebar__top {
+  justify-content: center;
+}
+
+.sidebar--collapsed .sidebar__logo {
+  display: none;
+}
+
+.sidebar__collapse-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.sidebar__collapse-btn:hover {
+  color: var(--gold-soft);
+  background: var(--gold-wash);
+  border-color: var(--border-gold);
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-item__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  min-height: 44px;
+  overflow: hidden;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+/* gold active indicator */
+.nav-item__link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--grad-gold);
+  transform: scaleY(0);
+  transition: transform 0.25s var(--ease-out);
+}
+
+.nav-item__link:hover::before,
+.nav-item__link:focus-visible::before,
+.nav-item__link.active::before {
+  transform: scaleY(1);
+}
+
+.nav-item__link:hover,
+.nav-item__link:focus-visible {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.nav-item__link.active {
+  background: var(--grad-surface), var(--surface-raised);
+  border-color: var(--border);
+  box-shadow: var(--highlight-inset);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.nav-item__link.active .nav-item__icon {
+  color: var(--gold);
+}
+
+.nav-item__icon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.sidebar--collapsed .nav-item__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.nav-item__tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  z-index: 20;
+}
+
+.sidebar--collapsed .nav-item:hover .nav-item__tooltip,
+.sidebar--collapsed .nav-item:focus-within .nav-item__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---- Main area ---- */
+.shell__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell__mobile-bar {
+  display: none;
+}
+
+.shell__content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Desktop vs. mobile ---- */
+.shell__mobile-sidebar,
+.shell__backdrop {
+  display: none;
+}
+
+@media (max-width: 839px) {
+  .shell__desktop-sidebar {
+    display: none;
+  }
+
+  .shell__mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-nav);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* gold hairline along the bar's bottom edge */
+  .shell__mobile-bar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--grad-gold-line);
+    opacity: 0.55;
+  }
+
+  .shell__mobile-bar--scrolled {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-md);
+  }
+
+  .shell__mobile-bar button {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  .shell__mobile-bar button:hover {
+    color: var(--gold-soft);
+  }
+
+  .shell__mobile-bar-logo {
+    display: inline-flex;
+  }
+
+  .shell__mobile-bar-logo img {
+    height: 18px;
+    filter: drop-shadow(0 0 10px var(--gold-wash));
+  }
+
+  .shell__mobile-sidebar {
+    display: block;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(280px, 82vw);
+    height: 100%;
+    z-index: 40;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shell__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: var(--scrim);
+    z-index: 30;
+  }
+}

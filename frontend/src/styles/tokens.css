@@ -1,0 +1,120 @@
+/* Single source of truth for the "Premium legal dark" design system: colour, type, spacing, radii and
+   elevation. Components reference these tokens only; no raw colour values belong in component CSS.
+
+   Palette: a layered near-black scale for depth, a blue-violet accent for interaction (primary actions, focus,
+   hover highlights) and a brass/gold family for "premium" moments (heading accents, dividers, badges, icons,
+   active states). Both accents are used sparingly, never as large flat fills. */
+:root {
+  /* ---- layered surfaces (page -> surface -> raised -> overlay) ---- */
+  --bg: #07070a;
+  --bg-nav: #0a0a0e;
+  --surface: #0e0e12;
+  --surface-raised: #15151b;
+  --surface-overlay: #1c1c24;
+  --surface-banner: #1c1c24;
+
+  /* ---- hairlines ---- */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-gold: rgba(201, 164, 92, 0.38);
+  --border-gold-strong: rgba(227, 201, 138, 0.6);
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --highlight-button: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --highlight-button-hover: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --inset-field: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+
+  /* ---- text (all AA on every surface above; --text-faint is the dimmest allowed for body copy) ---- */
+  --text: #f2efe9;
+  --text-muted: #a3a3b0;
+  --text-faint: #8b8b98;
+  --text-on-accent: #ffffff;
+
+  /* ---- interactive accent: blue-violet ---- */
+  --accent: #194bfd;
+  --accent-violet: #5c32fc;
+  --accent-magenta: #ad13fb;
+  --accent-text: #8aa4ff; /* the accent as readable text on dark surfaces */
+  --accent-wash: rgba(25, 75, 253, 0.22);
+  --accent-border: rgba(138, 164, 255, 0.38);
+  --grad-bubble-user: linear-gradient(135deg, rgba(56, 63, 252, 0.28), rgba(92, 50, 252, 0.2));
+  --grad-primary: linear-gradient(90deg, #383ffc, #5c32fc);
+  --grad-primary-hover: linear-gradient(90deg, #4850ff, #6c40ff);
+  --glow-blue: rgba(56, 63, 252, 0.45);
+  --glow-soft: rgba(92, 50, 252, 0.18);
+
+  /* ---- brass / gold accent ---- */
+  --gold: #c9a45c;
+  --gold-soft: #e3c98a;
+  --gold-deep: #8a6d33; /* decorative lines and fills only: too dark for text on black */
+  --gold-wash: rgba(201, 164, 92, 0.1);
+  --gold-glow: rgba(201, 164, 92, 0.28);
+  --shimmer: rgba(227, 201, 138, 0.38);
+  --grad-gold: linear-gradient(135deg, #e3c98a 0%, #c9a45c 48%, #8a6d33 100%);
+  --grad-gold-line: linear-gradient(90deg, transparent, #c9a45c 20%, #e3c98a 50%, #c9a45c 80%, transparent);
+
+  /* ---- states ---- */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --success-wash: rgba(74, 222, 128, 0.14);
+  --warning-wash: rgba(251, 191, 36, 0.14);
+  --danger-wash: rgba(248, 113, 113, 0.12);
+  --danger-border: rgba(248, 113, 113, 0.38);
+
+  /* ---- surfaces: top-light gradient, glass, scrim ---- */
+  --grad-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 42%);
+  --glass-bg: rgba(14, 14, 18, 0.72);
+  --glass-bg-strong: rgba(14, 14, 18, 0.88);
+  --glass-blur: blur(16px) saturate(1.2);
+  --scrim: rgba(3, 3, 6, 0.66);
+
+  /* ---- atmosphere ---- */
+  --atmosphere-violet: rgba(92, 50, 252, 0.13);
+  --atmosphere-gold: rgba(201, 164, 92, 0.085);
+  --grain-opacity: 0.045;
+
+  /* ---- elevation ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.55);
+
+  /* ---- type ---- */
+  --font-serif: "Cormorant Garamond", "Cormorant Fallback", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: "Inter Variable", "Inter Fallback", Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --fs-display: clamp(2.75rem, 1.6rem + 3.6vw, 4.25rem);
+  --fs-h1: clamp(2.125rem, 1.5rem + 2vw, 3rem);
+  --fs-h2: clamp(1.5rem, 1.3rem + 0.7vw, 1.875rem);
+  --fs-h3: 1.1875rem;
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-caption: 0.75rem;
+
+  --lh-tight: 1.1;
+  --lh-heading: 1.2;
+  --lh-body: 1.6;
+
+  --ls-display: -0.02em; /* tighter tracking on big serif headings */
+  --ls-heading: -0.01em;
+  --ls-caps: 0.14em; /* small-caps labels */
+
+  /* ---- spacing (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* ---- radii ---- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-pill: 999px;
+
+  /* ---- motion ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}

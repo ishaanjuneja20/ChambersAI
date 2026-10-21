@@ -1,0 +1,82 @@
+/* The card surface (layered background, hairline, shadow) comes from the shared .card class. */
+.sources-panel {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: fit-content;
+}
+
+.sources-panel h3 {
+  margin: 0;
+  padding-bottom: var(--space-3);
+  font-size: 1.35rem;
+  line-height: var(--lh-tight);
+  color: var(--text);
+  background: var(--grad-gold-line) bottom / 100% 1px no-repeat;
+}
+
+.sources-panel__empty {
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  margin: 0;
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.source-badge {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--border);
+  background: var(--grad-surface), var(--surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.25s var(--ease-out);
+}
+
+a.source-badge:hover,
+a.source-badge:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 14px var(--glow-soft);
+  transform: translateY(-1px);
+}
+
+.source-badge__tag {
+  display: inline-flex;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.6rem;
+  margin-bottom: var(--space-2);
+}
+
+.source-badge__tag--verified {
+  background: var(--success-wash);
+  color: var(--success);
+}
+
+.source-badge__tag--interpretation {
+  background: var(--warning-wash);
+  color: var(--warning);
+}
+
+.source-badge__tag--none {
+  background: var(--danger-wash);
+  color: var(--danger);
+}
+
+.source-badge__label {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text);
+}

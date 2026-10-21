@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChambersAI</title>
+    <meta name="description" content="Talk to an AI lawyer. General legal information, not legal advice." />
+    <meta name="theme-color" content="#07070a" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+    <script>
+      // Before the first paint: once the startup logo has played in this browser session, mark <html> so it never flashes again.
+      try {
+        if (sessionStorage.getItem("chambersai.introSeen") === "1") document.documentElement.classList.add("intro-seen");
+      } catch (e) {}
+    </script>
+    <style>
+      /* Black from the very first paint until the startup logo takes over (the app removes it); never shown on a repeat visit. */
+      #boot-cover {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: #000;
+      }
+      html.intro-seen #boot-cover {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot-cover" aria-hidden="true"></div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+.consultations-page {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.consultations-page > *:not(.decorations) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Serif title over a gold hairline. */
+.consultations-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  background: var(--grad-gold-line) bottom / 100% 1px no-repeat;
+}
+
+.consultations-page__header h1 {
+  margin: 0;
+  color: var(--text);
+}
+
+.consultations-page__search {
+  font-size: var(--fs-small);
+}
+
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The surface, hairline and hover lift come from the shared .card class. */
+.session-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+.session-list__item strong {
+  font-family: var(--font-serif);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  color: var(--text);
+}
+
+.session-list__meta {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.session-list__last {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+}
+
+.session-list__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.empty-note {
+  margin: 0;
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  border: 1px dashed var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--gold-wash);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.empty-note a {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.empty-note a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .session-list__item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
