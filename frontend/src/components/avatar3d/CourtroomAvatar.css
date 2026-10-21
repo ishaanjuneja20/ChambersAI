@@ -4,13 +4,24 @@
   width: min(100%, calc(56vh * 1672 / 941));
   margin: 0 auto;
   aspect-ratio: 1672 / 941;
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
-  background-color: #1a0f08;
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-lg);
+  background-color: #000;
   background-size: cover;
   background-position: center;
   transition: box-shadow 0.3s ease;
+}
+
+/* The courtroom picture and the canvas stay hidden until the avatar's first full frame has rendered (data-revealed is set then, in the
+   same frame), so nothing of an empty room is ever visible while loading. */
+.courtroom[data-revealed] {
+  background-image: var(--courtroom-bg);
+}
+
+.courtroom:not([data-revealed]) .courtroom__canvas {
+  visibility: hidden;
 }
 
 .courtroom__canvas {
@@ -22,23 +33,10 @@
   pointer-events: none;
 }
 
-.courtroom__loading {
-  position: absolute;
-  left: 50%;
-  bottom: 1rem;
-  transform: translateX(-50%);
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(20, 10, 4, 0.65);
-  color: #f3e3cc;
-  font-size: 0.8rem;
-  pointer-events: none;
-}
-
 .courtroom--listening {
-  box-shadow: 0 0 0 2px var(--accent-violet), 0 0 18px var(--glow-blue);
+  box-shadow: var(--shadow-lg), 0 0 0 2px var(--accent-violet), 0 0 18px var(--glow-blue);
 }
 
 .courtroom--speaking {
-  box-shadow: 0 0 0 2px var(--success);
+  box-shadow: var(--shadow-lg), 0 0 0 2px var(--gold), 0 0 24px var(--gold-glow);
 }

@@ -10,12 +10,62 @@ body,
 
 body {
   margin: 0;
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   background: var(--bg);
-  /* A very faint blue radial glow at the top for depth. */
-  background-image: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(56, 63, 252, 0.08), transparent 60%);
-  background-repeat: no-repeat;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Page atmosphere: two very soft glows (blue-violet top-left, warm gold bottom-right) and a faint grain,
+   each on its own fixed layer behind everything, so they never repaint on scroll or sit over content. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    radial-gradient(ellipse 900px 620px at 8% -8%, var(--atmosphere-violet), transparent 68%),
+    radial-gradient(ellipse 820px 560px at 96% 104%, var(--atmosphere-gold), transparent 68%);
+}
+
+body::after {
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+  color: var(--text);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+}
+
+h3 {
+  font-size: var(--fs-h3);
 }
 
 .sr-only {
@@ -31,10 +81,293 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-violet);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
   box-shadow: 0 0 0 5px var(--glow-soft);
-  border-radius: 0.25rem;
+}
+
+::selection {
+  background: var(--gold-glow);
+  color: var(--text);
+}
+
+/* ---- small-caps label and gold divider (decorative) ---- */
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* A thin gold hairline with a small diamond ornament at its centre. */
+.divider-gold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 220px;
+  color: var(--gold);
+}
+
+.divider-gold--left {
+  justify-content: flex-start;
+}
+
+.divider-gold--left::before {
+  display: none;
+}
+
+.divider-gold::before,
+.divider-gold::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--grad-gold-line);
+}
+
+.divider-gold > span {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+  border: 1px solid var(--gold);
+  background: var(--gold-wash);
+}
+
+/* Slow gold shimmer along the divider hairlines (motion-safe only). */
+@media (prefers-reduced-motion: no-preference) {
+  .divider-gold--shimmer::before,
+  .divider-gold--shimmer::after {
+    background: linear-gradient(90deg, transparent, var(--gold) 18%, var(--gold-soft) 32%, var(--gold) 46%, transparent 100%);
+    background-size: 300% 100%;
+    animation: divider-shimmer 7s ease-in-out infinite;
+  }
+
+  .divider-gold--shimmer::after {
+    animation-direction: reverse;
+  }
+}
+
+@keyframes divider-shimmer {
+  0%,
+  100% {
+    background-position: 100% 0;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}
+
+/* ---- buttons ---- */
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border-radius: var(--radius-pill);
+  padding: 0.7rem 1.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.2s, background 0.2s, color 0.2s, border-color 0.25s, opacity 0.2s, box-shadow 0.25s,
+    transform 0.25s var(--ease-out);
+}
+
+/* Primary: the interactive blue-violet, with an inner top highlight and a slow gold sheen sweeping across on hover. */
+.btn--primary {
+  background: var(--grad-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--highlight-button), var(--shadow-sm);
+}
+
+.btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, var(--shimmer) 50%, transparent 65%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.btn--primary:hover::after,
+.btn--primary:focus-visible::after {
+  transform: translateX(120%);
+  transition: transform 0.9s var(--ease-out);
+}
+
+.btn--primary:hover,
+.btn--primary:focus-visible {
+  background: var(--grad-primary-hover);
+  box-shadow: var(--highlight-button-hover), 0 8px 28px var(--glow-blue);
+  transform: translateY(-2px);
+}
+
+.btn--primary:active {
+  transform: scale(0.98) translateY(0);
+}
+
+.btn--primary:disabled {
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  opacity: 1;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn--primary:disabled::after {
+  display: none;
+}
+
+/* Secondary: a gold hairline outline. */
+.btn--outline {
+  background: transparent;
+  border-color: var(--border-gold);
+  color: var(--text);
+}
+
+.btn--outline:hover,
+.btn--outline:focus-visible {
+  background: var(--gold-wash);
+  border-color: var(--border-gold-strong);
+  box-shadow: 0 0 22px var(--gold-wash);
+}
+
+.btn--outline:active {
+  transform: scale(0.98);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+  text-align: left;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+
+.link-button:hover {
+  color: var(--gold-soft);
+  text-decoration-color: var(--gold);
+}
+
+.link-button svg {
+  transition: transform 0.15s ease;
+}
+
+.link-button:hover svg {
+  transform: translateX(2px);
+}
+
+/* ---- form fields: one look for every text input, textarea and search box ---- */
+.auth-form input,
+.match-assistant__input,
+.describe-box__input,
+.consultations-page__search {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  box-shadow: var(--inset-field);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.auth-form input::placeholder,
+.match-assistant__input::placeholder,
+.describe-box__input::placeholder,
+.consultations-page__search::placeholder {
+  color: var(--text-faint);
+}
+
+.auth-form input:hover,
+.match-assistant__input:hover:enabled,
+.describe-box__input:hover,
+.consultations-page__search:hover {
+  border-color: var(--border-gold);
+}
+
+.auth-form input:focus-visible,
+.match-assistant__input:focus-visible,
+.describe-box__input:focus-visible,
+.consultations-page__search:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: var(--inset-field), 0 0 0 3px var(--glow-soft), 0 0 20px var(--glow-soft);
+}
+
+/* ---- notices ---- */
+.auth-error {
+  background: var(--danger-wash);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  font-size: var(--fs-small);
+}
+
+.auth-notice {
+  background: var(--grad-surface), var(--surface-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  font-size: var(--fs-small);
+}
+
+/* ---- chips and badges ---- */
+.chip,
+.chip-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--grad-surface), var(--surface-raised);
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-gold);
+  background: var(--gold-wash);
+  color: var(--gold-soft);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
 }
 
 /* ---- shared helpers: hero cursor glow, scroll reveal, card spotlight ---- */
@@ -61,8 +394,8 @@ body {
 
 .reveal {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
 }
 
 .reveal--shown {
@@ -70,15 +403,21 @@ body {
   transform: translateY(0);
 }
 
+/* Layered surface card: a faint top light, a hairline border with an inner highlight, soft layered shadow.
+   Hover lifts it a touch and warms the hairline to gold. */
 .card {
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--grad-surface), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--highlight-inset), var(--shadow-sm);
+  transition: transform 0.3s var(--ease-out), border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover,
 .card:focus-within {
   transform: translateY(-2px);
-  border-color: var(--accent-violet);
-  box-shadow: 0 10px 28px var(--glow-soft);
+  border-color: var(--border-gold);
+  box-shadow: var(--highlight-inset), var(--shadow-md);
 }
 
 .spotlight-card {
@@ -103,16 +442,20 @@ body {
   opacity: 1;
 }
 
+/* Backwards fill only, so no transform lingers once the page has settled (a lingering transform would
+   re-anchor any fixed-position descendants). */
 .page-fade {
-  animation: page-fade-in 0.22s ease both;
+  animation: page-fade-in 0.45s var(--ease-out) backwards;
 }
 
 @keyframes page-fade-in {
   from {
     opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -131,5 +474,33 @@ body.tab-hidden * {
   .reveal {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* ---- ChambersAI cursor ----
+   html.cursor-custom is toggled by src/lib/cursorPreference.ts (default on; "System cursor" in Profile &
+   Settings turns it off). Pure CSS, so it's a real cursor with no lag. Mouse-like pointers only; touch
+   devices are untouched. Hotspot is the centre of the mark. The url() line is the fallback for browsers
+   without image-set() cursors. */
+@media (hover: hover) and (pointer: fine) {
+  html.cursor-custom,
+  html.cursor-custom * {
+    cursor: url("/brand/cursor-a.png") 12 12, auto !important;
+    cursor: -webkit-image-set(url("/brand/cursor-a.png") 1x, url("/brand/cursor-a@2x.png") 2x) 12 12, auto !important;
+    cursor: image-set(url("/brand/cursor-a.png") 1x, url("/brand/cursor-a@2x.png") 2x) 12 12, auto !important;
+  }
+
+  /* Exceptions that keep a native cursor so the app stays usable. The textarea resize grip and scrollbars
+     are drawn by the browser and keep their own cursors regardless. */
+  html.cursor-custom textarea:enabled,
+  html.cursor-custom [contenteditable]:not([contenteditable="false"]),
+  html.cursor-custom input:enabled:not([type]),
+  html.cursor-custom input:enabled:is([type="text"], [type="email"], [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"]) {
+    cursor: text !important;
+  }
+
+  html.cursor-custom :disabled,
+  html.cursor-custom [aria-disabled="true"] {
+    cursor: not-allowed !important;
   }
 }

@@ -1,5 +1,5 @@
 import type { Citation } from "./consultTypes";
-import { DEMO_LAWYERS } from "./demoLawyers";
+import { DEMO_LAWYERS, inKeywordMatchOrder } from "./demoLawyers";
 
 // Demo-mode only. Real answers come from the backend's POST /ask (and, for live Meet/Chat, the
 // proposed WS /ws/consult/{lawyer_id}) — see "Changes needed outside frontend/". Every citation
@@ -62,7 +62,7 @@ export function getDemoAnswer(domain: string): DomainAnswer {
 // Demo-only heuristic — mirrors the one in matchApi.ts but returns just the domain.
 export function detectDomain(text: string): string | null {
   const lower = text.toLowerCase();
-  for (const lawyer of DEMO_LAWYERS) {
+  for (const lawyer of inKeywordMatchOrder(DEMO_LAWYERS)) {
     if (lawyer.keywords.some((k) => lower.includes(k))) return lawyer.domain;
   }
   return null;

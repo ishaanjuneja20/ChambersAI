@@ -13,10 +13,12 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="auth-shell__brand">
           <Decorations />
           <img className="auth-shell__logo" src="/brand/logo-white.png" alt="ChambersAI" />
+          <div className="divider-gold divider-gold--left" aria-hidden="true">
+            <span />
+          </div>
+          <p className="auth-shell__headline">Legal clarity, in conversation.</p>
           <p className="auth-shell__tagline">
-            Talk through your legal question with an AI advocate matched to your situation. General
-            information to help you understand your options — not a replacement for a licensed
-            advocate.
+            Talk through your legal question with an AI advocate matched to your situation.
           </p>
           <div className="auth-shell__badge">
             <RotatingBadge />

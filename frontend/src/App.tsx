@@ -9,7 +9,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import LawyerProfile from "./pages/LawyerProfile";
-import NewConsultation from "./pages/NewConsultation";
 import MyConsultations from "./pages/MyConsultations";
 import Profile from "./pages/Profile";
 import Meet from "./pages/Meet";
@@ -40,7 +39,7 @@ export default function App() {
           <Route element={<ProtectedShellLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/lawyers/:id" element={<LawyerProfile />} />
-            <Route path="/consultation/new" element={<NewConsultation />} />
+            <Route path="/consultation/new" element={<Navigate to="/home" replace />} />
             <Route path="/consultation/meet/:id" element={<Meet />} />
             <Route path="/consultation/chat/:id" element={<Chat />} />
             <Route path="/consultations" element={<MyConsultations />} />

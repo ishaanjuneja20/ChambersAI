@@ -1,11 +1,11 @@
 .profile-page {
   position: relative;
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 1.75rem 1.5rem 3rem;
+  padding: var(--space-6) var(--space-5) var(--space-8);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
 }
 
 .profile-page > *:not(.decorations) {
@@ -13,59 +13,77 @@
   z-index: 1;
 }
 
+/* Serif title over a gold hairline. */
 .profile-page h1 {
   margin: 0;
+  padding-bottom: var(--space-4);
   color: var(--text);
+  background: var(--grad-gold-line) bottom / 100% 1px no-repeat;
 }
 
+/* keep the demo badge pill-sized inside the column */
+.profile-page > .home-placeholder__badge {
+  align-self: flex-start;
+}
+
+/* The surface, hairline and hover lift come from the shared .card class. */
 .profile-section {
-  padding: 1.25rem 1.3rem;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
+  gap: var(--space-3);
 }
 
 .profile-section h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-h2);
+  line-height: var(--lh-tight);
   color: var(--text);
 }
 
 .profile-section p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
 }
 
 .profile-section ul {
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: var(--space-4);
   color: var(--text-muted);
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: var(--fs-small);
+  line-height: 1.7;
 }
 
+.profile-section ul li::marker {
+  color: var(--gold);
+}
+
+/* Segmented toggle (Language, Cursor): a gold-tinted pill marks the selection. */
 .language-toggle {
   display: inline-flex;
+  padding: 3px;
+  gap: 2px;
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  box-shadow: var(--inset-field);
   width: fit-content;
+  max-width: 100%;
 }
 
 .language-toggle__option {
-  border: none;
-  background: var(--surface-raised);
-  padding: 0.4rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: 0.45rem 1.1rem;
   cursor: pointer;
+  font-family: var(--font-sans);
   font-weight: 600;
   color: var(--text-muted);
-  font-size: 0.88rem;
-  transition: background 0.15s ease, color 0.15s ease;
+  font-size: var(--fs-small);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .language-toggle__option:hover {
@@ -73,11 +91,12 @@
 }
 
 .language-toggle__option--active {
-  background: var(--grad-primary);
-  color: #fff;
+  background: var(--gold-wash);
+  border-color: var(--border-gold);
+  color: var(--gold-soft);
 }
 
 .profile-section__danger-note {
   color: var(--danger);
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
 }

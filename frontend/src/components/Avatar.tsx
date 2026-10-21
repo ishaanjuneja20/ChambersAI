@@ -20,9 +20,11 @@ interface AvatarProps {
   status?: ConsultStatus;
   size?: "small" | "large";
   lipSync?: LipSyncDriver; // viseme timing for 3D lawyers
+  onReady?: () => void; // the 3D scene has rendered its first real frame
+  onModelFailed?: () => void; // the 3D model couldn't load: the 2D portrait is showing instead
 }
 
-export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle", size = "large", lipSync }: AvatarProps) {
+export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle", size = "large", lipSync, onReady, onModelFailed }: AvatarProps) {
   const liveLevel = useAudioLevel(audioSource ?? null);
   const level = audioLevel ?? liveLevel;
   const mouthOpenRy = 4 + level * 16;
@@ -40,7 +42,11 @@ export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle
             level={level}
             status={status}
             lipSync={lipSync}
-            onError={() => setModelFailed(true)}
+            onReady={onReady}
+            onError={() => {
+              setModelFailed(true);
+              onModelFailed?.();
+            }}
           />
         </Suspense>
       </div>
@@ -53,7 +59,7 @@ export default function Avatar({ lawyer, audioSource, audioLevel, status = "idle
         {failed ? (
           <PlaceholderPortrait seed={lawyer.id} />
         ) : (
-          <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt={`${lawyer.name}, AI advocate persona`} onError={onError} />
+          <img src={lawyer.avatarUrl ?? `/lawyers/${lawyer.id}.jpg`} alt={lawyer.name} onError={onError} />
         )}
         <svg className="avatar__mouth-overlay" viewBox="0 0 200 200" aria-hidden="true">
           <ellipse cx="100" cy="128" rx="18" ry={mouthOpenRy} style={{ fill: "var(--bg)" }} opacity={status === "speaking" ? 0.8 : 0} />

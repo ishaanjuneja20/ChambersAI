@@ -6,60 +6,61 @@
   z-index: 0;
 }
 
-/* Outer: parallax offset only (JS-driven inline transform). */
-.decorations__item {
+.decorations__arch {
   position: absolute;
-  transition: transform 0.2s ease-out;
-  will-change: transform;
+  top: -1.5rem;
+  right: -4rem;
+  width: min(440px, 46vw);
+  fill: none;
+  stroke: var(--gold-deep);
+  stroke-width: 1;
+  opacity: 0.32;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
 }
 
-/* Inner: the actual float/spin/pulse keyframes, kept on a separate element so they never
-   fight the outer's inline parallax transform. */
-.decorations__sparkle-inner {
-  animation: decorations-float 7s ease-in-out infinite, decorations-spin 16s linear infinite;
+/* Fluted column lines fading out toward the middle of the page. */
+.decorations__columns {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 9rem;
+  background: repeating-linear-gradient(to right, var(--border) 0 1px, transparent 1px 14px);
+  -webkit-mask-image: linear-gradient(to right, #000, transparent);
+  mask-image: linear-gradient(to right, #000, transparent);
+  opacity: 0.55;
+}
+
+.decorations__corner {
+  display: none; /* only shown where a page opts in (the auth brand panel) */
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.decorations__corner--tl {
+  top: 1rem;
+  left: 1rem;
+}
+
+.decorations__corner--br {
+  right: 1rem;
+  bottom: 1rem;
+  transform: rotate(180deg);
+}
+
+@media (max-width: 640px) {
+  .decorations__arch,
+  .decorations__columns {
+    display: none;
+  }
+}
+
+.auth-shell__brand .decorations__corner {
   display: block;
-}
-
-.decorations__ring-inner {
-  animation: decorations-float 9s ease-in-out infinite reverse, decorations-pulse 5s ease-in-out infinite;
-  display: block;
-}
-
-@keyframes decorations-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes decorations-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes decorations-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .decorations__sparkle-inner,
-  .decorations__ring-inner {
-    animation: none;
-  }
-  .decorations__item {
-    transition: none;
-  }
 }

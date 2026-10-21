@@ -17,7 +17,7 @@ export default function RotatingBadge() {
         </text>
       </svg>
       <svg className="rotating-badge__star" width="20" height="20" viewBox="0 0 22 22">
-        <path d="M11 0 L13 9 L22 11 L13 13 L11 22 L9 13 L0 11 L9 9 Z" fill="var(--accent)" />
+        <path d="M11 0 L13 9 L22 11 L13 13 L11 22 L9 13 L0 11 L9 9 Z" fill="var(--gold)" />
       </svg>
     </div>
   );

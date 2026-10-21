@@ -15,6 +15,10 @@ interface VoiceBubbleProps {
   transcriptPreview?: string;
   label: string;
   anchor?: "inline" | "above";
+  buttonSize?: number;
+  /** "mic": just the round mic button (the input bar draws the listening visuals itself); "bubble": the original expanding bubble. */
+  variant?: "bubble" | "mic";
+  disabled?: boolean;
   onPointerDown: (e: React.PointerEvent) => void;
   onPointerUp: (e: React.PointerEvent) => void;
   onCancel: () => void;
@@ -32,6 +36,9 @@ export default function VoiceBubble({
   transcriptPreview,
   label,
   anchor = "inline",
+  buttonSize = BUTTON_SIZE,
+  variant = "bubble",
+  disabled = false,
   onPointerDown,
   onPointerUp,
   onCancel,
@@ -47,7 +54,7 @@ export default function VoiceBubble({
   // Canvas animation loop: reads the analyser directly every frame via refs, so React never
   // re-renders for this. Pauses when the tab is hidden or the bubble isn't expanded.
   useEffect(() => {
-    if (!expanded || prefersReducedMotion) return;
+    if (variant === "mic" || !expanded || prefersReducedMotion) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -119,12 +126,12 @@ export default function VoiceBubble({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [expanded, mode, analyserRef, bubbleSize, prefersReducedMotion]);
+  }, [variant, expanded, mode, analyserRef, bubbleSize, prefersReducedMotion]);
 
   // Reduced motion: no canvas animation at all, just a glow that tracks level directly on the
   // element's box-shadow via a lightweight rAF (brightness-only, no shape/flow motion).
   useEffect(() => {
-    if (!expanded || !prefersReducedMotion) return;
+    if (variant === "mic" || !expanded || !prefersReducedMotion) return;
     const el = containerRef.current;
     if (!el) return;
     const freqData = new Uint8Array(64);
@@ -143,13 +150,38 @@ export default function VoiceBubble({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [expanded, prefersReducedMotion, analyserRef]);
+  }, [variant, expanded, prefersReducedMotion, analyserRef]);
 
-  const size = expanded ? bubbleSize : BUTTON_SIZE;
+  if (variant === "mic") {
+    // Hold-to-talk / tap-to-toggle, same handlers as the bubble. Listening shows as a pulsing active state; the waves are the bar's job.
+    return (
+      <button
+        ref={containerRef}
+        type="button"
+        className={`voice-bubble voice-bubble--mic${expanded && mode === "listening" ? " voice-bubble--active" : ""}`}
+        style={{ width: buttonSize, height: buttonSize }}
+        // aria-disabled, not `disabled`: a disabled button drops keyboard focus when it is disabled mid-answer
+        aria-disabled={disabled || undefined}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerLeave={(e) => expanded && onPointerUp(e)}
+        aria-pressed={expanded && mode === "listening"}
+        aria-label={label}
+      >
+        <Mic size={Math.round(buttonSize * 0.42)} aria-hidden="true" />
+      </button>
+    );
+  }
+
+  const size = expanded ? bubbleSize : buttonSize;
   const borderRadius = expanded ? "42%" : "50%";
 
   return (
-    <div className={`voice-bubble-anchor${anchor === "above" ? " voice-bubble-anchor--above" : ""}`}>
+    <div
+      className={`voice-bubble-anchor${anchor === "above" ? " voice-bubble-anchor--above" : ""}`}
+      // "above": the anchor keeps the idle button's footprint, so the layout around it never moves while the bubble floats above.
+      style={anchor === "above" ? ({ width: buttonSize, height: buttonSize, "--bubble-size": `${bubbleSize}px` } as React.CSSProperties) : undefined}
+    >
       <motion.button
         ref={containerRef}
         type="button"
@@ -162,7 +194,7 @@ export default function VoiceBubble({
         aria-pressed={expanded}
         aria-label={expanded ? "Listening — release or tap to stop and send" : label}
       >
-        {!expanded && <Mic size={18} aria-hidden="true" />}
+        {!expanded && <Mic size={Math.round(buttonSize * 0.42)} aria-hidden="true" />}
 
         {expanded && !prefersReducedMotion && <canvas ref={canvasRef} className="voice-bubble__canvas" aria-hidden="true" />}
         {expanded && <div className="voice-bubble__sheen" aria-hidden="true" />}

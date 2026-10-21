@@ -1,46 +1,113 @@
+/* The control dock: one floating glass bar. Left: attach + text field. Far right: [Send | Stop] then the one mic, which never moves.
+   While listening or processing the whole bar turns into a wave visualizer (VoiceWaveBar) at the same size and position. */
 .meet-input {
   width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  position: sticky;
-  bottom: env(safe-area-inset-bottom, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  z-index: 5;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .meet-input-bar {
   position: relative;
+  height: 76px; /* fixed: the voice state must not change the bar's size */
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 56px;
-  background: var(--surface-raised);
+  align-items: center;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 0.4rem 0.5rem;
-  transition: border-color 0.15s, box-shadow 0.15s, border-radius 0.15s;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--highlight-inset), var(--shadow-lg);
+  padding: 0 0.6rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.meet-input-bar--has-files {
-  border-radius: 1.5rem;
-  padding-top: 0.6rem;
-}
-
+/* The single focus indicator for the whole bar: one blue ring (the inner field draws none). */
 .meet-input-bar:focus-within {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 0 4px var(--glow-soft);
+  border-color: var(--accent);
+  box-shadow: var(--highlight-inset), var(--shadow-lg), 0 0 0 3px var(--glow-soft), 0 0 24px var(--glow-soft);
 }
 
 .meet-input-bar--drag {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 0 4px var(--glow-soft);
+  border-color: var(--border-gold-strong);
+  box-shadow: var(--highlight-inset), var(--shadow-lg), 0 0 0 3px var(--gold-wash);
 }
 
 .meet-input-bar__row {
+  position: relative;
+  z-index: 1; /* above the wave layer */
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none; /* only the controls take clicks, so the wave layer / cancel button beneath stay reachable */
+}
+
+.meet-input-bar__row > *,
+.meet-input-bar__left > *,
+.meet-input-bar__right > * {
+  pointer-events: auto;
+}
+
+.meet-input-bar__left {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  transition: opacity 0.25s ease, visibility 0s;
+}
+
+/* Listening / processing: the field and the attach button fade out, the waves take the bar. */
+.meet-input-bar--voice .meet-input-bar__left {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0s 0.25s;
+}
+
+.meet-input-bar__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Cancel (X): sits on the left inside the bar, only while listening. */
+.meet-input-bar__cancel {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0s 0.25s, border-color 0.2s;
+}
+
+.meet-input-bar--listening .meet-input-bar__cancel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.25s ease, border-color 0.2s;
+}
+
+.meet-input-bar__cancel:hover {
+  border-color: var(--border-gold);
 }
 
 .meet-input-bar__field {
@@ -49,16 +116,18 @@
   background: transparent;
   border: none;
   color: var(--text);
-  font-size: 0.95rem;
-  font-family: inherit;
+  font-size: var(--fs-body);
+  font-family: var(--font-sans);
   padding: 0.4rem 0.2rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.meet-input-bar__field:focus {
+.meet-input-bar__field:focus,
+.meet-input-bar__field:focus-visible {
   outline: none;
+  box-shadow: none; /* the bar's ring is the focus indicator */
 }
 
 .meet-input-bar__field::placeholder {
@@ -87,13 +156,14 @@
 
 .meet-input-bar__icon-btn {
   background: transparent;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-gold);
   color: var(--text);
 }
 
 .meet-input-bar__icon-btn:hover:not(:disabled) {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 10px var(--glow-soft);
+  border-color: var(--border-gold-strong);
+  color: var(--gold-soft);
+  box-shadow: 0 0 14px var(--gold-wash);
 }
 
 .meet-input-bar__icon-btn:disabled {
@@ -105,12 +175,25 @@
 .meet-input-bar__round {
   background: var(--grad-primary);
   border: none;
-  color: #ffffff;
+  color: var(--text-on-accent);
+  box-shadow: var(--highlight-button), var(--shadow-sm);
 }
 
 .meet-input-bar__round:hover:not(:disabled) {
   background: var(--grad-primary-hover);
   box-shadow: 0 4px 18px var(--glow-blue);
+}
+
+.meet-input-bar__round--stop {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-soft);
+  box-shadow: none;
+}
+
+.meet-input-bar__round--stop:hover:not(:disabled) {
+  background: var(--gold-wash);
+  box-shadow: 0 0 14px var(--gold-wash);
 }
 
 .meet-input-bar__round:disabled {
@@ -120,77 +203,32 @@
   box-shadow: none;
 }
 
-.meet-input-bar__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.1rem 0.4rem 0.2rem;
-}
-
-.meet-input-bar__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  max-width: 220px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 0.6rem;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.78rem;
-  color: var(--text);
-}
-
-.meet-input-bar__chip--error {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-.meet-input-bar__chip-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 120px;
-}
-
-.meet-input-bar__chip-meta {
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.meet-input-bar__chip-remove {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.meet-input-bar__chip-remove:hover {
-  background: var(--border-strong);
-  color: var(--text);
-}
-
 .meet-input__error {
   margin: 0.4rem 0 0;
   text-align: center;
-  font-size: 0.78rem;
+  font-size: var(--fs-caption);
   color: var(--danger);
 }
 
-@media (max-width: 600px) {
-  .meet-input {
-    max-width: none;
+@media (max-width: 699px) {
+  .meet-input-bar {
+    height: 72px;
+    padding: 0 0.5rem;
+  }
+
+  .meet-input-bar__row {
+    gap: 0.4rem;
+  }
+
+  .meet-input-bar__field {
+    min-height: 44px; /* touch target */
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .meet-input-bar,
+  .meet-input-bar__left,
+  .meet-input-bar__cancel,
   .meet-input-bar__icon-btn,
   .meet-input-bar__round {
     transition: none;

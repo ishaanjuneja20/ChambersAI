@@ -1,23 +1,24 @@
+/* The card surface (layered background, hairline, shadow) comes from the shared .card class. */
 .sources-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 1.1rem;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
   height: fit-content;
 }
 
 .sources-panel h3 {
   margin: 0;
-  font-size: 0.95rem;
+  padding-bottom: var(--space-3);
+  font-size: 1.35rem;
+  line-height: var(--lh-tight);
   color: var(--text);
+  background: var(--grad-gold-line) bottom / 100% 1px no-repeat;
 }
 
 .sources-panel__empty {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
   margin: 0;
 }
 
@@ -27,7 +28,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--space-3);
 }
 
 .source-badge {
@@ -35,47 +36,47 @@
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--border);
-  background: var(--surface-raised);
-  border-radius: 0.7rem;
-  padding: 0.55rem 0.7rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  background: var(--grad-surface), var(--surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.25s var(--ease-out);
 }
 
 a.source-badge:hover,
 a.source-badge:focus-visible {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 12px var(--glow-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 14px var(--glow-soft);
   transform: translateY(-1px);
 }
 
 .source-badge__tag {
   display: inline-flex;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--fs-caption);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  border-radius: 999px;
-  padding: 0.15rem 0.5rem;
-  margin-bottom: 0.3rem;
+  letter-spacing: var(--ls-caps);
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.6rem;
+  margin-bottom: var(--space-2);
 }
 
 .source-badge__tag--verified {
-  background: rgba(74, 222, 128, 0.14);
+  background: var(--success-wash);
   color: var(--success);
 }
 
 .source-badge__tag--interpretation {
-  background: rgba(251, 191, 36, 0.14);
+  background: var(--warning-wash);
   color: var(--warning);
 }
 
 .source-badge__tag--none {
-  background: rgba(248, 113, 113, 0.14);
+  background: var(--danger-wash);
   color: var(--danger);
 }
 
 .source-badge__label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
   color: var(--text);
 }

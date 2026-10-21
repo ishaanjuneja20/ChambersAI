@@ -1,55 +1,37 @@
-import { useEffect, useRef } from "react";
 import "./Decorations.css";
 
-function Sparkle({ style }: { style: React.CSSProperties }) {
+// Refined, non-interactive page ornament: a faint arched-window motif at the top-right edge, fluted column
+// lines down the left edge, and thin gold corner brackets. Pure SVG/CSS (no animation, no JS), positioned at
+// the edges so it never sits behind text.
+function Arch() {
+  const cx = 200;
   return (
-    <div className="decorations__item" style={style}>
-      <svg className="decorations__sparkle-inner" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-        <path d="M11 0 L13 9 L22 11 L13 13 L11 22 L9 13 L0 11 L9 9 Z" fill="var(--accent-violet)" opacity="0.65" />
-      </svg>
-    </div>
+    <svg className="decorations__arch" viewBox="0 0 400 620" aria-hidden="true">
+      {[170, 138, 106].map((r) => (
+        <path key={r} d={`M ${cx - r} 620 V ${r + 20} A ${r} ${r} 0 0 1 ${cx + r} ${r + 20} V 620`} />
+      ))}
+      <path d={`M ${cx} 20 V 620 M ${cx - 106} 300 H ${cx + 106}`} />
+      <path d={`M ${cx - 12} 8 L ${cx} 0 L ${cx + 12} 8 L ${cx} 16 Z`} />
+    </svg>
   );
 }
 
-function StripedRing({ style, color }: { style: React.CSSProperties; color: string }) {
+function Corner({ className }: { className: string }) {
   return (
-    <div className="decorations__item" style={style}>
-      <svg className="decorations__ring-inner" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-        <circle cx="17" cy="17" r="14" fill="none" stroke={color} strokeWidth="2" strokeDasharray="4 5" opacity="0.5" />
-      </svg>
-    </div>
+    <svg className={`decorations__corner ${className}`} viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M1 47 V1 H47" />
+      <path d="M9 17 L13 13 L17 17 L13 21 Z" />
+    </svg>
   );
 }
 
-// A handful of small, non-interactive decorative shapes (sparkles + striped rings) that float,
-// rotate and nudge slightly with the cursor. Positioned to never sit over content or controls.
 export default function Decorations() {
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const onMove = (e: MouseEvent) => {
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 2;
-      const y = (e.clientY / innerHeight - 0.5) * 2;
-      el.querySelectorAll<HTMLElement>(".decorations__item").forEach((item, i) => {
-        const strength = 4 + (i % 3) * 2;
-        item.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
-      });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
   return (
-    <div className="decorations" ref={wrapRef} aria-hidden="true">
-      <Sparkle style={{ top: "8%", left: "6%" }} />
-      <Sparkle style={{ top: "22%", right: "10%" }} />
-      <Sparkle style={{ bottom: "14%", left: "16%" }} />
-      <StripedRing style={{ top: "40%", right: "4%" }} color="var(--accent-magenta)" />
-      <StripedRing style={{ bottom: "8%", right: "22%" }} color="var(--text-faint)" />
+    <div className="decorations" aria-hidden="true">
+      <Arch />
+      <div className="decorations__columns" />
+      <Corner className="decorations__corner--tl" />
+      <Corner className="decorations__corner--br" />
     </div>
   );
 }

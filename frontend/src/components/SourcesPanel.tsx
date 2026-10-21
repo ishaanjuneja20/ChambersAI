@@ -24,21 +24,27 @@ function SourceBadge({ citation }: { citation: Citation }) {
   return <div className="source-badge">{content}</div>;
 }
 
-export default function SourcesPanel({ citations }: { citations: Citation[] }) {
+function SourceList({ citations }: { citations: Citation[] }) {
+  return citations.length === 0 ? (
+    <p className="sources-panel__empty">No sources cited yet.</p>
+  ) : (
+    <ul className="source-list">
+      {citations.map((c, i) => (
+        <li key={i}>
+          <SourceBadge citation={c} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// `embedded`: just the list (for use inside another panel's tab), without the card and its own heading.
+export default function SourcesPanel({ citations, embedded = false }: { citations: Citation[]; embedded?: boolean }) {
+  if (embedded) return <SourceList citations={citations} />;
   return (
     <aside className="sources-panel card" aria-label="Sources">
       <h3>Sources</h3>
-      {citations.length === 0 ? (
-        <p className="sources-panel__empty">No sources cited yet.</p>
-      ) : (
-        <ul className="source-list">
-          {citations.map((c, i) => (
-            <li key={i}>
-              <SourceBadge citation={c} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <SourceList citations={citations} />
     </aside>
   );
 }

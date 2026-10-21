@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { ConsultStatus } from "../../lib/consultTypes";
 import type { LawyerModel } from "./lawyerModels";
 import { FaceAnimator } from "./faceAnimator";
+import { acquireGLTFLoader } from "./gltfLoaders";
+import { enhanceSkin, shouldEnableSkinDetail } from "./skinDetail";
 import type { LipSyncDriver } from "../../lib/lipsync/driver";
 import "./CourtroomAvatar.css";
 
@@ -15,10 +17,15 @@ interface CourtroomAvatarProps {
   status: ConsultStatus;
   lipSync?: LipSyncDriver; // viseme timing; without it the mouth follows `level` only
   onError?: () => void;
+  /** Called once, after the first frame with the model in its final pose has been rendered. */
+  onReady?: () => void;
 }
 
 // Framing, in metres, matched to the composition reference: head near the top quarter, judge's bench
 // visible behind, a desk across the bottom edge. The model is a standing avatar; the desk hides the legs.
+// Fine skin detail (pores, micro-variation, a faint sheen). On by default; VITE_SKIN_DETAIL=off disables it, and it
+// switches itself off on low-power devices.
+const SKIN_DETAIL = import.meta.env.VITE_SKIN_DETAIL !== "off";
 const FOV = 22;
 const VIEW_HEIGHT = 0.8; // world height visible at the model's plane
 const HEAD_TOP_FROM_TOP = 0.22; // fraction of the frame above the top of the hair
@@ -80,16 +87,17 @@ function buildDesk(deskY: number): THREE.Group {
   return desk;
 }
 
-export default function CourtroomAvatar({ model, name, level, status, lipSync, onError }: CourtroomAvatarProps) {
+export default function CourtroomAvatar({ model, name, level, status, lipSync, onError, onReady }: CourtroomAvatarProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const levelRef = useRef(level);
   const onErrorRef = useRef(onError);
+  const onReadyRef = useRef(onReady);
   const lipSyncRef = useRef(lipSync);
-  const [loaded, setLoaded] = useState(false);
 
   levelRef.current = level;
   onErrorRef.current = onError;
+  onReadyRef.current = onReady;
   lipSyncRef.current = lipSync;
 
   // Which timing method drives the mouth, visible as data-lipsync on the stage (and in the console).
@@ -139,75 +147,114 @@ export default function CourtroomAvatar({ model, name, level, status, lipSync, o
 
     const camera = new THREE.PerspectiveCamera(FOV, 16 / 9, 0.05, 20);
 
+    // Resizing a canvas's drawing buffer CLEARS it, and a frame runs rAF (our render) -> layout -> ResizeObserver -> paint. So a resize
+    // done here, in the observer, used to be painted as an empty canvas (the avatar vanished) until the next rAF redrew it. Fix: skip the
+    // resize when the buffer size didn't change, and otherwise redraw synchronously, in this same callback, before the browser paints.
+    // The camera and the 1672:941 composition are untouched; only its aspect follows the stage.
+    let bufferW = 0;
+    let bufferH = 0;
     const resize = () => {
       const { width, height } = stage.getBoundingClientRect();
       if (!width || !height) return;
+      const pixelRatio = renderer.getPixelRatio();
+      const nextW = Math.floor(width * pixelRatio);
+      const nextH = Math.floor(height * pixelRatio);
+      if (nextW === bufferW && nextH === bufferH) return;
+      bufferW = nextW;
+      bufferH = nextH;
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(stage);
     resize();
+
+    // The courtroom picture is decoded before it is shown (it appears whole, with the avatar, not progressively).
+    let backgroundReady = false;
+    const background = new Image();
+    background.src = model.backgroundUrl;
+    background.decode().then(
+      () => (backgroundReady = true),
+      () => (backgroundReady = true), // a broken picture must not hold the avatar back
+    );
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let face: FaceAnimator | undefined;
     let avatar: THREE.Object3D | undefined;
     let disposed = false;
 
-    new GLTFLoader().load(
-      model.modelUrl,
-      (gltf) => {
-        if (disposed) return;
-        avatar = gltf.scene;
-        const morphMeshes: THREE.Mesh[] = [];
-        avatar.traverse((obj) => {
-          const mesh = obj as THREE.Mesh;
-          if (!mesh.isMesh) return;
-          mesh.frustumCulled = false; // skinned bounds don't follow the re-posed arms
-          if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) morphMeshes.push(mesh);
-        });
-        const headTop = new THREE.Box3().setFromObject(avatar).max.y;
-        const frameTop = headTop + HEAD_TOP_FROM_TOP * VIEW_HEIGHT;
-        const centerY = frameTop - VIEW_HEIGHT / 2;
-        const halfTan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
-        const distance = VIEW_HEIGHT / 2 / halfTan;
-        camera.position.set(0, centerY, distance);
-        camera.lookAt(0, centerY, 0);
-        // Height at which the desk's back edge lands at DESK_BACK_FROM_TOP of the frame.
-        const deskY = centerY - (DESK_BACK_FROM_TOP - 0.5) * 2 * (distance - DESK_BACK_Z) * halfTan;
+    const { loader, release } = acquireGLTFLoader(renderer);
+    const onLoaded = (gltf: GLTF) => {
+      if (disposed) return;
+      avatar = gltf.scene;
+      const morphMeshes: THREE.Mesh[] = [];
+      avatar.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.frustumCulled = false; // skinned bounds don't follow the re-posed arms
+        if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) morphMeshes.push(mesh);
+      });
+      enhanceSkin(avatar, { ...model.skinProfile, renderer, enabled: SKIN_DETAIL && shouldEnableSkinDetail() });
+      const headTop = new THREE.Box3().setFromObject(avatar).max.y;
+      const frameTop = headTop + HEAD_TOP_FROM_TOP * VIEW_HEIGHT;
+      const centerY = frameTop - VIEW_HEIGHT / 2;
+      const halfTan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+      const distance = VIEW_HEIGHT / 2 / halfTan;
+      camera.position.set(0, centerY, distance);
+      camera.lookAt(0, centerY, 0);
+      // Height at which the desk's back edge lands at DESK_BACK_FROM_TOP of the frame.
+      const deskY = centerY - (DESK_BACK_FROM_TOP - 0.5) * 2 * (distance - DESK_BACK_Z) * halfTan;
 
-        poseArms(avatar, deskY);
-        face = new FaceAnimator(
-          {
-            meshes: morphMeshes,
-            head: avatar.getObjectByName("Head"),
-            chest: avatar.getObjectByName("Spine2"),
-            leftEye: avatar.getObjectByName("LeftEye"),
-            rightEye: avatar.getObjectByName("RightEye"),
-          },
-          reduceMotion,
-        );
-        const missing = face.missingMorphs();
-        if (missing.length) console.warn("[lip-sync] model lacks morph targets:", missing.join(", "));
-        scene.add(avatar, buildDesk(deskY));
-        setLoaded(true);
-      },
-      undefined,
-      () => {
-        if (!disposed) onErrorRef.current?.();
-      },
-    );
+      poseArms(avatar, deskY);
+      face = new FaceAnimator(
+        {
+          meshes: morphMeshes,
+          head: avatar.getObjectByName("Head"),
+          chest: avatar.getObjectByName("Spine2"),
+          leftEye: avatar.getObjectByName("LeftEye"),
+          rightEye: avatar.getObjectByName("RightEye"),
+        },
+        reduceMotion,
+      );
+      const missing = face.missingMorphs();
+      if (missing.length) console.warn("[lip-sync] model lacks morph targets:", missing.join(", "));
+      scene.add(avatar, buildDesk(deskY));
+    };
+    // Preferred file first (.opt.glb), then the uncompressed ones; only when all fail does the 2D portrait take over.
+    const urls = [model.modelUrl, ...model.fallbackUrls];
+    const tryLoad = (index: number) => {
+      loader.load(urls[index], onLoaded, undefined, (error) => {
+        if (disposed) return;
+        if (index + 1 < urls.length) {
+          console.warn(`[avatar] ${urls[index]} failed to load, trying ${urls[index + 1]}`, error);
+          tryLoad(index + 1);
+        } else onErrorRef.current?.();
+      });
+    };
+    tryLoad(0);
 
     const clock = new THREE.Clock();
+    let reported = false;
     renderer.setAnimationLoop(() => {
       const dt = Math.min(clock.getDelta(), 0.1);
       face?.update(dt, clock.elapsedTime, lipSyncRef.current?.sample() ?? null, levelRef.current);
       renderer.render(scene, camera);
+      if (avatar && backgroundReady && !reported) {
+        // The first frame with the posed model is drawn and the courtroom picture is decoded: reveal both together (until now the stage showed
+        // neither the picture nor an empty canvas), then report on the next frame, once the browser has had a chance to present it.
+        reported = true;
+        stage.dataset.revealed = "";
+        requestAnimationFrame(() => {
+          if (!disposed) onReadyRef.current?.();
+        });
+      }
     });
 
     return () => {
       disposed = true;
+      release();
       renderer.setAnimationLoop(null);
       observer.disconnect();
       scene.traverse((obj) => {
@@ -230,12 +277,11 @@ export default function CourtroomAvatar({ model, name, level, status, lipSync, o
     <div
       ref={stageRef}
       className={`courtroom courtroom--${status}`}
-      style={{ backgroundImage: `url("${model.backgroundUrl}")` }}
+      style={{ "--courtroom-bg": `url("${model.backgroundUrl}")` } as React.CSSProperties}
       role="img"
-      aria-label={`${name}, AI advocate persona, seated in a courtroom`}
+      aria-label={`${name}, seated in a courtroom`}
     >
       <canvas ref={canvasRef} className="courtroom__canvas" />
-      {!loaded && <div className="courtroom__loading">Preparing the courtroom…</div>}
     </div>
   );
 }

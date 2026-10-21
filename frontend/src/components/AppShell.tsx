@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Home, MessageSquarePlus, History, Settings, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-react";
+import { Home, History, Settings, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-react";
+import MatchAssistant from "./MatchAssistant";
 import "./AppShell.css";
 
 const COLLAPSE_KEY = "chambersai.sidebarCollapsed";
 
 const NAV_ITEMS = [
   { to: "/home", label: "Home", icon: Home },
-  { to: "/consultation/new", label: "New Consultation", icon: MessageSquarePlus },
   { to: "/consultations", label: "My Consultations", icon: History },
   { to: "/profile", label: "Profile & Settings", icon: Settings },
 ];
@@ -76,8 +76,6 @@ function Sidebar({ collapsed, onToggleCollapse, onRequestClose }: SidebarProps) 
           </div>
         ))}
       </nav>
-
-      <p className="sidebar__footer-note">General information, not legal advice.</p>
     </aside>
   );
 }
@@ -147,6 +145,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </div>
+
+      <MatchAssistant />
     </div>
   );
 }
