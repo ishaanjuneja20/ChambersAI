@@ -6,42 +6,40 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 LAWYERS = {
-    # Rhea Kapoor (female). The default is Fish's "Marcus authoritative and deep" (tagged male), the voice
-    # this lawyer has always had; FISH_VOICE_CRIMINAL in backend/.env sets a female voice for her.
+    # Rhea Kapoor (female). Defaults to her own female Fish voice; FISH_VOICE_CRIMINAL in backend/.env overrides it.
     "criminal": {
         "name": "Criminal Lawyer",
-        "voice_id": os.getenv("FISH_VOICE_CRIMINAL") or "201388b52f4142fd962cfcc9b6f68e9b",
+        "voice_id": os.getenv("FISH_VOICE_CRIMINAL") or "b1a1d760d9604bdb957a56eec3460f1b",
         "persona": "Confident, precise, and professional.",
     },
+    # Meera Iyer (female).
     "family": {
         "name": "Family Lawyer",
-        "voice_id": "bdca24aa396b477eb77cfd20ca766cdf",
+        "voice_id": "06ad9402213e4e7189cb5a298f9ba821",
         "persona": "Calm, empathetic, and reassuring.",
     },
+    # Priya Menon (female).
     "property": {
         "name": "Property Lawyer",
-        "voice_id": "07d1a99304cc4e6c984bdbc1fdd87dde",
+        "voice_id": "fa3528ac39d546429da5f65612df7b4c",
         "persona": "Clear, practical, and detail-oriented.",
     },
-    # Ananya Iyer has no voice of her own yet: FISH_VOICE_CONSTITUTIONAL in backend/.env sets one;
-    # until then she borrows the family lawyer's (female) voice.
+    # Ananya Iyer (female). Defaults to her own female Fish voice; FISH_VOICE_CONSTITUTIONAL in backend/.env overrides it.
     "constitutional": {
         "name": "Constitutional Lawyer",
-        "voice_id": os.getenv("FISH_VOICE_CONSTITUTIONAL") or "bdca24aa396b477eb77cfd20ca766cdf",
+        "voice_id": os.getenv("FISH_VOICE_CONSTITUTIONAL") or "a6630e2dd6c14ea799c2a7c078e0d8de",
         "persona": "Calm, precise, and thoughtful.",
     },
-    # Karan Oberoi (male). Defaults to Fish's "Marcus authoritative and deep" (tagged male, calm,
-    # professional), the criminal lawyer's voice; FISH_VOICE_LABOUR in backend/.env sets his own.
+    # Karan Oberoi (male). Defaults to his own male Fish voice; FISH_VOICE_LABOUR in backend/.env overrides it.
     "labour": {
         "name": "Labour Lawyer",
-        "voice_id": os.getenv("FISH_VOICE_LABOUR") or "201388b52f4142fd962cfcc9b6f68e9b",
+        "voice_id": os.getenv("FISH_VOICE_LABOUR") or "ce9c96291460478ea6851049cb847d73",
         "persona": "Firm, confident, and employee-focused.",
     },
-    # Arjun Shah (male). Defaults to Fish's "Authoritative Male Speaker" (tagged male), distinct from
-    # Karan's; FISH_VOICE_CONSUMER in backend/.env sets his own.
+    # Arjun Shah (male). Defaults to his own male Fish voice; FISH_VOICE_CONSUMER in backend/.env overrides it.
     "consumer": {
         "name": "Consumer Lawyer",
-        "voice_id": os.getenv("FISH_VOICE_CONSUMER") or "07d1a99304cc4e6c984bdbc1fdd87dde",
+        "voice_id": os.getenv("FISH_VOICE_CONSUMER") or "73770ea2927d46c19e461e7e812b2f95",
         "persona": "Direct, practical, and consumer-focused.",
     },
 }
