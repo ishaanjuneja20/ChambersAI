@@ -6,9 +6,11 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 LAWYERS = {
+    # Rhea Kapoor (female). The default is Fish's "Marcus authoritative and deep" (tagged male), the voice
+    # this lawyer has always had; FISH_VOICE_CRIMINAL in backend/.env sets a female voice for her.
     "criminal": {
         "name": "Criminal Lawyer",
-        "voice_id": "201388b52f4142fd962cfcc9b6f68e9b",
+        "voice_id": os.getenv("FISH_VOICE_CRIMINAL") or "201388b52f4142fd962cfcc9b6f68e9b",
         "persona": "Confident, precise, and professional.",
     },
     "family": {

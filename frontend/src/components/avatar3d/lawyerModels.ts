@@ -1,6 +1,6 @@
 // Lawyers that have a 3D avatar on the consultation screen. Everyone else keeps the 2D portrait.
 // Ananya Iyer (constitutional), Priya Menon (property), Karan Oberoi (labour), Arjun Shah (consumer) and
-// Meera Iyer (family). All
+// Meera Iyer (family) and Rhea Kapoor (criminal). All
 // GLBs share the same Ready Player Me rig and ARKit blendshapes, so framing, arm pose (IK from each model's
 // own bone lengths), visemes and face animation are shared.
 export interface LawyerModel {
@@ -36,6 +36,11 @@ const LAWYER_MODELS: Record<string, LawyerModel> = {
     modelUrl: `${base}brand/assets/lawyers/MeeraIyer.glb`,
     backgroundUrl: `${base}assets/courtroom-background.png`,
     fishVoice: true, // backend/lawyers.py "family"
+  },
+  criminal: {
+    modelUrl: `${base}brand/assets/lawyers/rheakapoor.glb`,
+    backgroundUrl: `${base}assets/courtroom-background.png`,
+    fishVoice: true, // backend/lawyers.py "criminal"; FISH_VOICE_CRIMINAL sets a female voice for Rhea
   },
 };
 
