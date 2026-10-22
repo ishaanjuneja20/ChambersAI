@@ -416,5 +416,77 @@
   "type": "trap",
   "question": "मैं अपने आविष्कार का पेटेंट कैसे कराऊँ?",
   "gold": []
+ },
+ {
+  "id": "s1-en",
+  "pair": "s1",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "scenario",
+  "question": "A fake case has been filed against me. What can I do?",
+  "gold": []
+ },
+ {
+  "id": "s2-en",
+  "pair": "s2",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "scenario",
+  "question": "My employer hasn’t paid my salary for three months. What are my options?",
+  "gold": []
+ },
+ {
+  "id": "s3-en",
+  "pair": "s3",
+  "lawyer": "consumer",
+  "lang": "en",
+  "type": "scenario",
+  "question": "I bought a defective car and the dealer refuses to fix it. What can I do?",
+  "gold": []
+ },
+ {
+  "id": "s4-en",
+  "pair": "s4",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "scenario",
+  "question": "My landlord is not returning my security deposit. What can I do?",
+  "gold": []
+ },
+ {
+  "id": "s5-en",
+  "pair": "s5",
+  "lawyer": "criminal",
+  "lang": "en",
+  "type": "scenario",
+  "question": "The police refused to register my complaint. What should I do?",
+  "gold": []
+ },
+ {
+  "id": "s6-en",
+  "pair": "s6",
+  "lawyer": "labour",
+  "lang": "en",
+  "type": "scenario",
+  "question": "I was fired without any notice. Is that legal and what can I do?",
+  "gold": []
+ },
+ {
+  "id": "s7-en",
+  "pair": "s7",
+  "lawyer": "property",
+  "lang": "en",
+  "type": "scenario",
+  "question": "My neighbour has built a wall on part of my land. What are my options?",
+  "gold": []
+ },
+ {
+  "id": "s8-en",
+  "pair": "s8",
+  "lawyer": "constitutional",
+  "lang": "en",
+  "type": "scenario",
+  "question": "I was arrested without being told why. What are my rights?",
+  "gold": []
  }
 ]

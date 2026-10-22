@@ -14,6 +14,8 @@ Run: `python3 tools/eval_embeddings.py --root . --models tfidf e5-small`
 30 answerable questions (15 pairs, English and Hindi) and 8 trap questions, written the way a member of the public would ask, with no legal terms. `questions.json` is deliberately easy; this set is closer to real use and is what refusal thresholds and query rewriting should be judged on. Same format, same caveat: not reviewed by a lawyer.
 Run: `python3 tools/eval_embeddings.py --root . --models bge-m3 --device cpu --questions tests/eval/questions_lay.json --tag @lay`
 
+The last 8 entries (`s1-en` .. `s8-en`, English only) are broad scenario questions with `"type": "scenario"` and an empty gold list: everyday situations that involve several legal steps or remedies, used to judge multi-query retrieval (`CHAMBERS_MULTIQUERY`) and the NO_SOURCE retry (`CHAMBERS_RETRY`). `eval_embeddings.py` skips them (it only scores `answerable`); `tools/run_answers.py --compare` treats them like answerable questions and shows how many sub-queries each used.
+
 ## judgment_questions.json (DRAFT, not lawyer reviewed)
 41 questions against the Supreme Court judgment index: `find_case` (issue described in everyday words, the answer is a
 case), `point` (a specific point inside a case; also lists the gold paragraphs), `trap` (nothing in the judgments).

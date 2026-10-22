@@ -25,12 +25,19 @@ def state(r):
     return "refused" if r["refused"] else "answered"
 
 
+def subqueries(r):
+    """Number of sub-queries the statute rewrite produced for this question, '-' if the run did not record it."""
+    sub = (r.get("debug") or {}).get("subqueries")
+    return "-" if sub is None else len(sub)
+
+
 def compare(a_tag, b_tag):
     a, b = load(a_tag), load(b_tag)
     kinds = {}
     for i in a:
         if i in b:
-            kinds.setdefault((a[i]["type"], state(a[i]), state(b[i])), []).append(i)
+            typ = "answerable" if a[i]["type"] == "scenario" else a[i]["type"]       # scenario questions count as answerable
+            kinds.setdefault((typ, state(a[i]), state(b[i])), []).append(i)
     print(f"{a_tag} -> {b_tag}")
     for (typ, sa, sb), ids in sorted(kinds.items()):
         print(f"  {typ:10s} {sa:9s} -> {sb:9s} {len(ids):3d}  {' '.join(ids) if sa != sb else ''}")
@@ -38,6 +45,10 @@ def compare(a_tag, b_tag):
     for i in a:
         if i in b and state(a[i]) == state(b[i]) == "answered" and a[i]["citations"] != b[i]["citations"]:
             print(f"  {i}: {len(a[i]['citations'])} -> {len(b[i]['citations'])} citations")
+    print("\nsub-queries used per question (CHAMBERS_MULTIQUERY; '-' = not recorded in that run):")
+    for i in a:
+        if i in b:
+            print(f"  {i:8s} {state(a[i]):9s} -> {state(b[i]):9s} sub-queries {subqueries(a[i])} -> {subqueries(b[i])}")
 
 
 def main():
@@ -46,6 +57,7 @@ def main():
     ap.add_argument("--ids", nargs="*")
     ap.add_argument("--compare", nargs=2)
     ap.add_argument("--tally", nargs="+", help="show answered/refused per question across several saved runs")
+    ap.add_argument("--questions", default="tests/eval/judgment_questions.json", help="question set to run")
     ap.add_argument("--pause", type=float, default=13.0)
     ap.add_argument("--resume", action="store_true", help="keep answers already saved under this tag, run only the rest")
     a = ap.parse_args()
@@ -62,7 +74,7 @@ def main():
     from backend.rag.generate import GenerationError
     from backend.rag.pipeline import answer, warmup
     lawyers = {l["id"]: l for l in json.loads((root / "lawyers.json").read_text(encoding="utf-8"))}
-    qs = json.loads((root / "tests/eval/judgment_questions.json").read_text(encoding="utf-8"))
+    qs = json.loads((root / a.questions).read_text(encoding="utf-8"))
     if a.ids:
         qs = [q for q in qs if q["id"] in a.ids]
     out_path = EVAL / f"answers_{a.tag}.json"

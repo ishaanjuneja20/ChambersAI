@@ -17,6 +17,7 @@ REFUSAL = {"en": "I don't have a reliable source for this.",
 
 STATUTE_MARGIN = float(os.environ.get("CHAMBERS_STATUTE_MARGIN", "0.05"))   # 0 turns the soft statute hits off
 SOFT_STATUTES = 3
+MULTI_TOP = 8                                                        # hits kept after merging the sub-queries' results
 RETRY_EXTRA = 2                                                     # extra model calls after NO_SOURCE (CHAMBERS_RETRY=0 turns them off)
 
 
@@ -59,6 +60,17 @@ def _judgments_on() -> bool:
     return os.environ.get("CHAMBERS_JUDGMENTS", "1") != "0" and J.judgments_available()
 
 
+def _merge_hits(first: list[dict], others: list[list[dict]]) -> list[dict]:
+    """One list from several retrievals: a chunk keeps its best score, the best MULTI_TOP are kept (same order as a
+    single retrieval: similarity plus the soft domain boost)."""
+    best: dict = {}
+    for h in first + [h for hs in others for h in hs]:
+        cid = h["chunk"]["id"]
+        if cid not in best or h["score"] > best[cid]["score"]:
+            best[cid] = h
+    return sorted(best.values(), key=lambda h: -h["score"])[:MULTI_TOP]
+
+
 def _judgment_hits(question: str, domain: str, jr: str | None, k: int = 3) -> list[dict]:
     """Court-judgment paragraphs, only if the judgment index is installed and the question itself (not the
     Gemini rewrite, which makes off-topic questions look legal) clears JUDGMENT_REFUSAL_THRESHOLD."""
@@ -81,13 +93,17 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
     else:
         lang_search = lang
     rewritten = jr = None
+    subs: list[str] = []                                  # sub-queries for broad, several-step questions
+    multi = os.environ.get("CHAMBERS_MULTIQUERY", "1") != "0"
     if rewrite_on:                                        # the two rewrites are independent: run them together
         with ThreadPoolExecutor(2) as ex:
-            f1 = ex.submit(rewrite_query, question)
+            f1 = ex.submit(rewrite_query, question, subqueries=subs) if multi else ex.submit(rewrite_query, question)
             f2 = ex.submit(rewrite_query, question, target="judgments") if _judgments_on() else None
             rewritten, jr = f1.result(), (f2.result() if f2 else None)
     t1 = time.time()
     hits = retrieve(question, lawyer["domain"], rewritten=rewritten)
+    if subs:                                              # same threshold below: the merge only widens the candidates
+        hits = _merge_hits(hits, [retrieve(question, lawyer["domain"], rewritten=s) for s in subs])
     th = refusal_threshold(lang_search)
     jhits = _judgment_hits(question, lawyer["domain"], jr)
     if hits and hits[0]["similarity"] >= th:
@@ -101,7 +117,7 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
         hits = []                                                    # statutes only count when reliable
     info = None
     if debug:
-        info = {"lang": lang, "search_lang": lang_search, "threshold": th, "rewrite": rewritten,
+        info = {"lang": lang, "search_lang": lang_search, "threshold": th, "rewrite": rewritten, "subqueries": subs,
                 "top": [(h["chunk"]["citation"], round(h["similarity"], 3)) for h in hits[:3]],
                 "seconds": {"rewrite": round(t1 - t0, 1), "retrieve": round(time.time() - t1, 1)},
                 "judgments": [(h["chunk"]["citation"], round(h["similarity_query"], 3)) for h in jhits]}

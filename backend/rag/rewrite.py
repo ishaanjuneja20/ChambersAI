@@ -7,6 +7,7 @@ as legal text and never contains citations (it is told not to name sections).
 from __future__ import annotations
 
 import os
+import re
 
 from backend.rag.generate import GenerationError, _post, call_gemini
 
@@ -27,6 +28,31 @@ REWRITE_PROMPT = (
     "Do NOT answer the question and do NOT name section numbers. Output only the query.\n\nQuestion: ")
 
 
+MAX_SUBQUERIES = 3
+_PROMPT_TAIL = "\n\nQuestion: "
+MULTI_INSTRUCTION = (
+    "\nIf the question involves several separate legal steps or remedies (for example a false case filed against the "
+    "user: the false charge, getting the case quashed, bail in advance), add up to 3 more lines after the query, each "
+    "starting with 'SUB:' and holding one short query (max 12 words) for one step or remedy, in the same statute-style "
+    "operative words, with no padding words such as 'punishment' and no Act names. Example: 'false case filed on me' -> "
+    "the query line 'false charge of an offence made with intent to injure a person', then 'SUB: false charge', "
+    "'SUB: quashing of the case', 'SUB: anticipatory bail'. If the question is about a single topic, output ONLY the "
+    "one query line and no SUB: lines.")
+assert REWRITE_PROMPT.endswith(_PROMPT_TAIL)
+REWRITE_MULTI_PROMPT = REWRITE_PROMPT[:-len(_PROMPT_TAIL)] + MULTI_INSTRUCTION + _PROMPT_TAIL
+
+
+def parse_subqueries(text: str, main: str) -> list[str]:
+    """The 'SUB: ...' lines after the query line: at most MAX_SUBQUERIES, no repeats, none equal to the main query."""
+    subs: list[str] = []
+    for line in text.strip().splitlines()[1:]:
+        m = re.match(r"\s*SUB:\s*(.+)", line, re.I)
+        q = m.group(1).strip(" \"'`")[:150] if m else ""
+        if q and q.lower() != main.lower() and q.lower() not in (s.lower() for s in subs):
+            subs.append(q)
+    return subs[:MAX_SUBQUERIES]
+
+
 JUDGMENT_REWRITE_PROMPT = (
     "You help search a database of Supreme Court of India judgments. "
     "Rewrite the user's question as ONE short English search query (max 25 words) using the legal terms, doctrines and "
@@ -39,9 +65,14 @@ JUDGMENT_REWRITE_PROMPT = (
     "number. Output only the query.\n\nQuestion: ")
 
 
-def rewrite_query(question: str, post=_post, target: str = "statutes") -> str:
-    """target: "statutes" (default) or "judgments" (words a Supreme Court judgment would use)."""
+def rewrite_query(question: str, post=_post, target: str = "statutes", subqueries: list | None = None) -> str:
+    """target: "statutes" (default) or "judgments" (words a Supreme Court judgment would use).
+    subqueries (statutes only): pass a list to also get up to 3 short sub-queries appended to it when the question
+    involves several legal steps or remedies; the return value is still the one main query."""
     prompt = JUDGMENT_REWRITE_PROMPT if target == "judgments" else REWRITE_PROMPT
+    multi = subqueries is not None and target != "judgments"
+    if multi:
+        prompt = REWRITE_MULTI_PROMPT
     body = {"contents": [{"role": "user", "parts": [{"text": prompt + question}]}],
             "generationConfig": {"temperature": 0, "maxOutputTokens": 400}}
     try:
@@ -52,7 +83,10 @@ def rewrite_query(question: str, post=_post, target: str = "statutes") -> str:
             print("[gemini] rewrite failed, using the question as asked", file=sys.stderr, flush=True)
         return question
     line = text.strip().splitlines()[0].strip(" \"'`") if text.strip() else ""
-    return line[:300] or question
+    main = line[:300] or question
+    if multi:
+        subqueries.extend(parse_subqueries(text, main))
+    return main
 
 
 TRANSLATE_PROMPT = (
