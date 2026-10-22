@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import { ChevronUp, FileText, X } from "lucide-react";
 import type { Citation, TranscriptTurn } from "../../lib/consultTypes";
 import { formatSize, type AttachedFile } from "../../lib/attachments";
 import SourcesPanel from "../SourcesPanel";
+import GeneralTag from "../GeneralTag";
+import { showGeneralNotice } from "../../lib/generalAnswer";
+import PageTaggedText from "../PageTaggedText";
+import DocumentCard from "./DocumentCard";
 import type { LiveCaption } from "./Subtitles";
 
 export type TabKey = "transcript" | "sources" | "documents";
 
 const FILE_STATUS: Record<AttachedFile["status"], string> = {
   uploading: "Uploading…",
-  attached: "Attached",
+  analysing: "Analysing…",
+  attached: "Analysed",
   demo: "Attached (demo: not analysed)",
   error: "Upload failed",
 };
@@ -153,11 +158,19 @@ export default function RoomPanel({
             <div className="room-transcript" aria-live="polite" aria-relevant="additions text">
               {transcript.length === 0 && !liveCaption && <p className="room-panel__empty">No messages yet. Ask a question to begin.</p>}
               {transcript.map((turn) => (
-                <p key={turn.id} className={`room-turn room-turn--${turn.role}`}>
-                  {turn.text}
-                </p>
+                <Fragment key={turn.id}>
+                  {showGeneralNotice(turn.general) && <GeneralTag className="room-turn__tag" />}
+                  <p className={`room-turn room-turn--${turn.role}${showGeneralNotice(turn.general) ? " room-turn--general" : ""}`}>
+                    <PageTaggedText text={turn.text} />
+                  </p>
+                </Fragment>
               ))}
-              {liveCaption && <p className="room-turn room-turn--lawyer room-turn--live">{liveCaption.text.slice(0, liveCaption.visibleChars) || "…"}</p>}
+              {liveCaption && (
+                <>
+                  {showGeneralNotice(liveCaption.general) && <GeneralTag className="room-turn__tag" />}
+                  <p className={`room-turn room-turn--lawyer room-turn--live${showGeneralNotice(liveCaption.general) ? " room-turn--general" : ""}`}>{liveCaption.text.slice(0, liveCaption.visibleChars) || "…"}</p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -171,15 +184,21 @@ export default function RoomPanel({
             <p className="room-panel__empty">No documents attached in this session.</p>
           ) : (
             <ul className="room-docs">
-              {files.map((f) => (
-                <li key={f.id} className={`room-doc${f.status === "error" ? " room-doc--error" : ""}`}>
-                  <FileText size={18} aria-hidden="true" />
-                  <span className="room-doc__name">{f.file.name}</span>
-                  <span className="room-doc__meta">
-                    {formatSize(f.file.size)} · {f.status === "error" ? (f.error ?? FILE_STATUS.error) : FILE_STATUS[f.status]}
-                  </span>
-                </li>
-              ))}
+              {files.map((f) =>
+                f.doc && f.status === "attached" ? (
+                  <li key={f.id}>
+                    <DocumentCard file={f} />
+                  </li>
+                ) : (
+                  <li key={f.id} className={`room-doc${f.status === "error" ? " room-doc--error" : ""}`}>
+                    <FileText size={18} aria-hidden="true" />
+                    <span className="room-doc__name">{f.name}</span>
+                    <span className="room-doc__meta">
+                      {formatSize(f.size)} · {f.status === "error" ? (f.error ?? FILE_STATUS.error) : FILE_STATUS[f.status]}
+                    </span>
+                  </li>
+                ),
+              )}
             </ul>
           )}
         </div>

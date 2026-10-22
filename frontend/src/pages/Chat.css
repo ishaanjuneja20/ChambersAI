@@ -121,6 +121,13 @@
   color: var(--text);
 }
 
+/* Under a lawyer's message, in line with its text (past the headshot). */
+.chat-turn__offer {
+  align-self: flex-start;
+  max-width: 92%;
+  margin: 0 0 0 calc(36px + var(--space-3));
+}
+
 .chat__typing {
   display: flex;
   align-items: center;
@@ -185,11 +192,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.chat-starters {
-  position: static;
-  padding-top: 2px;
 }
 
 .chat-jump {
@@ -384,6 +386,11 @@
   .chat-turn__photo {
     width: 32px;
     height: 32px;
+  }
+
+  .chat-turn__offer {
+    max-width: 96%;
+    margin-left: calc(32px + var(--space-3));
   }
 
   .chat-dock {

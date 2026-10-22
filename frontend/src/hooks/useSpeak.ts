@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usesFishVoice } from "../components/avatar3d/lawyerModels";
 import { LipSyncDriver } from "../lib/lipsync/driver";
-import { detectLang } from "../lib/lipsync/g2p";
-import { FishSpeechPlayer } from "../lib/speech/fishSpeech";
+import { detectLang, type Lang } from "../lib/lipsync/g2p";
+import { CAPTION_JOINER, FishSpeechPlayer, revealIndex, type FishStreamCallbacks, type StreamSentence } from "../lib/speech/fishSpeech";
 
 // The browser never calls Gemini or Fish Audio directly and holds no keys.
 // - Lawyers with a Fish voice, when VITE_TTS_API_URL points at the backend: audio from POST /api/speak,
@@ -16,14 +16,31 @@ export interface SpeakOptions {
   lawyerId?: string;
 }
 
+/** An answer being spoken while it still arrives (see speakStream). */
+export interface SpeechStream {
+  enqueue: (sentence: StreamSentence) => void;
+  finish: () => void;
+}
+
 export function useSpeak() {
   const [speaking, setSpeaking] = useState(false);
   const browserSupported = typeof window !== "undefined" && "speechSynthesis" in window;
   const fallbackIntervalRef = useRef<number>();
+  const browserStreamEnd = useRef<(() => void) | null>(null); // ends the browser-voice stream in progress
   const lipSync = useMemo(() => new LipSyncDriver(), []);
   const fish = useMemo(() => (TTS_API_URL ? new FishSpeechPlayer(TTS_API_URL, lipSync) : null), [lipSync]);
 
-  useEffect(() => () => fish?.dispose(), [fish]);
+  // Leaving the page silences whatever is still being said, whichever voice it was.
+  useEffect(
+    () => () => {
+      fish?.dispose();
+      window.clearInterval(fallbackIntervalRef.current);
+      browserStreamEnd.current = null;
+      if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      lipSync.stop();
+    },
+    [fish, lipSync],
+  );
 
   const browserSpeak = useCallback(
     (text: string, onWordBoundary: (charIndex: number) => void, onEnd: () => void) => {
@@ -100,13 +117,102 @@ export function useSpeak() {
     [fish, browserSpeak],
   );
 
+  // Browser voice for an answer that is still arriving: one utterance per sentence, queued by the browser itself.
+  const browserStream = useCallback(
+    (cb: FishStreamCallbacks): SpeechStream => {
+      window.clearInterval(fallbackIntervalRef.current);
+      browserStreamEnd.current?.();
+      if (browserSupported) window.speechSynthesis.cancel();
+      const generation = lipSync.begin(() => performance.now() / 1000, "speech-synthesis-boundaries");
+      let captionEnd = 0;
+      let count = 0;
+      let pending = 0;
+      let finished = false;
+      let ended = false;
+      let lang: Lang | null = null;
+      const end = () => {
+        if (ended) return;
+        ended = true;
+        if (browserStreamEnd.current === end) browserStreamEnd.current = null;
+        lipSync.stop();
+        setSpeaking(false);
+        cb.onEnd();
+      };
+      browserStreamEnd.current = end;
+      setSpeaking(true);
+      return {
+        enqueue: ({ caption, speak: spoken }) => {
+          if (ended || finished) return;
+          const start = count ? captionEnd + CAPTION_JOINER.length : 0;
+          captionEnd = start + caption.length;
+          count++;
+          const sentenceEnd = captionEnd;
+          if (!browserSupported || !spoken.trim()) {
+            cb.onProgress(sentenceEnd); // nothing to say it with: the caption is simply shown
+            return;
+          }
+          lang ??= detectLang(spoken);
+          const wordLang = lang;
+          const utterance = new SpeechSynthesisUtterance(spoken);
+          utterance.rate = 1;
+          pending++;
+          const done = () => {
+            if (ended) return;
+            cb.onProgress(sentenceEnd);
+            if (--pending === 0 && finished) end();
+          };
+          utterance.onstart = () => lipSync.setSynthetic(generation, true);
+          utterance.onboundary = (e) => {
+            if (ended) return;
+            cb.onProgress(revealIndex(caption, 0, caption.length, e.charIndex / spoken.length) + start);
+            if (e.name === "word" || e.name === undefined) {
+              lipSync.addWord(generation, e.charLength ? spoken.substr(e.charIndex, e.charLength) : spoken.slice(e.charIndex).split(/\s/)[0], wordLang, utterance.rate);
+            }
+          };
+          utterance.onend = done;
+          utterance.onerror = done;
+          window.speechSynthesis.speak(utterance);
+        },
+        finish: () => {
+          finished = true;
+          if (pending === 0) end();
+        },
+      };
+    },
+    [browserSupported, lipSync],
+  );
+
+  /**
+   * Speaks an answer sentence by sentence while it is still being received. `cb.onProgress` reports how many
+   * characters of the captions (enqueued captions joined with CAPTION_JOINER) have been spoken; `cb.onEnd`
+   * fires after finish() once the last sentence was heard, or when stop() cuts the answer off.
+   */
+  const speakStream = useCallback(
+    (lawyerId: string, cb: FishStreamCallbacks): SpeechStream => {
+      if (fish && usesFishVoice(lawyerId)) {
+        setSpeaking(true);
+        fish.begin(lawyerId, {
+          onProgress: cb.onProgress,
+          onEnd: () => {
+            setSpeaking(false);
+            cb.onEnd();
+          },
+        });
+        return { enqueue: (sentence) => fish.enqueue(sentence), finish: () => fish.finish() };
+      }
+      return browserStream(cb);
+    },
+    [fish, browserStream],
+  );
+
   const stop = useCallback(() => {
     window.clearInterval(fallbackIntervalRef.current);
     fish?.stop();
     if (browserSupported) window.speechSynthesis.cancel();
     lipSync.stop();
     setSpeaking(false);
+    browserStreamEnd.current?.(); // an answer cut off before finish() still ends
   }, [browserSupported, fish, lipSync]);
 
-  return { speak, stop, speaking, supported: browserSupported || !!fish, lipSync };
+  return { speak, speakStream, stop, speaking, supported: browserSupported || !!fish, lipSync };
 }

@@ -7,7 +7,8 @@ Data (not in git) is read from $CHAMBERS_DATA_DIR (default: ./data_dir fallback 
 
 Behaviour (decided from the eval, see DECISIONS.md):
   * cosine similarity between the query and each chunk
-  * one hit per section (best chunk), because long sections are split into several chunks
+  * one hit per section (best chunk), because long sections are split into several chunks; the hit's text then
+    carries the section's other parts too (see expand_section)
   * domain tag adds DOMAIN_BOOST to the ranking score; it never filters (CLAUDE.md rule 5)
   * every hit carries `similarity` (raw, used for refusal) and `score` (boosted, used for ranking)
   * `refusal_threshold(lang)` gives the per-language cut-off below which we refuse (rule 4)
@@ -29,6 +30,8 @@ DOMAIN_BOOST = 0.02
 # Tilted towards answering: the Gemini step ("no source" -> no citation -> refuse) is a second guard.
 # Without the rewrite step, scores are lower: re-tune if rewriting is switched off (CHAMBERS_REWRITE=0).
 REFUSAL_THRESHOLDS = {"en": 0.64, "hi": 0.60}
+EXPAND_WHOLE_MAX = 9000    # a section split into parts is merged whole when its parts total at most this many characters
+GAP = "[…]"               # marks text left out of an expanded section
 _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 
 _index = None          # lazily loaded Index
@@ -59,6 +62,11 @@ def refusal_threshold(lang: str) -> float:
     return REFUSAL_THRESHOLDS.get(lang, max(REFUSAL_THRESHOLDS.values()))
 
 
+def _part_no(chunk_id: str) -> int:
+    m = re.search(r"-p(\d+)$", chunk_id)
+    return int(m.group(1)) if m else 1
+
+
 class Index:
     def __init__(self, chunks, vectors):
         assert len(chunks) == len(vectors)
@@ -66,6 +74,11 @@ class Index:
         self.vectors = np.asarray(vectors, dtype="float64")
         self.keys = [self._key(c) for c in chunks]
         self.domains = [set(c.get("domains") or []) for c in chunks]
+        self.sections: dict = {}                   # section key -> chunk indices in part order (id, id-p2, id-p3, ...)
+        for i, k in enumerate(self.keys):
+            self.sections.setdefault(k, []).append(i)
+        for group in self.sections.values():
+            group.sort(key=lambda i: _part_no(chunks[i]["id"]))
 
     @staticmethod
     def _key(c):
@@ -127,6 +140,34 @@ def get_embedder():
     return _embedder
 
 
+def expand_section(index: Index, i: int) -> dict:
+    """Chunk i (the part that matched) with the other parts of its section merged into its text, in their original
+    order, so the model sees the penalty, limit or exception that usually sits in the last part. A section of at most
+    EXPAND_WHOLE_MAX characters is merged whole. A longer one keeps the matched part, the part before and after it
+    and always the final part; every stretch left out is marked with a line GAP. A section in one piece is returned
+    as is. The id, citation and metadata stay those of the matched part; the index itself is not changed."""
+    chunk = index.chunks[i]
+    group = index.sections[index.keys[i]]
+    n = len(group)
+    if n == 1:
+        return chunk
+    texts = [index.chunks[j]["text"] for j in group]
+    pos = group.index(i)
+    keep = list(range(n)) if sum(map(len, texts)) <= EXPAND_WHOLE_MAX else sorted({pos - 1, pos, pos + 1, n - 1} & set(range(n)))
+    pieces = [GAP] if keep[0] > 0 else []
+    for a, b in zip(keep, keep[1:] + [None]):
+        pieces.append(texts[a])
+        if b is not None and b != a + 1:
+            pieces.append(GAP)
+    merged = "\n\n".join(pieces)
+    parts = [_part_no(index.chunks[group[k]]["id"]) for k in keep]
+    if os.environ.get("CHAMBERS_TRACE"):
+        import sys
+        base = re.sub(r"-p\d+$", "", index.chunks[group[0]]["id"])
+        print(f"[retrieve] section={base} parts={','.join(map(str, parts))} of {n} chars={len(merged)}", file=sys.stderr, flush=True)
+    return {**chunk, "text": merged, "expanded": True, "parts": parts}
+
+
 def search(query: str, lawyer_domain: str, k: int, index: Index, embed, rewritten: str | None = None) -> list[dict]:
     """`rewritten` is an optional English legal rewrite of the question; each section keeps its better score."""
     texts = [query] + ([rewritten] if rewritten and rewritten != query else [])
@@ -143,9 +184,13 @@ def search(query: str, lawyer_domain: str, k: int, index: Index, embed, rewritte
     hits = []
     for i in best.values():
         boost = DOMAIN_BOOST if lawyer_domain in index.domains[i] else 0.0
-        hits.append({"chunk": index.chunks[i], "score": float(sims[i] + boost), "similarity": float(sims[i])})
-    hits.sort(key=lambda h: -h["score"])
-    return hits[:k]
+        hits.append(({"chunk": index.chunks[i], "score": float(sims[i] + boost), "similarity": float(sims[i])}, i))
+    hits.sort(key=lambda hi: -hi[0]["score"])
+    out = []
+    for h, i in hits[:k]:                        # similarity and score stay those of the matched part
+        h["chunk"] = expand_section(index, i)
+        out.append(h)
+    return out
 
 
 def retrieve(query: str, lawyer_domain: str, k: int = 5, rewritten: str | None = None) -> list[dict]:

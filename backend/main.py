@@ -10,9 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from backend.docs_routes import build_router as build_docs_router
 from backend.lawyers import LAWYERS as VOICE_LAWYERS
 from backend.rag.generate import GenerationError
-from backend.rag.pipeline import answer, answer_stream, warmup
+from backend.rag.pipeline import answer, answer_stream, sse_lines, warmup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,9 +37,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in os.environ.get(
         "CHAMBERS_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type"],
 )
+
+# Uploaded PDFs and questions about them (docs/CONTRACTS.md, "Document analysis").
+app.include_router(build_docs_router(LAWYERS))
 
 MAX_AUDIO_BYTES = 15 * 1024 * 1024
 MAX_SPEAK_CHARS = 1000
@@ -138,8 +142,7 @@ def ask_stream(req: AskRequest):
         raise HTTPException(404, "unknown lawyer")
 
     def events():
-        for ev in answer_stream(req.question, lawyer, req.lang, voice=req.voice):
-            yield "data: " + json.dumps(ev, ensure_ascii=False) + "\n\n"
+        yield from sse_lines(lambda: answer_stream(req.question, lawyer, req.lang, voice=req.voice))
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

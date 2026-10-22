@@ -5,3 +5,5 @@ python-multipart
 python-dotenv
 fish-audio-sdk>=1.0.0
 groq
+pypdf
+cryptography

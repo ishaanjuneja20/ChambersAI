@@ -1,6 +1,10 @@
 // Plays an answer with the lawyer's Fish Audio voice through the backend's POST /api/speak, one sentence
 // per request (two prefetched ahead), and feeds the lip-sync driver a timeline for every sentence.
 //
+// Two ways in: speak(fullText) for an answer that is already complete, and begin() / enqueue() / finish() for an
+// answer that is still arriving (POST /ask/stream): each sentence is sent to /api/speak the moment it is enqueued
+// and plays after the previous one, whatever order the audio comes back in.
+//
 // Sync: every sentence is decoded and scheduled on one AudioContext at an exact context time; the driver
 // reads the context time the output device is actually playing (getOutputTimestamp), so the mouth follows
 // real playback, including output latency and a suspended context. No JS timers decide the mouth.
@@ -16,6 +20,24 @@ export interface FishSpeakCallbacks {
   onFail: (fromChar: number) => void;
 }
 
+/** An answer that arrives sentence by sentence: what is shown, and the (marker-free) text that is spoken. */
+export interface StreamSentence {
+  /** Caption text, e.g. "Murder is punished with death or life imprisonment [1]." */
+  caption: string;
+  /** Exactly what the voice should say: the same sentence without the [n] markers. */
+  speak: string;
+}
+
+export interface FishStreamCallbacks {
+  /** How much of the caption is spoken so far: a char offset into the enqueued captions joined with CAPTION_JOINER. */
+  onProgress: (charIndex: number) => void;
+  /** All enqueued sentences have been spoken after finish(), or the answer was stopped (the partial answer still counts as ended). */
+  onEnd: () => void;
+}
+
+/** Between two enqueued captions. Whoever shows the caption joins the sentences with this, so offsets line up. */
+export const CAPTION_JOINER = " ";
+
 interface Part {
   text: string;
   start: number; // char offset in the full answer
@@ -24,6 +46,22 @@ interface Part {
 interface Loaded {
   buffer: AudioBuffer;
   segments: Segment[] | null;
+}
+
+interface StreamRun {
+  gen: number;
+  lawyerId: string;
+  signal: AbortSignal;
+  driverGen: number;
+  lang: Lang | null; // taken from the first sentence: an answer is in one language
+  caption: string; // enqueued captions, joined with CAPTION_JOINER
+  count: number;
+  pending: number; // enqueued, not yet placed on the timeline
+  finished: boolean; // finish() was called
+  audioFailed: boolean; // a sentence's speech could not be produced: the rest is shown without audio
+  nextStart: number; // context time at which the next sentence may start
+  chain: Promise<void>; // placing happens in this order, whatever order the audio arrives in
+  scheduled: Array<{ startAt: number; end: number; captionStart: number; captionLength: number }>;
 }
 
 const ABBREVIATIONS = new Set(["art", "arts", "s", "ss", "sec", "secs", "no", "nos", "vs", "v", "dr", "mr", "mrs", "ms", "ltd", "co", "cl", "o", "r", "e.g", "i.e", "etc", "viz", "govt", "hon'ble"]);
@@ -86,6 +124,14 @@ export function splitSentences(text: string): Part[] {
   });
 }
 
+/** Caption offset `frac` of the way through a sentence: a whole word at a time, never past the end of that sentence. */
+export function revealIndex(caption: string, start: number, length: number, frac: number): number {
+  const end = start + length;
+  if (frac >= 1) return end;
+  const space = caption.indexOf(" ", start + Math.round(frac * length));
+  return space < 0 ? end : Math.min(space, end);
+}
+
 function base64ToBuffer(b64: string): ArrayBuffer {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
@@ -102,6 +148,7 @@ export class FishSpeechPlayer {
   // onEnd of the answer in progress. Like browser speechSynthesis.cancel() (which fires 'end'), stopping or
   // replacing an answer still completes it, so the consultation records it the same way on both voices.
   private pendingEnd: (() => void) | null = null;
+  private run: StreamRun | null = null; // the begin() / enqueue() answer in progress
 
   constructor(
     private readonly apiUrl: string,
@@ -125,11 +172,11 @@ export class FishSpeechPlayer {
     return this.ctx;
   }
 
-  private async load(part: Part, lawyerId: string, lang: Lang, signal: AbortSignal): Promise<Loaded> {
+  private async load(text: string, lawyerId: string, lang: Lang, signal: AbortSignal): Promise<Loaded> {
     const res = await fetch(`${this.apiUrl}/api/speak`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: part.text, lawyer_id: lawyerId, lang }),
+      body: JSON.stringify({ text, lawyer_id: lawyerId, lang }),
       signal,
     });
     if (!res.ok) throw new Error(`speak ${res.status}`);
@@ -137,6 +184,21 @@ export class FishSpeechPlayer {
     const buffer = await this.context().decodeAudioData(base64ToBuffer(body.audio_base64));
     const segments = body.timing?.source === "fish-timestamps" ? body.timing.segments : null;
     return { buffer, segments };
+  }
+
+  /** Schedules a decoded sentence on the audio clock and hands its viseme timeline to the lip-sync driver. */
+  private place(ctx: AudioContext, driverGen: number, loaded: Loaded, text: string, lang: Lang, notBefore: number): { startAt: number; end: number } {
+    const { buffer, segments } = loaded;
+    const env = computeEnvelope(buffer.getChannelData(0), buffer.sampleRate);
+    const timeline = buildTimeline(text, lang, buffer.duration, segments, env);
+    const startAt = Math.max(ctx.currentTime + 0.08, notBefore);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start(startAt);
+    this.sources.push(src);
+    this.driver.addClip(driverGen, startAt, timeline);
+    return { startAt, end: startAt + buffer.duration };
   }
 
   speak(text: string, lawyerId: string, cb: FishSpeakCallbacks): void {
@@ -160,9 +222,7 @@ export class FishSpeechPlayer {
       if (cur) {
         const frac = Math.min(1, (now - cur.startAt) / (cur.end - cur.startAt));
         // reveal captions a whole word at a time, never past the sentence being heard
-        const partEnd = cur.part.start + cur.part.text.length;
-        const space = text.indexOf(" ", cur.part.start + Math.round(frac * cur.part.text.length));
-        const ci = frac >= 1 || space < 0 ? partEnd : Math.min(space, partEnd);
+        const ci = revealIndex(text, cur.part.start, cur.part.text.length, frac);
         if (ci !== lastChar) {
           lastChar = ci;
           cb.onProgress(ci);
@@ -170,7 +230,7 @@ export class FishSpeechPlayer {
       }
       const last = scheduled[scheduled.length - 1];
       if (finishedLoading && last && now >= last.end) {
-        this.finish(gen);
+        this.settle(gen);
         this.pendingEnd = null;
         cb.onEnd();
         return;
@@ -180,7 +240,7 @@ export class FishSpeechPlayer {
 
     const loads = new Map<number, Promise<Loaded>>();
     const want = (i: number) => {
-      if (i < parts.length && !loads.has(i)) loads.set(i, this.load(parts[i], lawyerId, lang, aborter.signal));
+      if (i < parts.length && !loads.has(i)) loads.set(i, this.load(parts[i].text, lawyerId, lang, aborter.signal));
     };
 
     void (async () => {
@@ -199,7 +259,7 @@ export class FishSpeechPlayer {
           const waitEnd = () => {
             if (gen !== this.gen) return;
             if (this.playbackTime() >= nextStart) {
-              this.finish(gen);
+              this.settle(gen);
               this.pendingEnd = null; // the fallback voice takes over and ends the answer itself
               cb.onFail(parts[i].start);
             } else setTimeout(waitEnd, 50);
@@ -208,29 +268,125 @@ export class FishSpeechPlayer {
           return;
         }
         if (gen !== this.gen) return;
-        const { buffer, segments } = loaded;
-        const env = computeEnvelope(buffer.getChannelData(0), buffer.sampleRate);
-        const timeline = buildTimeline(parts[i].text, lang, buffer.duration, segments, env);
-        const startAt = Math.max(ctx.currentTime + 0.08, nextStart);
-        const src = ctx.createBufferSource();
-        src.buffer = buffer;
-        src.connect(ctx.destination);
-        src.start(startAt);
-        this.sources.push(src);
-        this.driver.addClip(driverGen, startAt, timeline);
-        scheduled.push({ startAt, end: startAt + buffer.duration, part: parts[i] });
-        nextStart = startAt + buffer.duration;
+        const { startAt, end } = this.place(ctx, driverGen, loaded, parts[i].text, lang, nextStart);
+        scheduled.push({ startAt, end, part: parts[i] });
+        nextStart = end;
         if (i === 0) this.raf = requestAnimationFrame(tick);
       }
       finishedLoading = true;
     })();
   }
 
-  private finish(gen: number) {
+  /**
+   * Starts an answer that is still arriving. Call enqueue() for every sentence as it comes in and finish() after
+   * the last one. Starting a new answer, or stop(), cuts this one off (onEnd still fires, as for speak()).
+   */
+  begin(lawyerId: string, cb: FishStreamCallbacks): void {
+    this.stop();
+    const gen = ++this.gen;
+    this.pendingEnd = cb.onEnd;
+    this.context();
+    const aborter = new AbortController();
+    this.aborter = aborter;
+    const run: StreamRun = {
+      gen,
+      lawyerId,
+      signal: aborter.signal,
+      driverGen: this.driver.begin(this.playbackTime, "fish-timestamps"),
+      lang: null,
+      caption: "",
+      count: 0,
+      pending: 0,
+      finished: false,
+      audioFailed: false,
+      nextStart: 0,
+      chain: Promise.resolve(),
+      scheduled: [],
+    };
+    this.run = run;
+    let lastChar = -1;
+
+    const tick = () => {
+      if (gen !== this.gen) return;
+      const now = this.playbackTime();
+      const { scheduled } = run;
+      const cur = scheduled.find((s) => now >= s.startAt && now < s.end) ?? scheduled.filter((s) => s.end <= now).pop();
+      if (cur) {
+        const frac = cur.end > cur.startAt ? Math.min(1, (now - cur.startAt) / (cur.end - cur.startAt)) : 1;
+        const ci = revealIndex(run.caption, cur.captionStart, cur.captionLength, frac);
+        if (ci !== lastChar) {
+          lastChar = ci;
+          cb.onProgress(ci);
+        }
+      }
+      const last = scheduled[scheduled.length - 1];
+      if (run.finished && run.pending === 0 && (!last || now >= last.end)) {
+        this.settle(gen);
+        this.pendingEnd = null;
+        cb.onEnd();
+        return;
+      }
+      this.raf = requestAnimationFrame(tick);
+    };
+    this.raf = requestAnimationFrame(tick);
+  }
+
+  /** One more sentence of the answer: its speech is requested now and plays after the sentences before it. */
+  enqueue(sentence: StreamSentence): void {
+    const run = this.run;
+    if (!run || run.gen !== this.gen || run.finished) return;
+    const captionStart = run.count ? run.caption.length + CAPTION_JOINER.length : 0;
+    run.caption = run.count ? run.caption + CAPTION_JOINER + sentence.caption : sentence.caption;
+    run.count++;
+    run.pending++;
+    const captionLength = sentence.caption.length;
+    const speakable = sentence.speak.trim().length > 0;
+    run.lang ??= detectLang(sentence.speak);
+    const lang = run.lang;
+    const load = speakable && !run.audioFailed ? this.load(sentence.speak, run.lawyerId, lang, run.signal) : null;
+    load?.catch(() => {}); // the chain below reports it; this keeps an abort from surfacing as an unhandled rejection
+
+    run.chain = run.chain.then(async () => {
+      try {
+        if (run.gen !== this.gen) return;
+        let loaded: Loaded | null = null;
+        if (load && !run.audioFailed) {
+          try {
+            loaded = await load;
+          } catch {
+            if (run.gen !== this.gen) return;
+            // Earlier sentences keep playing; this one and the rest are shown without audio.
+            run.audioFailed = true;
+            this.aborter?.abort();
+            console.warn("[speech] Fish Audio voice unavailable; showing the rest of the answer as text");
+          }
+        }
+        if (run.gen !== this.gen) return;
+        if (loaded) {
+          const { startAt, end } = this.place(this.context(), run.driverGen, loaded, sentence.speak, lang, run.nextStart);
+          run.scheduled.push({ startAt, end, captionStart, captionLength });
+          run.nextStart = end;
+        } else {
+          // shown as soon as the sentences before it have been heard
+          run.scheduled.push({ startAt: run.nextStart, end: run.nextStart, captionStart, captionLength });
+        }
+      } finally {
+        run.pending--;
+      }
+    });
+  }
+
+  /** The answer has no more sentences; onEnd fires once the last enqueued one has been heard. */
+  finish(): void {
+    if (this.run && this.run.gen === this.gen) this.run.finished = true;
+  }
+
+  private settle(gen: number) {
     if (gen !== this.gen) return;
     cancelAnimationFrame(this.raf);
     this.sources = [];
     this.aborter = null;
+    this.run = null;
     this.driver.stop();
   }
 
@@ -239,6 +395,7 @@ export class FishSpeechPlayer {
     cancelAnimationFrame(this.raf);
     this.aborter?.abort();
     this.aborter = null;
+    this.run = null;
     for (const src of this.sources) {
       try {
         src.stop();

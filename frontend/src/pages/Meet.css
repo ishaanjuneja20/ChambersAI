@@ -358,14 +358,16 @@
 
 .room-starter {
   flex-shrink: 0;
-  max-width: 300px;
+  max-width: 320px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* a question may take two lines; the full text is in the button's title */
+  line-clamp: 2;
   scroll-snap-align: start;
   padding: 0.5rem 0.95rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-gold);
+  border-radius: 1.15rem;
+  border: 1px solid var(--border);
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
@@ -375,13 +377,46 @@
   line-height: 1.35;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.25s, background-color 0.2s, transform 0.25s var(--ease-out);
+  transition: border-color 0.25s, background-color 0.2s, box-shadow 0.25s, transform 0.25s var(--ease-out);
 }
 
 .room-starter:hover {
-  border-color: var(--border-gold-strong);
-  background: var(--gold-wash);
+  border-color: var(--accent-border);
+  background: var(--accent-wash);
+  box-shadow: 0 0 16px var(--glow-blue);
   transform: translateY(-1px);
+}
+
+/* The line above the questions offered after a refusal: one more item in the sideways row (Meet), or its own line (Chat). */
+.room-starters__hint {
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* In the chat thread, under the lawyer's message: wraps instead of scrolling sideways. */
+.room-starters--inline {
+  position: static;
+  flex-wrap: wrap;
+  overflow: visible;
+  padding: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.room-starters--inline::before,
+.room-starters--inline::after {
+  display: none;
+}
+
+.room-starters--inline .room-starters__hint {
+  flex-basis: 100%;
+  white-space: normal;
+  padding: 0;
 }
 
 .room-hint {

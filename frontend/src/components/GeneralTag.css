@@ -1,0 +1,49 @@
+.general-tag {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-sans, inherit);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+/* A general answer reads quieter than a sourced one: muted text, a muted rule instead of the gold one. */
+.chat-turn--general .chat-turn__text,
+.room-turn--general {
+  color: var(--text-muted);
+  border-left-color: var(--border);
+}
+
+.chat-turn__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* In the transcript the tag is a sibling above its answer: pull it up against it. */
+.room-turn__tag {
+  margin-bottom: calc(var(--space-2) - var(--space-4));
+}
+
+.room-subtitles__general {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+}
+
+.room-subtitles__general .general-tag {
+  background: var(--glass-bg-strong);
+}
+
+.room-subtitles--general .room-subtitles__strip {
+  color: var(--text-muted);
+}

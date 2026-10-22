@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
-// Owns microphone capture for every mic button in the app: a MediaRecorder (webm/opus, for a
-// future real STT/backend upload) and a Web Audio AnalyserNode exposing live level/frequency
+// Owns microphone capture for every mic button in the app: a MediaRecorder (webm/opus, uploaded to the
+// backend's speech-to-text by VoiceButton) and a Web Audio AnalyserNode exposing live level/frequency
 // data via a ref (not React state), so a canvas animation loop can read it every frame without
 // causing re-renders. No audio is ever stored beyond this hook's own lifetime — stop()/cancel()
 // release the mic and all tracks immediately.
@@ -12,7 +12,8 @@ export interface UseVoiceInputResult {
   error: string | null;
   supported: boolean;
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
-  start: () => Promise<void>;
+  /** Resolves true once the microphone is recording, false if it could not be started (error says why). */
+  start: () => Promise<boolean>;
   stop: () => Promise<Blob | null>;
   cancel: () => void;
 }
@@ -43,11 +44,11 @@ export function useVoiceInput(): UseVoiceInputResult {
     }
   }, []);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (): Promise<boolean> => {
     if (!supported) {
       setError("Voice input isn't supported in this browser.");
       setStatus("error");
-      return;
+      return false;
     }
     setError(null);
     setStatus("requesting");
@@ -74,17 +75,19 @@ export function useVoiceInput(): UseVoiceInputResult {
       recorder.start();
 
       setStatus("listening");
+      return true;
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       const message =
         name === "NotAllowedError" || name === "PermissionDeniedError"
-          ? "Microphone access was denied. You can still type your question below."
+          ? "Microphone access was denied. Please type your question."
           : name === "NotFoundError"
-            ? "No microphone was found. You can still type your question below."
-            : "Couldn't access the microphone. You can still type your question below.";
+            ? "No microphone was found. Please type your question."
+            : "Couldn't use the microphone. Please type your question.";
       setError(message);
       setStatus("error");
       release();
+      return false;
     }
   }, [supported, release]);
 

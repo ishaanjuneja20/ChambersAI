@@ -55,7 +55,7 @@ def test_retries_busy_model_then_succeeds(monkeypatch=None):
     assert "ok" in G.generate("q", HITS, "en", LAWYER, post=flaky) and len(calls) == 3
 
 
-def test_non_retryable_error_stops_immediately():
+def test_any_error_on_an_answer_tries_up_to_three_pairs_then_raises():
     os.environ["GEMINI_API_KEY"] = "test"
     os.environ.pop("GEMINI_MODEL", None)
     calls = []
@@ -68,7 +68,7 @@ def test_non_retryable_error_stops_immediately():
         G.generate("q", HITS, "en", LAWYER, post=bad)
         assert False
     except G.GenerationError:
-        assert len(calls) == 1
+        assert len(calls) == G.MAX_PAIRS == 3                       # 403 included: the next key or model may be fine
 
 
 def test_rewrite_returns_first_line_and_falls_back_on_error():
@@ -81,7 +81,7 @@ def test_rewrite_returns_first_line_and_falls_back_on_error():
     def boom(*a, **k):
         raise G.GenerationError("Gemini HTTP 403: bad key", 403)
 
-    assert W.rewrite_query("fired without notice", post=boom) == "fired without notice"
+    assert W.rewrite_query("my boss fired me without notice", post=boom) == "my boss fired me without notice"
 
 
 def test_pipeline_uses_judgments_and_filters_by_question_similarity():
@@ -130,7 +130,7 @@ def test_thinking_budget_zero_and_400_falls_back():
             raise G.GenerationError("Gemini HTTP 400: thinking not supported", 400)
         return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
 
-    assert G.generate("q", HITS, "en", LAWYER, post=picky) == "ok" and bodies == [True, False]
+    assert G.generate("q", HITS, "en", LAWYER, post=picky) == "ok" and bodies == [True] * 3 + [False]   # 3 pairs, then without
 
 
 def test_numbered_citations_share_numbers_and_follow_first_use():
@@ -196,7 +196,7 @@ def test_quota_on_first_model_moves_to_next_model_without_waiting():
         assert G.model_chain() == ["only"]
     finally:
         os.environ.pop("GEMINI_MODEL", None)
-    assert G.model_chain() == [G.DEFAULT_MODEL, G.FALLBACK_MODEL]
+    assert G.model_chain() == ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]
 
 
 def test_soft_statutes_only_when_judgments_cleared_and_statute_just_under_threshold():
@@ -257,3 +257,172 @@ def test_prompt_has_the_no_assumed_facts_rule():
         assert "Do not assume facts" not in G.build_prompt("q", HITS, "en", LAWYER)[0]
     finally:
         os.environ.pop("CHAMBERS_STRICT_RULES", None)
+
+
+# ---------------------------------------------------------------- (key, model) rotation
+OK = {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+
+def rotation(keys, models):
+    """Fresh counter and no dropped models; returns a function that restores the environment."""
+    os.environ.pop("GEMINI_API_KEY", None)
+    os.environ.pop("GEMINI_MODEL", None)
+    os.environ["GEMINI_API_KEYS"] = keys
+    os.environ["GEMINI_MODELS"] = models
+    G._rr = __import__("itertools").count()
+    G._dead_models.clear()
+    G.WAITS = (0, 0, 0)
+
+    def restore():
+        for k in ("GEMINI_API_KEYS", "GEMINI_MODELS", "CHAMBERS_TRACE"):
+            os.environ.pop(k, None)
+        G._dead_models.clear()
+    return restore
+
+
+def recorder(fail=lambda key, model: None):
+    seen = []
+
+    def post(url, key, body, timeout=60):
+        model = url.split("/models/")[1].split(":")[0]
+        seen.append((key, model))
+        code = fail(key, model)
+        if code:
+            raise G.GenerationError(f"Gemini HTTP {code}: x", code)
+        return OK
+    return seen, post
+
+
+def test_calls_rotate_keys_first_then_models():
+    restore = rotation("k0,k1", "m0,m1,m2")
+    try:
+        seen, post = recorder()
+        for _ in range(7):
+            G.call_gemini({}, post)
+        # call n: key n % 2, model (n // 2) % 3
+        assert seen == [("k0", "m0"), ("k1", "m0"), ("k0", "m1"), ("k1", "m1"), ("k0", "m2"), ("k1", "m2"), ("k0", "m0")]
+    finally:
+        restore()
+
+
+def test_429_tries_the_next_pair_before_waiting():
+    restore = rotation("k0,k1", "m0,m1")
+    G.WAITS = (30, 30, 30)                       # a real wait would hang the test: the first pass must not need one
+    try:
+        seen, post = recorder(lambda key, model: 429 if (key, model) in (("k0", "m0"), ("k1", "m0")) else None)
+        assert G.call_gemini({}, post) == "ok"
+        assert seen == [("k0", "m0"), ("k1", "m0"), ("k0", "m1")]       # both keys on m0 over quota, then the next model
+    finally:
+        restore()
+
+
+def test_5xx_also_moves_on_and_a_whole_failed_pass_waits_then_raises():
+    restore = rotation("k0", "m0,m1")
+    waits = []
+    saved = G.time.sleep
+    G.time.sleep = waits.append
+    G.WAITS = (1, 3)
+    try:
+        seen, post = recorder(lambda key, model: 503)
+        try:
+            G.call_gemini({}, post)
+            assert False
+        except G.GenerationError as e:
+            assert e.code == 503
+        assert len(seen) == 6 and waits == [0, 1, 3]                    # 2 pairs x 3 passes, waiting only between passes
+    finally:
+        G.time.sleep = saved
+        restore()
+
+
+def test_404_drops_the_model_for_good_and_warns_once_without_a_key(caplog=None):
+    import logging
+    restore = rotation("secret-key-0,secret-key-1", "gone,m1")
+    records = []
+    handler = logging.Handler()
+    handler.emit = records.append
+    G.logger.addHandler(handler)
+    try:
+        seen, post = recorder(lambda key, model: 404 if model == "gone" else None)
+        assert G.call_gemini({}, post) == "ok"
+        assert seen == [("secret-key-0", "gone"), ("secret-key-1", "m1")]
+        assert G._dead_models == {"gone"}
+        seen.clear()
+        for _ in range(4):
+            G.call_gemini({}, post)
+        assert {m for _, m in seen} == {"m1"}                           # never asked again
+        warnings = [r for r in records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1 and "gone" in warnings[0].getMessage() and "secret-key" not in warnings[0].getMessage()
+    finally:
+        G.logger.removeHandler(handler)
+        restore()
+
+
+def test_404_on_every_model_raises_the_404():
+    restore = rotation("k0", "a,b")
+    try:
+        seen, post = recorder(lambda key, model: 404)
+        try:
+            G.call_gemini({}, post)
+            assert False
+        except G.GenerationError as e:
+            assert e.code == 404
+        assert [m for _, m in seen] == ["a", "b"] and G._dead_models == {"a", "b"}
+    finally:
+        restore()
+
+
+def test_stream_rotates_and_falls_over_on_429_and_404():
+    restore = rotation("k0,k1", "gone,m1")
+    seen = []
+
+    def opener(url, key, body):
+        model = url.split("/models/")[1].split(":")[0]
+        seen.append((key, model))
+        if model == "gone":
+            raise G.GenerationError("Gemini HTTP 404: no", 404)
+        if key == "k1":
+            raise G.GenerationError("Gemini HTTP 429: quota", 429)
+        yield "Hi"
+        yield " there"
+
+    try:
+        assert "".join(G.stream_gemini({}, opener)) == "Hi there"
+        assert seen == [("k0", "gone"), ("k1", "m1"), ("k0", "m1")] or seen[0] == ("k0", "gone")
+        assert seen[-1] == ("k0", "m1") and G._dead_models == {"gone"}
+    finally:
+        restore()
+
+
+def test_stream_attempt_timeout_is_15_seconds():
+    import inspect
+    assert G.STREAM_TIMEOUT == 15
+    assert inspect.signature(G._open_stream).parameters["timeout"].default == 15
+
+
+def test_trace_prints_model_and_key_index_only(capsys=None):
+    import io
+    import contextlib
+    restore = rotation("secret-key-0,secret-key-1", "m0")
+    os.environ["CHAMBERS_TRACE"] = "1"
+    err = io.StringIO()
+    try:
+        seen, post = recorder()
+        with contextlib.redirect_stderr(err):
+            G.call_gemini({}, post)
+            G.call_gemini({}, post)
+        out = err.getvalue()
+        assert "model=m0 key=0 -> ok" in out and "model=m0 key=1 -> ok" in out and "secret" not in out
+    finally:
+        restore()
+
+
+def test_rule_1_answers_from_a_relevant_source_and_refuses_only_when_none_is_on_topic():
+    system, _ = G.build_prompt("q", HITS, "en", LAWYER)
+    rule1 = system.split("\n2. ")[0]
+    assert "ONLY the SOURCES" in rule1 and "outside knowledge" in rule1 and "never invent an id" in rule1
+    assert "bears on the user's situation, answer from it in plain words" in rule1
+    assert "partly cover the question, answer the part they cover and say plainly what they do not cover" in rule1
+    assert "only when no source is about the topic at all" in rule1
+    assert "different kind of event" in rule1 and "NO_SOURCE" in rule1
+    assert "does not directly answer" not in rule1 and "directly answer the question" not in rule1

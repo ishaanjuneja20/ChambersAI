@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import GeneralTag from "../GeneralTag";
+import { showGeneralNotice } from "../../lib/generalAnswer";
+import PageTaggedText from "../PageTaggedText";
 
 export interface LiveCaption {
   text: string;
   visibleChars: number;
+  /** A general-guidance answer: the subtitles carry the "General information" tag and are muted. */
+  general?: boolean;
 }
 
 const FADE_DELAY_MS = 1400; // how long the last sentence lingers after speech ends
@@ -24,9 +29,13 @@ function currentSentence(caption: LiveCaption): { shown: string; full: string } 
 // speech ends. A visually hidden live region announces each finished sentence once, not every word.
 export default function Subtitles({ caption }: { caption: LiveCaption | null }) {
   const last = useRef({ shown: "", full: "" });
+  const general = useRef(false);
   const [visible, setVisible] = useState(false);
 
-  if (caption) last.current = currentSentence(caption);
+  if (caption) {
+    last.current = currentSentence(caption);
+    general.current = showGeneralNotice(caption.general);
+  }
 
   useEffect(() => {
     if (caption) {
@@ -38,9 +47,16 @@ export default function Subtitles({ caption }: { caption: LiveCaption | null }) 
   }, [caption]);
 
   return (
-    <div className={`room-subtitles${visible ? " room-subtitles--on" : ""}`}>
+    <div className={`room-subtitles${visible ? " room-subtitles--on" : ""}${general.current ? " room-subtitles--general" : ""}`}>
+      {general.current && (
+        <div className="room-subtitles__general">
+          <GeneralTag />
+        </div>
+      )}
       <div className="room-subtitles__strip" aria-hidden="true">
-        <span>{last.current.shown}</span>
+        <span>
+          <PageTaggedText text={last.current.shown} />
+        </span>
       </div>
       <p className="sr-only" aria-live="polite">
         {visible ? last.current.full : ""}

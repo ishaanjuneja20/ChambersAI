@@ -1,0 +1,117 @@
+/* An analysed document in the room panel's Documents tab. */
+.doc-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--grad-surface), var(--surface-raised);
+  color: var(--text);
+}
+
+.doc-card__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--space-3);
+}
+
+.doc-card__head > svg {
+  margin-top: 2px;
+  color: var(--gold);
+}
+
+.doc-card__title {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.doc-card__meta {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.doc-card__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.doc-card__remove:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--danger);
+}
+
+.doc-card__remove:disabled {
+  cursor: default;
+}
+
+.doc-card__spinner {
+  animation: doc-card-spin 0.9s linear infinite;
+}
+
+@keyframes doc-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-card__spinner {
+    animation: none;
+  }
+}
+
+.doc-card__error {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--danger);
+}
+
+.doc-card__summary {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
+.doc-card__section {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-2);
+  font-size: var(--fs-small);
+}
+
+.doc-card__section summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.doc-card__count {
+  margin-left: 0.3em;
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.doc-card__section ul {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}

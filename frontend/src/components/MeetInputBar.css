@@ -203,11 +203,22 @@
   box-shadow: none;
 }
 
+/* Floats in the strip under the bar (where the "Hold Space" hint is, which hides meanwhile), so an error appearing or clearing - e.g.
+   when the next press starts recording - never moves the mic from under the pointer. */
 .meet-input__error {
-  margin: 0.4rem 0 0;
+  position: absolute;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  right: 0;
+  margin: 0;
   text-align: center;
   font-size: var(--fs-caption);
+  line-height: 1.25;
   color: var(--danger);
+}
+
+.room__dock:has(.meet-input__error) .room-hint {
+  visibility: hidden;
 }
 
 @media (max-width: 699px) {

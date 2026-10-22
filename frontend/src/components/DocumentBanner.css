@@ -1,0 +1,33 @@
+/* "Answering using your document: <title>", one line above the composer. */
+.doc-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 auto;
+  max-width: min(100%, 560px);
+  padding: 0.25rem 0.7rem;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.doc-banner svg {
+  flex-shrink: 0;
+}
+
+.doc-banner__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-banner strong {
+  font-weight: 600;
+  color: var(--text);
+}

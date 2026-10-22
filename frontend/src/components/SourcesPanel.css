@@ -80,3 +80,7 @@ a.source-badge:focus-visible {
   font-size: var(--fs-small);
   color: var(--text);
 }
+.source-badge__marker {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

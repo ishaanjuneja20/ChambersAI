@@ -11,7 +11,10 @@ function SourceBadge({ citation }: { citation: Citation }) {
   const content = (
     <>
       <span className={`source-badge__tag source-badge__tag--${citation.confidence}`}>{LABELS[citation.confidence]}</span>
-      <span className="source-badge__label">{citation.label}</span>
+      <span className="source-badge__label">
+        {citation.marker !== undefined && <span className="source-badge__marker">[{citation.marker}] </span>}
+        {citation.label}
+      </span>
     </>
   );
   if (citation.sourceUrl) {

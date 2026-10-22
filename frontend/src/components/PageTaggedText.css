@@ -1,0 +1,13 @@
+/* A "(page N)" marker in an answer, shown small and quiet. */
+.page-tag {
+  display: inline-block;
+  margin: 0 0.15em;
+  padding: 0 0.4em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78em;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: nowrap;
+  vertical-align: 0.08em;
+}

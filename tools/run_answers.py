@@ -85,6 +85,8 @@ def main():
     for n, q in enumerate(qs, 1):
         t0 = time.time()
         row = {"id": q["id"], "type": q["type"], "lang": q["lang"], "question": q["question"]}
+        if os.environ.get("CHAMBERS_TRACE"):
+            print(f"[eval] {q['id']}", file=sys.stderr, flush=True)          # lets a saved trace be split per question
         try:
             lw = lawyers.get(q["lawyer"]) or {"id": "", "domain": "", "name": "TBD", "personality": "TBD"}   # traps have no lawyer
             r = answer(q["question"], lw, q["lang"])
@@ -92,9 +94,10 @@ def main():
                        reason=(r.get("debug") or {}).get("reason"), debug=r.get("debug"))
         except GenerationError as e:
             row.update(error=str(e), refused=True, answer="", citations=[])
+        row["wall_seconds"] = round(time.time() - t0, 1)
         done[q["id"]] = row
         out_path.write_text(json.dumps(list(done.values()), ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"[{n}/{len(qs)}] {q['id']}: {state(row)}" + (f" ({row.get('reason')})" if row["refused"] else f" {len(row['citations'])} cites"),
+        print(f"[{n}/{len(qs)}] {q['id']}: {state(row)} {row['wall_seconds']}s" + (f" ({row.get('reason')})" if row["refused"] else f" {len(row['citations'])} cites"),
               flush=True)
         time.sleep(max(0.0, a.pause - (time.time() - t0)))
     print("saved", out_path)

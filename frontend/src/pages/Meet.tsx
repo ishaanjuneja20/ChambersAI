@@ -4,17 +4,21 @@ import Avatar from "../components/Avatar";
 import { getLawyerModel } from "../components/avatar3d/lawyerModels";
 import HandoffBanner from "../components/HandoffBanner";
 import MeetInputBar from "../components/MeetInputBar";
+import StarterChips from "../components/StarterChips";
 import AvatarLoadOverlay from "../components/meet/AvatarLoadOverlay";
 import RoomPanel from "../components/meet/RoomPanel";
 import RoomTopBar from "../components/meet/RoomTopBar";
 import Subtitles, { type LiveCaption } from "../components/meet/Subtitles";
 import { type VoiceButtonHandle } from "../components/voice/VoiceButton";
 import { useSessionFiles } from "../lib/attachments";
-import type { ConsultStatus } from "../lib/consultTypes";
-import { useConsultationSession } from "../hooks/useConsultationSession";
+import type { Citation, ConsultStatus } from "../lib/consultTypes";
+import { CAPTION_JOINER } from "../lib/speech/fishSpeech";
+import { useConsultationSession, type AnswerOutcome } from "../hooks/useConsultationSession";
 import { useDockHeight } from "../hooks/useDockHeight";
 import { useRoomPanel } from "../hooks/useRoomPanel";
 import { useSessionId } from "../hooks/useSessionId";
+import { generalSpokenNotice } from "../lib/generalAnswer";
+import { getStarterQuestions, REFUSAL_HINT } from "../lib/starterQuestions";
 import { useSpeak } from "../hooks/useSpeak";
 import { useSyntheticSpeechLevel } from "../hooks/useSyntheticSpeechLevel";
 import "./Meet.css";
@@ -39,7 +43,8 @@ export default function Meet() {
   const sessionId = useSessionId();
   const files = useSessionFiles(sessionId); // shared with the Chat page
 
-  const { lawyer, transcript, citations, handoff, addUserTurn, resolveAnswer, addLawyerTurn } = useConsultationSession(id, sessionId);
+  const { lawyer, transcript, citations, handoff, notice, backendEnabled, addUserTurn, resolveLawyer, resolveAnswer, streamAnswer, cancelAnswer, addLawyerTurn } =
+    useConsultationSession(id, sessionId);
 
   const [status, setStatus] = useState<ConsultStatus>("idle");
   const [liveCaption, setLiveCaption] = useState<LiveCaption | null>(null);
@@ -58,11 +63,15 @@ export default function Meet() {
   const voiceButtonRef = useRef<VoiceButtonHandle>(null);
   const fieldRef = useRef<HTMLInputElement>(null);
   const dockRef = useDockHeight();
-  const { speak, stop: stopSpeaking, supported: speechSupported, lipSync } = useSpeak();
+  const { speak, speakStream, stop: stopSpeaking, supported: speechSupported, lipSync } = useSpeak();
   // 3D lawyers are driven by `lipSync` inside their render loop; the per-frame synthetic level (React
   // state) is only needed by the 2D portraits.
   const has3D = !!lawyer && !!getLawyerModel(lawyer.id);
   const audioLevel = useSyntheticSpeechLevel(status === "speaking" && !has3D);
+
+  // Leaving the page (or switching lawyer) cuts off the answer being received and the audio being played. The hook
+  // aborts the request itself; this stops the voice, which no longer has anyone to record into.
+  useEffect(() => () => stopSpeaking(), [id, stopSpeaking]);
 
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("q")) return;
@@ -97,13 +106,80 @@ export default function Meet() {
     );
   }
 
+  // Backend mode: the answer streams in; each sentence is shown as a caption and spoken as it arrives.
+  function askBackend(question: string) {
+    const answering = resolveLawyer(question);
+    const answer = { text: "", body: "", general: false, citations: [] as Citation[], outcome: {} as AnswerOutcome, recorded: false };
+    // The turn is recorded once speech has ended, or was cut off, with whatever had arrived by then. A general answer's spoken notice
+    // is part of the captions while it is said, but not of the recorded text: the turn carries the tag instead.
+    const record = () => {
+      if (answer.recorded) return;
+      answer.recorded = true;
+      setLiveCaption(null);
+      setStatus("idle");
+      if (answer.body) addLawyerTurn(answer.body, answer.citations, answering, answer.outcome);
+    };
+    const voice = speakStream(answering.id, {
+      onProgress: (charIndex) => setLiveCaption((prev) => (prev ? { ...prev, visibleChars: charIndex } : prev)),
+      onEnd: record,
+    });
+    const append = (current: string, caption: string) => (current ? `${current}${CAPTION_JOINER}${caption}` : caption);
+    const show = (caption: string, speakText: string, recorded = true) => {
+      answer.text = append(answer.text, caption);
+      if (recorded) answer.body = append(answer.body, caption);
+      const full = answer.text;
+      const general = answer.general;
+      setStatus("speaking");
+      setLiveCaption((prev) => ({ text: full, visibleChars: prev?.visibleChars ?? 0, ...(general ? { general: true } : {}) }));
+      voice.enqueue({ caption, speak: speakText });
+    };
+    streamAnswer(question, answering, {
+      onSentence: ({ text: caption, speak: speakText, general }, citations) => {
+        answer.citations = citations;
+        if (general && !answer.general) {
+          // The first sentence of a general answer: the lawyer says it is not from verified sources before the answer itself
+          // (only while SHOW_GENERAL_NOTICE is on; the answer is still marked general either way).
+          answer.general = true;
+          answer.outcome = { general: true };
+          const notice = generalSpokenNotice(caption);
+          if (notice) show(notice, notice, false);
+        }
+        show(caption, speakText);
+      },
+      onRefused: (refusal, outcome) => {
+        answer.outcome = outcome; // the refusal text is shown and spoken as it came; the hint and chips are shown, not spoken
+        show(refusal, refusal);
+        voice.finish();
+      },
+      onComplete: (citations, outcome) => {
+        answer.citations = citations;
+        answer.outcome = outcome;
+        voice.finish();
+      },
+      onFailure: (citations, outcome) => {
+        answer.citations = citations;
+        answer.outcome = outcome;
+        voice.finish(); // what was already received is still spoken; with nothing received this ends at once
+      },
+    });
+  }
+
   async function submitQuestion(question: string) {
     const trimmed = question.trim();
     if (!trimmed) return;
     setUsedInput(true);
+    if (backendEnabled) {
+      cancelAnswer();
+      stopSpeaking(); // a question sent over an answer in progress records the part that was said
+    }
     addUserTurn(trimmed);
     setStatus("processing");
     setText("");
+
+    if (backendEnabled) {
+      askBackend(trimmed);
+      return;
+    }
 
     window.setTimeout(() => {
       const { answeringLawyer, answer, citations: answerCitations } = resolveAnswer(trimmed);
@@ -123,6 +199,7 @@ export default function Meet() {
   }
 
   const handleStop = () => {
+    cancelAnswer();
     stopSpeaking();
     voiceButtonRef.current?.cancel();
     setLiveCaption(null);
@@ -134,8 +211,15 @@ export default function Meet() {
     void submitQuestion(text);
   };
 
-  const starters = (lawyer?.sampleQuestions ?? []).slice(0, 4);
-  const showStarters = starters.length > 0 && transcript.length === 0 && (status === "idle" || status === "listening");
+  // Suggested questions: the lawyer's own before the first message; after that only the ones that follow an intro or a refusal, while
+  // that is the latest turn. A tap asks (and so is answered aloud) like a typed question.
+  const handleStarter = (question: string) => {
+    if (status !== "idle" || !lawyer) return;
+    void submitQuestion(question);
+  };
+  const lastTurn = transcript[transcript.length - 1];
+  const followUp = lastTurn?.role === "lawyer" && lastTurn.suggestions?.length ? lastTurn : null;
+  const showStarters = status === "idle" && (followUp !== null || (transcript.length === 0 && getStarterQuestions(lawyer?.id).length > 0));
   const stageBg = stageModel?.backgroundUrl ?? DEFAULT_STAGE_BG;
 
   return (
@@ -169,24 +253,13 @@ export default function Meet() {
         </div>
 
         <div className="room__dock" ref={dockRef}>
-          {!speechSupported && <p className="meet__disclaimer">(Voice playback isn't supported in this browser — captions still work.)</p>}
-          {showStarters && (
-            <div className="room-starters" role="group" aria-label="Suggested questions">
-              {starters.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  className="room-starter"
-                  onClick={() => {
-                    setText(q);
-                    fieldRef.current?.focus();
-                  }}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+          {notice && (
+            <p className="meet__disclaimer" role="alert">
+              {notice}
+            </p>
           )}
+          {!speechSupported && <p className="meet__disclaimer">(Voice playback isn't supported in this browser — captions still work.)</p>}
+          {showStarters && <StarterChips lawyerId={lawyer?.id} questions={followUp?.suggestions} hint={followUp?.kind === "refusal" ? REFUSAL_HINT : undefined} onSelect={handleStarter} />}
           <MeetInputBar
             sessionId={sessionId}
             text={text}
@@ -202,6 +275,8 @@ export default function Meet() {
               if (isListening) setUsedInput(true);
               setStatus(isListening ? "listening" : "idle");
             }}
+            // after recording stops, the bar shows "Transcribing…" (the processing state) until the question is on its way or failed
+            onTranscribingChange={(transcribing) => setStatus(transcribing ? "processing" : "idle")}
             voiceDisabled={status !== "idle" && status !== "listening"}
             voiceButtonRef={voiceButtonRef}
             fieldRef={fieldRef}

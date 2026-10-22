@@ -149,7 +149,7 @@ def test_rewrite_prompt_switches_to_judgments_and_does_not_leak_test_topics():
     from backend.rag import rewrite as W
     seen = {}
 
-    def fake(body, post, model=None):
+    def fake(body, post, **k):
         seen["prompt"] = body["contents"][0]["parts"][0]["text"]
         return "some query"
 

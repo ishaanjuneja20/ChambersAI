@@ -5,8 +5,10 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+from backend.rag import groq_budget as B
 from backend.rag import judgments as J
-from backend.rag.generate import GenerationError, NO_SOURCE, generate, generate_stream
+from backend.rag.general import general_guidance
+from backend.rag.generate import GenerationError, NO_SOURCE, admit_steps, generate, generate_stream
 from backend.rag.retrieve import _DEVANAGARI, detect_lang, refusal_threshold, retrieve
 from backend.rag.rewrite import rewrite_query, translate_to_english
 from backend.rag.verify import verify_citations
@@ -47,6 +49,28 @@ def _trace_attempt(n: int, of: int, outcome: str) -> None:
         print(f"[pipeline] attempt {n} of {of}: {outcome}", file=sys.stderr, flush=True)
 
 
+def _trace_general(outcome: str) -> None:
+    """CHAMBERS_TRACE=1: the outcome of the general-guidance call on stderr (a label, no content)."""
+    if os.environ.get("CHAMBERS_TRACE"):
+        import sys
+        print(f"[pipeline] general guidance: {outcome}", file=sys.stderr, flush=True)
+
+
+def _general_tier(question: str, lang: str, dbg: dict) -> str | None:
+    """Tier 2 (backend/rag/general.py), asked only where the pipeline would refuse: one more model call whose reply must
+    pass the code check. Returns the reply or None (then the caller refuses as before). CHAMBERS_GENERAL=0 turns it off.
+    Records `general_attempt`, `general` and `general_outcome` in `dbg` (labels only, never the text)."""
+    if os.environ.get("CHAMBERS_GENERAL", "1") == "0":
+        dbg.update(general_attempt=False, general=False)
+        return None
+    text, outcome = general_guidance(question, lang)
+    _trace_general(outcome)
+    if text and lang == "hi":
+        text = text.replace("\u3002", "\u0964")
+    dbg.update(general_attempt=True, general=text is not None, general_outcome=outcome)
+    return text
+
+
 def warmup() -> None:
     """Load bge-m3 and both indexes now (server start) so the first question doesn't pay for it."""
     from backend.rag import retrieve as R
@@ -80,8 +104,10 @@ def _judgment_hits(question: str, domain: str, jr: str | None, k: int = 3) -> li
     return [h for h in hits if h["similarity_query"] >= J.JUDGMENT_REFUSAL_THRESHOLD]
 
 
-def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
-    """Rewrite + retrieve. Returns (hits, debug_info); hits is empty when nothing clears its threshold."""
+def _prepare(question: str, lawyer: dict, lang: str, debug: bool, hint: str | None = None):
+    """Rewrite + retrieve. Returns (hits, debug_info); hits is empty when nothing clears its threshold.
+    `hint` (document questions only, backend/rag/docqa.py) is a short description of the user's document; it is added to
+    what the two query rewrites see, nothing else: the similarity checks and thresholds still use the question alone."""
     rewrite_on = os.environ.get("CHAMBERS_REWRITE", "1") != "0"
     t0 = time.time()
     answer_question = question
@@ -96,9 +122,12 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
     subs: list[str] = []                                  # sub-queries for broad, several-step questions
     multi = os.environ.get("CHAMBERS_MULTIQUERY", "1") != "0"
     if rewrite_on:                                        # the two rewrites are independent: run them together
+        to_rewrite = f"{question}\n(Context: the user is asking about a document of theirs about: {hint})" if hint else question
         with ThreadPoolExecutor(2) as ex:
-            f1 = ex.submit(rewrite_query, question, subqueries=subs) if multi else ex.submit(rewrite_query, question)
-            f2 = ex.submit(rewrite_query, question, target="judgments") if _judgments_on() else None
+            # each worker runs in a copy of this context, so its Groq calls belong to this question (groq_budget.py)
+            f1 = ex.submit(B.carry(rewrite_query), to_rewrite, subqueries=subs, lang=lang_search) if multi \
+                else ex.submit(B.carry(rewrite_query), to_rewrite, lang=lang_search)
+            f2 = ex.submit(B.carry(rewrite_query), to_rewrite, target="judgments", lang=lang_search) if _judgments_on() else None
             rewritten, jr = f1.result(), (f2.result() if f2 else None)
     t1 = time.time()
     hits = retrieve(question, lawyer["domain"], rewritten=rewritten)
@@ -124,7 +153,25 @@ def _prepare(question: str, lawyer: dict, lang: str, debug: bool):
     return hits + jhits, info
 
 
+def _general_or(refused: dict, question: str, lang: str, debug: bool) -> dict:
+    """The tier-2 answer ({"answer", "citations": [], "refused": False, "general": True}) in place of `refused`, or
+    `refused` itself when tier 2 is off or its reply is rejected."""
+    dbg = refused["debug"] if debug else {}
+    text = _general_tier(question, lang, dbg)
+    if text is None:
+        return refused
+    out = {"answer": text, "citations": [], "refused": False, "general": True}
+    if debug:
+        out["debug"] = dbg
+    return out
+
+
 def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
+    with B.scope():                                       # all the model calls of this question share one Groq budget ticket
+        return _answer(question, lawyer, lang)
+
+
+def _answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     lang = lang or detect_lang(question)
     refused = {"answer": REFUSAL.get(lang, REFUSAL["en"]), "citations": [], "refused": True}
     debug = os.environ.get("CHAMBERS_DEBUG") == "1"       # numbers and section names only, never the question text
@@ -134,7 +181,7 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     if not hits:
         if debug:
             refused["debug"]["reason"] = "best similarity below threshold"
-        return refused
+        return _general_or(refused, question, lang, debug)
     t2 = time.time()
     retries = _retry_budget(question, hits, lang)
     attempts = 1
@@ -150,7 +197,7 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
     if NO_SOURCE in raw:                                  # the model says the sources don't answer it: refuse, don't cite
         if debug:
             refused["debug"]["reason"] = "model found no answer in the sources"
-        return refused
+        return _general_or(refused, question, lang, debug)
     text, citations, _dropped = verify_citations(raw, hits, numbered=True)
     if lang == "hi":                                     # Gemini sometimes ends sentences with the CJK full stop
         text = text.replace("\u3002", "\u0964")
@@ -186,7 +233,27 @@ def split_sentences(buf: str):
     return out, buf[start:]
 
 
+def _general_stream(question: str, lang: str, refusal: dict, debug: bool, dbg: dict):
+    """Events for tier 2 where the stream would refuse: the sentences of the general reply (each with `general: true`) and
+    a `done` with `general: true` and no citations, or the refusal. The reply is one model call, checked whole before
+    anything is yielded, then split into sentences, so a rejected reply is never spoken."""
+    text = _general_tier(question, lang, dbg)
+    extra = {"debug": dbg} if debug else {}
+    if text is None:
+        yield {**refusal, **extra}
+        return
+    sentences, rest = split_sentences(text + "\n")
+    for sen in sentences + ([rest.strip()] if rest.strip() else []):
+        yield {"type": "sentence", "text": sen, "speak": sen, "new_citations": [], "general": True}
+    yield {"type": "done", "citations": [], "general": True, **extra}
+
+
 def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: bool = True, stream=generate_stream):
+    """The events of _answer_stream, with this question's Groq budget ticket bound at every step (groq_budget.py)."""
+    yield from B.bind_iter(B.current() or B.Ticket(), _answer_stream(question, lawyer, lang, voice, stream))
+
+
+def _answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: bool = True, stream=generate_stream):
     """Yields dict events: {"type": "sentence", "text", "speak", "new_citations": [{"n", "text"}]} for each verified
     sentence, then {"type": "done", "citations": [...]}; or {"type": "refused", "answer"}; or {"type": "error"}.
     `text` keeps the [n] markers for the screen; `speak` has them removed for text-to-speech. Nothing is yielded
@@ -197,7 +264,7 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
     try:
         hits, info = _prepare(question, lawyer, lang, debug)
         if not hits:
-            yield refusal
+            yield from _general_stream(question, lang, refusal, debug, {})
             return
         retries = _retry_budget(question, hits, lang)
 
@@ -264,9 +331,32 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
                 continue
             break
         extra = {"debug": {"attempts": attempts}} if debug else {}
+        if outcome == "no_source":
+            yield from _general_stream(question, lang, refusal, debug, {"attempts": attempts})
+            return
         if outcome != "ok":
             yield {**refusal, **extra}
             return
         yield {"type": "done", "citations": order, **extra}
     except GenerationError as e:
         yield {"type": "error", "message": str(e)}
+
+
+# ------------------------------------------------------------------ server-sent events
+KEEPALIVE = ": waiting\n\n"          # an SSE comment: the client ignores it, but it counts as the server being alive
+
+
+def sse_lines(make_stream):
+    """The text of an SSE response for one question: `make_stream()` returns the question's event iterator (answer_stream or
+    docqa.answer_stream_docs), each event becomes a `data:` line. First the question is admitted to Groq's budget
+    (generate.admit_steps): while it waits for room a KEEPALIVE comment is sent every few seconds, so the client's inactivity
+    timeout does not fire. No event type is added; with the budget off or room available nothing extra is sent."""
+    ticket = B.Ticket()
+    for _ in admit_steps(ticket):
+        yield KEEPALIVE
+
+    def run():                                            # started inside bind_iter, so make_stream() itself runs under the ticket
+        yield from make_stream()
+
+    for ev in B.bind_iter(ticket, run()):
+        yield "data: " + json.dumps(ev, ensure_ascii=False) + "\n\n"

@@ -323,6 +323,7 @@ export default function MatchAssistant() {
                         processing={voiceProcessing}
                         onUiChange={setVoiceUi}
                         onListeningChange={setListening}
+                        onTranscribingChange={setVoiceProcessing}
                         onResult={handleSpoken}
                         renderTrigger={(trigger) => (
                           <button

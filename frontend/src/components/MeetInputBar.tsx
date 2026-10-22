@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, X, ArrowUp, Square } from "lucide-react";
 import AttachmentChips from "./AttachmentChips";
-import { ALLOWED_EXTENSIONS, useAttachments } from "../lib/attachments";
+import DocumentBanner from "./DocumentBanner";
+import { ACCEPTED_EXTENSIONS, useAttachments } from "../lib/attachments";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import VoiceButton, { type VoiceButtonHandle, type VoiceUi } from "./voice/VoiceButton";
 import VoiceWaveBar from "./voice/VoiceWaveBar";
@@ -27,6 +28,7 @@ interface MeetInputBarProps {
   status: ConsultStatus;
   onVoiceResult: (text: string) => void;
   onListeningChange: (listening: boolean) => void;
+  onTranscribingChange: (transcribing: boolean) => void;
   voiceDisabled: boolean;
   voiceButtonRef: React.RefObject<VoiceButtonHandle>;
   /** Lets the host focus the text field (e.g. after picking a suggested question). */
@@ -42,6 +44,7 @@ export default function MeetInputBar({
   status,
   onVoiceResult,
   onListeningChange,
+  onTranscribingChange,
   voiceDisabled,
   voiceButtonRef,
   fieldRef,
@@ -152,6 +155,7 @@ export default function MeetInputBar({
 
   return (
     <div className="meet-input">
+      <DocumentBanner sessionId={sessionId} />
       <AttachmentChips files={files} onRemove={removeFile} />
       <div
         ref={barRef}
@@ -180,7 +184,7 @@ export default function MeetInputBar({
               tabIndex={-1}
               aria-hidden="true"
               multiple
-              accept={ALLOWED_EXTENSIONS.join(",")}
+              accept={ACCEPTED_EXTENSIONS.join(",")}
               onChange={(e) => {
                 if (e.target.files) addFiles(e.target.files);
                 e.target.value = "";
@@ -234,6 +238,7 @@ export default function MeetInputBar({
               processing={status === "processing"}
               onResult={handleVoiceResult}
               onListeningChange={onListeningChange}
+              onTranscribingChange={onTranscribingChange}
               onUiChange={setVoiceUi}
             />
           </div>

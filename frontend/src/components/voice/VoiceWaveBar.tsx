@@ -113,7 +113,7 @@ export default function VoiceWaveBar({ ui, active, mode }: { ui: VoiceUi | null;
     return () => cancelAnimationFrame(raf);
   }, [active, reduceMotion, analyserRef]);
 
-  const caption = mode === "processing" ? "Processing…" : ui?.transcript ? lastWords(ui.transcript) : "Listening…";
+  const caption = mode === "processing" ? (ui?.transcribing ? "Transcribing…" : "Processing…") : ui?.transcript ? lastWords(ui.transcript) : "Listening…";
 
   return (
     <div ref={wrapRef} className={`voice-wave${active ? " voice-wave--on" : ""}${mode === "processing" ? " voice-wave--processing" : ""}${reduceMotion ? " voice-wave--static" : ""}`}>
@@ -124,7 +124,7 @@ export default function VoiceWaveBar({ ui, active, mode }: { ui: VoiceUi | null;
         {caption}
       </p>
       <p className="sr-only" role="status" aria-live="polite">
-        {active ? (mode === "processing" ? "Processing" : "Listening") : ""}
+        {active ? (mode === "processing" ? (ui?.transcribing ? "Transcribing" : "Processing") : "Listening") : ""}
       </p>
     </div>
   );
