@@ -17,6 +17,33 @@ REFUSAL = {"en": "I don't have a reliable source for this.",
 
 STATUTE_MARGIN = float(os.environ.get("CHAMBERS_STATUTE_MARGIN", "0.05"))   # 0 turns the soft statute hits off
 SOFT_STATUTES = 3
+RETRY_EXTRA = 2                                                     # extra model calls after NO_SOURCE (CHAMBERS_RETRY=0 turns them off)
+
+
+def _search_lang(question: str, lang: str) -> str:
+    """The language the thresholds are judged in: Hinglish is translated for search, so it uses the English ones
+    (the same rule as _prepare)."""
+    if lang == "hi" and not _DEVANAGARI.search(question) and os.environ.get("CHAMBERS_TRANSLATE", "1") != "0":
+        return "en"
+    return lang
+
+
+def _retry_budget(question: str, hits: list[dict], lang: str) -> int:
+    """How many more times to ask the model after it says NO_SOURCE. The model is flaky: the same sources sometimes
+    answer and sometimes do not. Only when a statute hit clears the full refusal threshold (not the soft-margin
+    statutes, which sit just under it, and not judgments alone); otherwise the refusal stands without a retry."""
+    if os.environ.get("CHAMBERS_RETRY", "1") == "0":
+        return 0
+    th = refusal_threshold(_search_lang(question, lang))
+    reliable = any(h["chunk"].get("kind") != "judgment_para" and h["similarity"] >= th for h in hits)
+    return RETRY_EXTRA if reliable else 0
+
+
+def _trace_attempt(n: int, of: int, outcome: str) -> None:
+    """CHAMBERS_TRACE=1: one line per model attempt on stderr (attempt count and outcome). No content."""
+    if os.environ.get("CHAMBERS_TRACE"):
+        import sys
+        print(f"[pipeline] attempt {n} of {of}: {outcome}", file=sys.stderr, flush=True)
 
 
 def warmup() -> None:
@@ -93,9 +120,17 @@ def answer(question: str, lawyer: dict, lang: str | None = None) -> dict:
             refused["debug"]["reason"] = "best similarity below threshold"
         return refused
     t2 = time.time()
+    retries = _retry_budget(question, hits, lang)
+    attempts = 1
     raw = generate(question, hits, lang, lawyer)          # may raise GenerationError
+    while NO_SOURCE in raw and attempts <= retries:       # same hits, same prompt: the answer can differ from call to call
+        _trace_attempt(attempts, 1 + retries, "NO_SOURCE")
+        attempts += 1
+        raw = generate(question, hits, lang, lawyer)
+    _trace_attempt(attempts, 1 + retries, "NO_SOURCE" if NO_SOURCE in raw else "answered")
     if debug:
         refused["debug"]["seconds"]["generate"] = round(time.time() - t2, 1)
+        refused["debug"]["attempts"] = attempts
     if NO_SOURCE in raw:                                  # the model says the sources don't answer it: refuse, don't cite
         if debug:
             refused["debug"]["reason"] = "model found no answer in the sources"
@@ -148,57 +183,74 @@ def answer_stream(question: str, lawyer: dict, lang: str | None = None, voice: b
         if not hits:
             yield refusal
             return
-        order: list = []
-        pending: list = []                                # sentences before the first valid citation
-        started, sent_n, buf = False, 0, ""
-        stop: list = []                                   # set when the model answers NO_SOURCE
+        retries = _retry_budget(question, hits, lang)
 
-        def check(sentence):
-            nonlocal sent_n
-            if lang == "hi":
-                sentence = sentence.replace("\u3002", "\u0964")
-            text, _c, _d = verify_citations(sentence, hits, numbered=True, order=order)
-            speak = _MARKER.sub("", text).strip()
-            return text, speak, bool(_MARKER.search(text))
+        def one_attempt():
+            """Stream one model answer. Returns (outcome, order): "ok", "no_source" (the model gave up, nothing was
+            yielded) or "uncited" (no sentence had a valid citation)."""
+            order: list = []
+            pending: list = []                            # sentences before the first valid citation
+            started, sent_n, buf = False, 0, ""
+            stop: list = []                               # set when the model answers NO_SOURCE
 
-        def emit(text, speak):
-            nonlocal sent_n
-            new = [{"n": n + 1, "text": order[n]} for n in range(sent_n, len(order))]
-            sent_n = len(order)
-            return {"type": "sentence", "text": text, "speak": speak, "new_citations": new}
+            def check(sentence):
+                if lang == "hi":
+                    sentence = sentence.replace("\u3002", "\u0964")
+                text, _c, _d = verify_citations(sentence, hits, numbered=True, order=order)
+                speak = _MARKER.sub("", text).strip()
+                return text, speak, bool(_MARKER.search(text))
 
-        def handle(sentences):
-            nonlocal started
-            for sen in sentences:
-                if NO_SOURCE in sen:                      # model gave up: nothing may be spoken
-                    pending.clear()
-                    stop.append(True)
-                    return
-                text, speak, cited = check(sen)
-                if not speak:
-                    continue
-                if started:
-                    yield emit(text, speak)
-                elif cited:
-                    started = True
-                    for t, sp in pending:
-                        yield emit(t, sp)
-                    pending.clear()
-                    yield emit(text, speak)
-                else:
-                    pending.append((text, speak))
+            def emit(text, speak):
+                nonlocal sent_n
+                new = [{"n": n + 1, "text": order[n]} for n in range(sent_n, len(order))]
+                sent_n = len(order)
+                return {"type": "sentence", "text": text, "speak": speak, "new_citations": new}
 
-        for piece in stream(question, hits, lang, lawyer, voice=voice):
-            buf += piece
-            done, buf = split_sentences(buf)
-            yield from handle(done)
-            if stop or (not started and NO_SOURCE in buf):
-                break
-        if buf.strip() and not stop and NO_SOURCE not in buf:
-            yield from handle([buf.strip()])
-        if not started:
-            yield refusal
+            def handle(sentences):
+                nonlocal started
+                for sen in sentences:
+                    if NO_SOURCE in sen:                  # model gave up: nothing may be spoken
+                        pending.clear()
+                        stop.append(True)
+                        return
+                    text, speak, cited = check(sen)
+                    if not speak:
+                        continue
+                    if started:
+                        yield emit(text, speak)
+                    elif cited:
+                        started = True
+                        for t, sp in pending:
+                            yield emit(t, sp)
+                        pending.clear()
+                        yield emit(text, speak)
+                    else:
+                        pending.append((text, speak))
+
+            for piece in stream(question, hits, lang, lawyer, voice=voice):
+                buf += piece
+                done, buf = split_sentences(buf)
+                yield from handle(done)
+                if stop or (not started and NO_SOURCE in buf):
+                    break
+            if buf.strip() and not stop and NO_SOURCE not in buf:
+                yield from handle([buf.strip()])
+            if started:
+                return "ok", order
+            return ("no_source" if stop or NO_SOURCE in buf else "uncited"), order
+
+        attempts = 0
+        while True:
+            attempts += 1
+            outcome, order = yield from one_attempt()
+            _trace_attempt(attempts, 1 + retries, "answered" if outcome == "ok" else outcome)
+            if outcome == "no_source" and attempts <= retries:    # nothing has been emitted yet, so a retry is invisible
+                continue
+            break
+        extra = {"debug": {"attempts": attempts}} if debug else {}
+        if outcome != "ok":
+            yield {**refusal, **extra}
             return
-        yield {"type": "done", "citations": order}
+        yield {"type": "done", "citations": order, **extra}
     except GenerationError as e:
         yield {"type": "error", "message": str(e)}
